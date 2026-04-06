@@ -13,12 +13,14 @@ Clone `09_soul/` into a new workspace, then localize only the files that should 
 These files should be reviewed immediately in every new repo:
 
 - `09_soul/core/USER.md`
+- `09_soul/core/DEVELOPMENT_INTEGRATION.md`
 - `09_soul/core/PROJECT_ADAPTER_TEMPLATE.md` -> rename for the host repo
 - `AGENTS.md`
-- `.cursor/rules/05_soul_router.mdc`
+- `.cursor/rules/01_soul_router.mdc`
 
 Reason:
 - `USER.md` defines who Hoveath is helping
+- `DEVELOPMENT_INTEGRATION.md` defines the portable standard for embedding Hoveath into day-to-day work
 - the project adapter defines how Hoveath should behave in this repo
 - `AGENTS.md` and runtime rules are the local Cursor projection
 
@@ -50,7 +52,8 @@ When a new repo teaches Hoveath something:
    - `09_soul/memory/`
    - `09_soul/axioms/`
    - `09_soul/skills/`
-4. Only project the minimal active subset into runtime files.
+4. Before promotion, remove repo-local naming, path assumptions, and tool-surface specifics so the lesson stays portable.
+5. Only project the minimal active subset into runtime files.
 
 ## Deprecation Rule
 

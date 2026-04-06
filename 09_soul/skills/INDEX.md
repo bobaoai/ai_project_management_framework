@@ -86,6 +86,8 @@
 - [多 Agent 并行 analysis](./bestpractice_multi_agent_analysis.md) ✅ — Topic 分割 50% 重叠、交叉验证
 - [AI 辅助调试诊断](./bestpractice_ai_debugging_diagnosis.md) ✅ — "代码改不好"的根因诊断决策树
 - [AI 产品设计原则](./bestpractice_ai_product_design.md) ✅ — 线性聊天 vs 知识工作、感知规则解耦
+- [Skill 写作指南（Meta-Skill）](./bestpractice_skill_writing.md) ✅ — 写 skill 时优先定义目标、边界、验收标准与输出规格，避免把 skill 写成 SOP
+- [读者状态与判断增益优先](./bestpractice_reader_state_and_judgment_gain.md) ✅ — 先定义读者读完后获得什么判断能力，再决定 section、prompt、contract 与 detail
 
 ---
 

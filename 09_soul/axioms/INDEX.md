@@ -38,10 +38,11 @@
 - 「验证」「信任」「可靠性」→ V 系列, A04
 - 「优先级」「效率」「瓶颈」→ M03, X03
 - 「上下文」「记忆」「文档」→ A05, T03
+- 「问题 framing」「隐藏假设」「真正目标」→ A16, A08
 
 ---
 
-## A. AI/Agentic 领域 (13条)
+## A. AI/Agentic 领域 (16条)
 
 | ID | 公理 | 核心含义 |
 |----|------|----------|
@@ -58,10 +59,13 @@
 | A11 | [工具组合即能力扩展](a11_tool_composition_as_capability_expansion.md) | 工具被组合时能力非线性扩展 |
 | A12 | [AI 原生开发范式](a12_ai_native_development_paradigm.md) | 软件应优先提供 AI 可消费的接口 |
 | A13 | [技术采用三阶段](a13_tech_adoption_stages.md) | 电动机平行：Driver→Co-pilot→Architect |
+| A14 | [Prompt 边界卫生](a14_prompt_boundary_hygiene.md) | 下游 prompt 只保留 task-plane 信息 |
+| A15 | [通路层诊断优先](a15_path_layer_diagnosis.md) | 诊断先回到通路层，再判断错误为何出现与是否会复发 |
+| A16 | [先揭示隐藏假设，再回答更好的问题](a16_hidden_assumption_better_question.md) | 先识别限制性假设，再用更高价值的 framing 回答真实目标 |
 
 ---
 
-## T. 技术决策 (9条)
+## T. 技术决策 (10条)
 
 | ID | 公理 | 核心含义 |
 |----|------|----------|
@@ -74,6 +78,7 @@
 | T07 | [隔离-处理-验证闭环](t07_isolation_processing_verification.md) | 收集 → 沙箱 → 验证 |
 | T08 | [第一性原理方法论设计](t08_first_principles_methodology.md) | 先质疑框架是否解决问题 |
 | T09 | [数据策略与MDP](t09_data_strategy_mdp.md) | 数据捕获本身就是第一阶段产品 |
+| T10 | [Index 优先，AI 填补语义缺口](t10_index_first_ai_for_gaps.md) | 有结构化事实时直接消费，语义缺口交给 AI，不引入 heuristic 中间层 |
 
 ---
 
@@ -123,9 +128,9 @@
 
 | 领域 | 数量 |
 |------|------|
-| AI/Agentic | 13 |
-| 技术决策 | 9 |
+| AI/Agentic | 16 |
+| 技术决策 | 10 |
 | 管理/工作哲学 | 10 |
 | 信任与验证 | 5 |
 | 跨域隐喻 | 6 |
-| **总计** | **43** |
+| **总计** | **47** |

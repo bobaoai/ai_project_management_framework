@@ -13,8 +13,8 @@ It represents the assistant as a reusable persona or project manager with:
 This directory is not the repo's day-to-day working state. It is the source layer that can be projected into local Cursor runtime files and adapted to future projects.
 
 It now contains a copy-first manager baseline imported from the reference `context-infrastructure` system:
-- 44 axioms
-- 25 skills
+- 47 axioms
+- 26 skills
 - core persona and communication material
 - memory and automation scaffolding
 
@@ -27,7 +27,7 @@ It now contains a copy-first manager baseline imported from the reference `conte
 
 ## Structure
 
-- `core/`: persona, user preferences, project adapter, portability rules
+- `core/`: persona, user preferences, project adapter, development-integration standard, portability rules
 - `docs/`: imported setup and cron references
 - `memory/`: observations and reflections that may later be promoted
 - `axioms/`: stable principles worth carrying across repos
@@ -37,6 +37,10 @@ It now contains a copy-first manager baseline imported from the reference `conte
 - `tools/`: imported helper tools and utilities
 - `reference/`: external reference material used to shape this framework
 - `core/LOCALIZATION_GUIDE.md`: what to rewrite first when bringing Hoveath into a new repo
+
+## Development Integration
+
+Use `core/DEVELOPMENT_INTEGRATION.md` as the portable standard for deciding whether `Hoveath` is actually embedded into a host repo's working loop or only projected into prompt/runtime files.
 
 ## Promotion Rule
 
@@ -51,6 +55,8 @@ Use this path for learning:
 ## Portability
 
 The goal is that `09_soul/` can later be summoned by another repo with a new project adapter rather than rebuilt from scratch.
+
+When carrying this layer into another repo, copy `09_soul/` itself and rebuild the local runtime projection there. Do not treat host-local `AGENTS.md` or `.cursor/rules/` as part of the portable payload.
 
 ## Copy-First Policy
 
