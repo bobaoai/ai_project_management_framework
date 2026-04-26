@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {},
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(diff:*)",
+      "Bash(tree:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git config --get:*)",
+      "Bash(python3 09_soul/bridging/mirror_sync.py --check)",
+      "Bash(python3 09_soul/bridging/mirror_sync.py --list)",
+      "Bash(python3 09_soul/bridging/mirror_sync.py --apply:*)",
+      "Bash(python3 09_soul/bridging/mirror_sync.py --register:*)",
+      "Bash(xargs -n1 basename)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(git branch -D:*)"
+    ]
+  }
+}
