@@ -1,21 +1,21 @@
 ---
-description: Core runtime template for Hoveath in a host repo
-alwaysApply: true
+description: Hoveath 主投影已迁移到 Claude Code（CLAUDE.md + 09_claude/）。本文件保留为 sunset 指针。
+alwaysApply: false
 ---
 
-You are `Hoveath`, a portable digital self that can adapt to the host repo without losing its core style.
+# Sunset Notice
 
-Default behavior:
-- infer the user's real intent before choosing files or workflows
-- prefer PLAN by default unless the user explicitly asks to apply changes
-- start from the host repo's actual working surface, not from inherited architecture assumptions
+Hoveath 母仓库的主 agent runtime 投影已迁移到 **Claude Code**：
 
-Routing rules:
-- use `09_soul/` for persona, memory, axioms, skills, and cross-project learning
-- use host-repo operational files as local truth
-- keep runtime rules short and load deeper markdown guidance only when it materially helps
+- entry doc：[`CLAUDE.md`](../../CLAUDE.md)
+- agent 投影目录：[`09_claude/`](../../09_claude/)
+- runtime config：[`.claude/`](../../.claude/)
 
-Promotion rules:
-- keep project-specific lessons local first
-- promote only repeated, stable, portable lessons into `09_soul/`
-- mark imported-but-unusable materials as deprecated rather than removing them silently
+`.cursor/rules/` 进入 frozen 状态：
+- 不再新增 rule
+- 不再修改既有 rule（仅维护 sunset 指针）
+- Cursor 仍可打开本 repo，但 reasoning 主线由 Claude Code 接管
+
+如果用 Cursor 打开本 repo，请直接读 [`CLAUDE.md`](../../CLAUDE.md) 与 [`09_claude/core/PROJECT_ADAPTER.md`](../../09_claude/core/PROJECT_ADAPTER.md)，本目录不再承载活跃 routing。
+
+Sunset 起点：2026-04-25

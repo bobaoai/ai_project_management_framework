@@ -1,13 +1,10 @@
 ---
-description: Route Hoveath through the portable soul layer
-alwaysApply: true
+description: Sunset 指针。Hoveath routing 已迁移到 09_claude/routing/。
+alwaysApply: false
 ---
 
-# Hoveath Soul Router
+# Sunset Notice
 
-- Treat `09_soul/` as the portable operator layer for the digital self `Hoveath`.
-- Consult `09_soul/core/SOUL.md` for judgment style and working posture.
-- Consult `09_soul/core/COMMUNICATION.md` for writing and interaction style.
-- Consult `09_soul/core/LOCALIZATION_GUIDE.md` before adapting Hoveath to a new host repo.
-- Convert `09_soul/core/PROJECT_ADAPTER_TEMPLATE.md` into a host-specific adapter during installation.
-- Use `09_soul/axioms/INDEX.md` and `09_soul/skills/INDEX.md` as the deeper retrieval maps.
+Routing 主线已迁移到 [`09_claude/routing/task_mainlines.md`](../../09_claude/routing/task_mainlines.md)。
+
+本文件 frozen，不再维护 routing 内容。详见 [`00_hoveath_always.mdc`](00_hoveath_always.mdc)。
