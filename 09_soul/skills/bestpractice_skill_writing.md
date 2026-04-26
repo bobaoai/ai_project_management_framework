@@ -76,21 +76,92 @@ Skill 的读者是一个有推理能力的 agent，它的 context window 是稀�
 
 ### 原则三：AI-facing 文档先讲清 contract，再追求压缩表达
 
-Skill 本身就是 AI-facing artifact。它不是给人类快速扫一眼的海报，而是给 agent 真正执行时消费的 contract。
+Skill 本身就是 AI-facing artifact。它不是给人类快速扫一眼的海报，而是给 agent 真正执行时消费的 contract。这条原则同样适用于一切**主要给 AI 消费**的稳定 doc：top-level design doc、routing doc、rule、axiom、entry doc（CLAUDE.md / AGENTS.md）。
 
-因此，先保证 skill 能回答这些问题：
+#### 6 个必须能回答的问题
 
-- 这个 skill 是干什么的
-- 什么时候应该进入它
-- 进入后先读什么
-- 应该产出什么
-- 和相邻 skill、builder、writer 或其他层如何交接
+写 / 评审任何 AI-facing artifact 时，先确保它能直接回答：
 
-只有这些边界和 handoff 已经清楚时，才去考虑是否还能更短、更整洁。
+1. **这一层是干什么的**（layer 用途）
+2. **什么时候应该进入它**（进入条件 / 触发信号）
+3. **进入后先读什么**（first authority / truth surface）
+4. **应该产出什么**（输出形态 + reader-end-state）
+5. **和相邻层如何交接**（handoff logic：上游期望什么 / 下游消费什么 / 失败时怎么 fall back）
+6. **哪些邻近概念容易和它混淆**（disambiguation：和 X 区别在哪、什么时候不要用它而用 Y）
 
-常见误区是为了“看起来清爽”，把关键边界压没了。这样做会让 skill 在阅读时更轻，但在执行时更模糊。对 agent 来说，少一点视觉负担没有意义；少掉关键 contract 才是真正的损失。
+只有 1-6 都清楚时，再去考虑是否还能更短、更整洁。
 
-这条原则也意味着：如果一个名字容易误导，就不要只靠命名本身承载含义。应直接写清楚它真正负责什么，以及它不负责什么。
+#### 不要为了视觉清爽牺牲 contract
+
+常见误区是为了"看起来清爽"，把关键边界压没了。AI-facing artifact 不需要 human skim-first 的整洁；它需要 agent 在执行时能找到 contract。
+
+具体几条 anti-pattern：
+- **任务主线收缩**：不要为了让 routing table 行数更少，就把 distinct 的 recurring task line 合并成一行。每条主线如果实际产出形态不同，就该独立一行
+- **层级误读**：要显式区分 `task mainline` / `skill layer` / `writer gateway layer` / `deterministic builder / package layer` — 名字相近的层最容易被误用
+- **靠命名承载含义**：如果一个名字容易误导（例如 "manager" 既可能指角色也可能指模块），不要只靠命名暗示，**直接在文档内写清楚它真正负责什么、以及它不负责什么**
+- **summary 在 contract 之前**：可以有 summary，但只在详细 contract 已清晰之后再 summary
+
+#### 检测：删一段后 agent 能否执行
+
+写完一段后扫一遍：删掉这段，agent 还能完成 reader-end-state 列出的任务吗？
+- 能 → 这段是 padding，删
+- 不能 → 这段是 contract，保留
+
+注意这个检测和 FP4 / `bestpractice_prose_without_editorial_meta.md` 的检测方向**相反但互补**：FP4 删的是"对世界判断没贡献的句子"（多写无益），本检测保留的是"对 agent 执行有贡献的 contract"（少写则模糊）。AI-facing artifact 在两者之间找平衡点。
+
+---
+
+### 原则四：钉「不变量」，不钉「实现路径」
+
+「结果确定性优于过程确定性」回答了「该把确定性放在哪一层」。但实际写 skill 时还有一个更细的问题：在「结果」这一层内部，哪些必须钉死，哪些应该留给 agent 自由发挥。
+
+如果什么都钉死，agent 失去 agency；如果什么都不钉，系统在每一轮都重新发明同一个东西，失去连贯性。
+
+可用的划分：
+
+- **必须钉死的不变量（invariant）**：
+  - 产物的 canonical 路径与命名
+  - 产物的 identity 字段（如 `report_date`、`asset_id`、`theme_id`）
+  - 上游依赖的身份与新鲜度契约
+  - 产出此节点的 canonical builder（不允许第二条产出路径）
+  - 与相邻 skill / builder / writer 的接口形状
+- **应该留开给 agent 的部分**：
+  - 具体 prose 怎么写
+  - 判断的具体路径与权衡
+  - 中间过程怎么组织
+  - 哪些证据要重点展开、哪些只点到为止
+
+写 skill 时要把这两类显式分开。「钉死不变量」是为了让系统连贯、artifact 可追踪、跨任务可复用；「留开实现」是为了让 agent 可以根据当下 context 做最优判断。如果一个 skill 通篇都在规定 prose 结构和写作步骤，却没有讲清不变量，那么它一定既限制了 agent，又允许了 artifact 漂移——两头不讨好。
+
+判断检查：
+
+- 这条要求是不变量还是实现细节
+- 如果不是不变量，能不能改写成「建议 + 失败信号」而不是「必须按 X 顺序做」
+- 不变量是否足够少：少到 agent 能记住，多到系统不会漂移
+
+### 原则五：边界有两面——禁止式 + 检测式
+
+现有 skill 里的边界大多是禁止式：「不要做 X」「不要把 Y 误读为 Z」。这种 boundary 在 agent 注意到禁令时有效，但当 agent 用更短的路径绕过禁令、产出了一个表面合规的 artifact 时，禁止式 boundary 完全失效——它没有任何检测机制。
+
+实际写 skill 时，每一条关键边界都应配一句**无声违反时长什么样**的描述。这是检测式 boundary。两面合在一起，agent 才有自我校验的把手。
+
+例如：
+
+- 禁止式：「不能在没跑完 data update 的情况下写 PM 报告」
+- 检测式：「如果你在没看到 `daily_update_status.json` 显示 `blocking == false` 的情况下产出了 PM 报告，那就是无声违反；artifact 自己看不出问题，但上游 freshness 没满足，下次复盘会发现」
+
+或：
+
+- 禁止式：「不要让 theme overlay 替代 first authority」
+- 检测式：「如果最终 artifact 的核心论述是 theme 的标准结论而不是当前 ticker / 当前市场 window 的解读，那就是无声违反——读者读完后判断的是 theme，不是 stock 或 today's tape」
+
+写检测式 boundary 时尽量做到：
+
+- 描述一个 agent 在产出后能自己回头检查的可观察特征
+- 不要只说「读起来不对」，要说「读起来不对是因为缺了哪一类证据 / 用错了哪一层 truth surface」
+- 如果违反只能在更下游被发现（比如下次复盘才能看出），明确说出在哪一层会被发现
+
+这条原则的意义不是让 skill 文件变长，而是让 agent 拥有「我刚才那条路是不是已经无声越界」的自检能力。这正好弥补「结果确定性 + 留开实现」组合下的天然漏洞——agent 自由度高的地方，最容易出现自己看不见的偏移。
 
 ---
 
@@ -212,6 +283,14 @@ agent 的关键边界是否足够明确？
 
 模糊边界会让 skill 失去约束力。
 
+### 不变量与检测式边界
+
+是否显式区分了「必须钉死的不变量」和「留开给 agent 的实现细节」？
+
+每一条关键边界，是否同时给出了**无声违反时长什么样**的可观察特征，而不只是禁止句？
+
+如果一个 skill 只有禁止式边界、没有检测式描述，agent 在自由发挥时就没有自校验的把手，越界很容易在下游才被发现。
+
 ### 信息密度
 
 文件是否保持了合理长度？
@@ -234,6 +313,9 @@ agent 的关键边界是否足够明确？
 | 封装错误信息 | CLI/工具输出笼统错误，丢失原始上下文 | 尽量透传 status code、response body、异常类型等底层信息 |
 | 忘记更新 `INDEX.md` | skill 写了但没人能找到 | 新增或重写 skill 后立刻更新索引 |
 | 过度追求压缩与整洁 | 文档更短了，但 entry condition、truth surface 或 handoff 消失 | 先保证 AI-facing contract 完整，再做压缩 |
+| 钉错层级 | 把 prose 风格、章节顺序、段落结构钉死，却没钉 canonical path、identity、freshness 契约 | 钉不变量、留开实现；少而准的硬约束比多而细的过程指令更值钱 |
+| 只写禁止式边界 | 「不要做 X」覆盖很全，但 agent 走捷径产出表面合规 artifact 时无人察觉 | 每条关键边界配一句「无声违反时长什么样」的检测式描述 |
+| Process leak / 对话归因 / workflow 时间窗 deictic | 在稳定 artifact（SKILL / design doc / rule / axiom）正文里出现「PM 在 X 提出 / 上一轮讨论 / 本轮 / 这次 / 当前 dogfood / 在 Plan A 启动前 / 我们刚才决定 / 按 Rule N 我们决定」之类语言；读者无法独立于本次对话理解这段话 | 归因 → 直接陈述设计取舍本身；时间窗 → 换成版本号 / 节序号 / 日期；rule / axiom 引用作贯穿性 framing convention（如 SKILL 顶部统一的 `Reader gain (Rule 36)` 序章 + 紧跟 reader-gain 描述）允许；只禁止 ad-hoc「按 Rule N 背书 / 按 Rule N 我们决定」；process 语言只放 changelog / handoff notes / `designDoc/temp/` / git commit message |
 
 ---
 
@@ -274,4 +356,4 @@ agent 的关键边界是否足够明确？
 
 ---
 
-**最后更新**: 2026-04-06
+**最后更新**: 2026-04-17

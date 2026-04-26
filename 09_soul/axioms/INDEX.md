@@ -21,6 +21,10 @@
 - 用户明确要求参考其个人哲学时
 - 在做反思层工作（沉淀公理、深度复盘）时
 
+### 最高优先级（First Principles）
+
+- **FP**：[第一性原理](FP_first_principles.md) — 7 条 work-judgment 准则，优先于所有其他 axiom 与工作层契约。Philosophy 层，跨项目跨 agent 稳定。每会话每任务**先用 FP，再考虑其他 axiom 或 rule**。
+
 ### 核心 Axiom 群
 
 这些公理形成有机整体，常被一起调用：
@@ -28,6 +32,8 @@
 - **AI 管理三角**：A02(放大器) + A03(IC→Manager) + A04(可靠性) — 所有 AI 协作的基础心智
 - **认知资产组**：T05(认知是资产) + A02 + A03 — 代码成本坍塌后的价值重定位
 - **验证闭环**：V02(可验证性) + T07(隔离-处理-验证) + V04(时间锚定) — 构建可信任的 AI 系统
+- **Harness Engineering 群**：A17(五面墙) + A18(验证成本守恒) + A19(概率性面积最小化) + V02(可验证性) + A04(可靠性管理) — 评估和设计生产级 agent 系统
+- **Doc Authoring 群**：A20(读者 persona) + A16(隐藏假设) + X04(为真实用例设计) — 任何 KB / report / skill 动笔前的读者锁定
 
 ### 主动检索触发
 
@@ -35,14 +41,19 @@
 
 - 「管理 AI」「委派」「delegation」→ A03, A04
 - 「框架选择」「技术选型」「lock-in」→ A06, T08
-- 「验证」「信任」「可靠性」→ V 系列, A04
+- 「验证」「信任」「可靠性」→ V 系列, A04, A17, A18
 - 「优先级」「效率」「瓶颈」→ M03, X03
 - 「上下文」「记忆」「文档」→ A05, T03
 - 「问题 framing」「隐藏假设」「真正目标」→ A16, A08
+- 「harness」「agent 生产化」「五面墙」「可靠性链条」→ A17, A04, V02
+- 「verification cost」「让非专家也能 X」「semantic layer」→ A18, A12, T10
+- 「multi-agent 架构」「workflow agent」「super-prompt 反模式」→ A19, A11, T07
+- 「读者」「persona」「服务谁」「reader」→ A20
+- 「时区」「timestamp」「日期对齐」「semantic mismatch」→ T11
 
 ---
 
-## A. AI/Agentic 领域 (16条)
+## A. AI/Agentic 领域 (20条)
 
 | ID | 公理 | 核心含义 |
 |----|------|----------|
@@ -62,10 +73,14 @@
 | A14 | [Prompt 边界卫生](a14_prompt_boundary_hygiene.md) | 下游 prompt 只保留 task-plane 信息 |
 | A15 | [通路层诊断优先](a15_path_layer_diagnosis.md) | 诊断先回到通路层，再判断错误为何出现与是否会复发 |
 | A16 | [先揭示隐藏假设，再回答更好的问题](a16_hidden_assumption_better_question.md) | 先识别限制性假设，再用更高价值的 framing 回答真实目标 |
+| A17 | [五面墙：可靠性链条同步失效](a17_five_walls_of_agent_reliability.md) | Agent 让防错/观测/状态/验证/治理五个环节的确定性假设同时失效 |
+| A18 | [验证成本守恒](a18_verification_cost_conservation.md) | 代理工具的验证成本等于它声称要消灭的专长，只能转移不能消灭 |
+| A19 | [概率性面积最小化](a19_minimize_probabilistic_surface.md) | 只在需要语义判断的步骤用 LLM，机械步骤一律用代码或 workflow agent |
+| A20 | [读者 Persona 优先](a20_reader_persona_primacy.md) | 任何 doc/skill 在动笔前显性声明读者 persona |
 
 ---
 
-## T. 技术决策 (10条)
+## T. 技术决策 (11条)
 
 | ID | 公理 | 核心含义 |
 |----|------|----------|
@@ -79,6 +94,7 @@
 | T08 | [第一性原理方法论设计](t08_first_principles_methodology.md) | 先质疑框架是否解决问题 |
 | T09 | [数据策略与MDP](t09_data_strategy_mdp.md) | 数据捕获本身就是第一阶段产品 |
 | T10 | [Index 优先，AI 填补语义缺口](t10_index_first_ai_for_gaps.md) | 有结构化事实时直接消费，语义缺口交给 AI，不引入 heuristic 中间层 |
+| T11 | [时间戳与日期字段必须显性声明语义](t11_timestamp_semantics_explicit.md) | 任何时间字段必须命名后缀带时区/语义，比较前必须验证两边语义匹配 |
 
 ---
 
@@ -128,9 +144,10 @@
 
 | 领域 | 数量 |
 |------|------|
-| AI/Agentic | 16 |
-| 技术决策 | 10 |
+| FP 第一性原理（最高优先级，独立系列） | 1 |
+| AI/Agentic | 20 |
+| 技术决策 | 11 |
 | 管理/工作哲学 | 10 |
 | 信任与验证 | 5 |
 | 跨域隐喻 | 6 |
-| **总计** | **47** |
+| **总计** | **53** |

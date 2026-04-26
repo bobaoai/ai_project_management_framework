@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .knowledge_cache/
 tmp/
+
+# Subordinate registry — 本机特定路径，不进 git
+# 母体跨机器一致；每台机器把 .local_paths.json.template 复制为 .local_paths.json 并填本机路径
+09_soul/examples/.local_paths.json

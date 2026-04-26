@@ -86,8 +86,13 @@
 - [多 Agent 并行 analysis](./bestpractice_multi_agent_analysis.md) ✅ — Topic 分割 50% 重叠、交叉验证
 - [AI 辅助调试诊断](./bestpractice_ai_debugging_diagnosis.md) ✅ — "代码改不好"的根因诊断决策树
 - [AI 产品设计原则](./bestpractice_ai_product_design.md) ✅ — 线性聊天 vs 知识工作、感知规则解耦
-- [Skill 写作指南（Meta-Skill）](./bestpractice_skill_writing.md) ✅ — 写 skill 时优先定义目标、边界、验收标准与输出规格，避免把 skill 写成 SOP
-- [读者状态与判断增益优先](./bestpractice_reader_state_and_judgment_gain.md) ✅ — 先定义读者读完后获得什么判断能力，再决定 section、prompt、contract 与 detail
+- [Skill 写作指南（Meta-Skill）](./bestpractice_skill_writing.md) ✅ — 写 skill 时优先定义目标、边界、验收标准与输出规格，避免把 skill 写成 SOP；含 AI-facing detail-first 6 问 + 不变量/检测式边界
+- [读者状态与判断增益优先](./bestpractice_reader_state_and_judgment_gain.md) ✅ — 先定义读者读完后获得什么判断能力，再决定 section、prompt、contract 与 detail；含 multi-agent handoff reader-gain 化 §
+- [Doc Self-Review（交付前自审 doc）](./bestpractice_doc_self_review.md) ✅ — R13 的 canonical 执行路径：三阶段（结构审 → 内容审 → 风格审）+ 4 份参考 + 跳过协议 + 自审报告格式
+- [Retrospective Writing（dogfood 周期复盘）](./bestpractice_retrospective_writing.md) ✅ — 触发条件 / INDEX 先行 / schema（status + validation kind + follow_up_trigger）/ follow-up inline 到执行点
+- [Mirror Sync（09_soul → 09_<agent> 投影同步）](./bestpractice_mirror_sync.md) ✅ — zero-metadata mirror + 外置 manifest；配合 `09_soul/bridging/mirror_sync.py` 做 drift 检测与 sync
+- [Prose Without Editorial Meta（写关于世界，不写关于稿件）](./bestpractice_prose_without_editorial_meta.md) ✅ — sentence-level 守门：reader-facing 报告与 stable AI-facing artifact 都禁止 editorial meta / conversation attribution / workflow time-window deictics / rule invocation as endorsement
+- [Prompt Boundary（task-plane vs control-plane）](./bestpractice_prompt_boundary.md) ✅ — A14 的 canonical 操作路径：下游 prompt 只放改变 worker 输出质量的信息，编排 / persona-source label / 已被结构性保证的 guardrail 一律删
 
 ---
 

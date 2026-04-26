@@ -141,13 +141,64 @@ artifact 常见的假进步有四种：
 
 ---
 
+## Multi-Agent Handoff：每个交接节点都要 Reader-Gain 化
+
+> **来源**：trading_platform critic pipeline 复盘（Writer → Debater → Writer rebuttal → Reviewer → Stage 3 Writer）发现：管线产出可用，但**最大摩擦是「每个 SKILL 告诉 agent 该做什么，而不是告诉它下一个读者读完后能新做什么」**。一旦每条 handoff artifact 显式声明 reader-gain，format 类争议消失、silent drift 变可检测、prompt 增量从主观判断变成"能否补上已知 reader-gain gap"。
+
+在多 agent / 多 stage pipeline 里，前面三层（artifact / instruction / sentence）都不够 — 还要加第四层：**每个 handoff 都是一次 reader-state 转移，每一步都要显式 declare 下一个读者新解锁什么判断能力**。
+
+### 把 handoff 当 contract，不当传送带
+
+每个 handoff artifact（前一个 agent 的输出 = 下一个 agent 的输入）必须能直接回答：
+
+- 读这份产物的下一个 agent 是谁
+- 读完后它新能做什么（具体到一个动词 + 一个区分）
+- 它读完后**不应该**还需要去重读上游素材才能完成自己的任务（如果还要回头读，本层 reader-gain 就没真正交付）
+
+工程化形态：每条 handoff artifact 在自身顶部 frontmatter 或第一段写 `required_reader_gain: <一句话>`。模糊版（"提供 context 给下游"）一律不算。
+
+### Vehicle-shaped vs Reader-Gain-shaped
+
+handoff 失败的典型不是 format 错，而是**正确格式 + 正确 section + 正确字段，但下游读者读完仍不能直接做 next-stage 任务**。
+
+| Vehicle-shaped（够形似） | Reader-Gain-shaped（够能用） |
+|---|---|
+| "produce a report with sections A/B/C" | "after reading, downstream X can rank items by severity without re-reading source" |
+| 文件落对路径、JSON schema 通过校验 | 下游 agent 不再需要回头 grep 上游原文 |
+| 引用了上游所有 evidence | 下游能用 citation 直接 verify，不需要重新组装证据 |
+
+### 多 Agent Pipeline 里的常见 handoff 反模式
+
+| 反模式 | 症状 | 修法 |
+|---|---|---|
+| 每条 attack / patch 只有 severity 没有 confidence | reviewer 自己 mentally calibrate 哪些 attack 真该改、哪些只是吐槽 | 把 confidence 跟 severity orthogonal 分开，让下游不用猜 |
+| Attack list 平铺，没有 root_cause_cluster_id | 下游看到 N 条独立 attack，要手工聚类才能优先级排序 | 加 cluster id，让共享根因的 attack 在产出时就关联 |
+| Patch 没有 `reader_gain_after_patch` 字段 | rebuttal / arbitrate 的 agent 不知道 patch 落地后下游 PM 新得到什么 | 每条 patch 必须 inline 描述「打完这个 patch，PM 新能怎么判断」 |
+| Location pointer 是从上游 transcribe 的（没 grep verify） | 下游照着 location 找不到对应内容 | 加 `location_grep_verified: true` flag，强制现场 verify |
+| Critic 输出过度分散在多个文件 | 下游不知道哪个是 canonical operational input，哪些是 audit trail | 在 frontmatter 标 `role: operational_input` / `role: audit_trail`；加 `<pipeline>_complete` marker pointing to canonical input |
+
+### Pipeline-level 自查问句
+
+设计或评审一个 multi-agent pipeline 时，对每条 handoff 都问一遍：
+
+- [ ] 这份 artifact 的 `required_reader_gain` 是否一句话能讲清
+- [ ] 下游 agent 读完是否能直接做下一步，不用回头读上游素材
+- [ ] 字段设计是 vehicle-shaped 还是 reader-gain-shaped
+- [ ] 有没有 confidence / severity / location-verified / cluster-id / reader_gain_after_patch 这类**下游做选择必须的**字段缺失
+- [ ] 有没有过度分散到多文件 — 如果 4 份文件的 90% 内容下游都不直接消费，merge 它们或显式标 audit trail
+
+任何 [ ] 没勾，handoff contract 还没设计完。
+
+---
+
 ## 何时优先回读本文件
 
 - 你想重写一个 report、memo、prompt 或 contract
 - 你发现 artifact 越写越长但仍不够清楚
 - 你怀疑自己在堆 section，而不是提升 judgment
 - 你在争论应该加什么内容，却说不清读者到底会因此得到什么
+- 你在设计或调整一个 multi-agent / 多 stage pipeline，发现 handoff 一直在反复磨合却定不下来
 
 ---
 
-**最后更新**: 2026-04-06
+**最后更新**: 2026-04-25

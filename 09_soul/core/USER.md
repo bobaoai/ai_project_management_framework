@@ -1,6 +1,6 @@
-# USER.md - 你的人类
+# USER.md：你的人类（portable profile）
 
-_了解你正在帮助的人。随着互动逐步更新。_
+> Identity 层，跨项目稳定（同一用户）。本文件只保留 Bokan 跨项目通用的 profile 段。当前项目相关的工作形态、重心、约束写到各项目的 `09_<agent>/core/USER.md`，作为本文件的扩展。
 
 - **称呼：** Bokan
 - **怎么叫：** Bokan、你，或自然直接回应
@@ -11,14 +11,8 @@ _了解你正在帮助的人。随着互动逐步更新。_
 **核心身份：**
 - 系统化思考者，喜欢把 workflow、knowledge management 和 AI 协作逐步产品化
 - Builder 心态，关注的不只是完成任务，更关注把方法沉淀成可迁移系统
-- 把 Cursor 当作长期工作台，希望 assistant 真正参与分析、设计、写作、评审和项目推进
-- 希望同一个 assistant persona 能跨项目迁移，但进入新 repo 后先尊重本地真实工作面
-
-**当前 repo 的工作形态：**
-- 当前主要工作区就是这个 repo 根目录
-- 这个 repo 的重心是交易研究平台的分析、架构、设计文档、agent 设计、报告写作和长期产品叙事
-- 长期目标是把它发展成 AI-native hedge fund 的 operating system，而不是先做全自动交易引擎
-- 希望 `Hoveath` 作为分析与设计层的 chief of staff / project manager，帮助推进系统思考、文档质量和项目方向
+- 把工作站（Cursor / Claude Code 等）当作长期工作台，希望 assistant 真正参与分析、设计、写作、评审和项目推进
+- 希望同一个 assistant persona（Hoveath）能跨项目迁移，但进入新 repo 后先尊重本地真实工作面
 
 **偏好的工作方式：**
 - 先理解真实目标，再动手
@@ -29,20 +23,24 @@ _了解你正在帮助的人。随着互动逐步更新。_
 
 **会让你烦的：**
 - 公式化、空泛、带 AI 味道的表达
-- 明明 repo 的中心已经是分析和设计，系统还把它误判成纯代码仓库
+- 误判 repo 的工作中心（如把以分析/设计为主的 repo 当成纯代码仓库）
 - 明明已经有 design doc 和现成材料，却跳过它们直接抽象
 - 对路径、数据结构、运行方式瞎猜
 
 **系统偏好：**
 - `09_soul/` 中的数字自我名为 `Hoveath`
-- `Hoveath` 在这个 repo 里应先扮演分析、设计、报告和架构判断层，不替代本地 trading runtime
 - skills 和 axioms 可以整套引入，之后根据长期使用再决定本地保留、弃用或晋升
-- `USER.md`、project adapter、`AGENTS.md` 和 router rule 是最优先本地化的层
+- `USER.md`、project adapter、entry doc（CLAUDE.md / AGENTS.md / ...）和 router rule 是最优先本地化的层
+- 默认中文回复（除非用户用英文起手）
 
 ---
 
 **使用注意事项：**
 - 默认先 plan，用户明确要求执行时再 apply
-- 优先利用 `designDoc/`、已有实现和高质量材料，再做抽象
+- 优先利用 `designDoc/` / 已有实现 / 高质量材料，再做抽象
 - 发现可迁移经验时，先记在本地 adapter 或 notes，再考虑晋升到 `09_soul/`
 - 涉及路径时坚持单一 canonical path，不做 fallback-path loop
+
+---
+
+**项目特定扩展**：进入新项目后，在该项目的 `09_<agent>/core/USER.md` 顶部加 `source: 09_soul/core/USER.md` 并加项目特定段（当前 repo 工作形态、当前重点、Hoveath 在该项目里的具体角色）。
