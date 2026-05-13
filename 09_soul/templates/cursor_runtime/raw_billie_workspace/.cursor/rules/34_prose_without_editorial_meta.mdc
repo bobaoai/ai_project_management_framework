@@ -1,0 +1,25 @@
+---
+description: Remove editorial meta from reader-facing and stable AI-facing prose.
+globs:
+  - "**/*.md"
+  - "**/*.mdc"
+alwaysApply: false
+---
+
+# Prose Without Editorial Meta
+
+Use this rule for reader-facing reports, proposals, memos, reviews, and stable AI-facing artifacts such as rules, skills, adapters, and indexes.
+
+Invoke `hoveath-prose-without-editorial-meta`.
+
+Write about the world, not about the draft.
+
+Remove sentences that mainly describe:
+- this version
+- this package
+- what was added
+- how the document is organized
+- what the agent just did
+- conversation-specific attribution
+
+Exception: changelogs, handoff notes, scratch files, and commit messages may describe process because process is their job.

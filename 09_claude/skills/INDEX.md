@@ -11,7 +11,7 @@
 
 业务 skill（gemini_image / send_email / google_docs / typefully_metrics 等）与已弃用 skill（workflow_bilibili / share_report 等）只在 09_soul/skills/ 保留，不进 mirror。host 项目按需自行添加。
 
-## Baseline 清单（14 个）
+## Baseline 清单（15 个）
 
 ### Doc / Skill 写作
 
@@ -21,6 +21,7 @@
 - [bestpractice_reader_state_and_judgment_gain.md](bestpractice_reader_state_and_judgment_gain.md) — 先定义读者读完获得的判断能力，再决定结构（含 multi-agent handoff reader-gain 化）
 - [bestpractice_prose_without_editorial_meta.md](bestpractice_prose_without_editorial_meta.md) — sentence-level 守门：写关于世界，不写关于稿件
 - [bestpractice_prompt_boundary.md](bestpractice_prompt_boundary.md) — A14 canonical 操作路径：下游 prompt 只放 task-plane
+- [bestpractice_chinese_writing_voice.md](bestpractice_chinese_writing_voice.md) — 7 层中文 voice 反模式 + 改写示范，self-check checklist
 
 ### Bridging / 系统卫生
 

@@ -1,0 +1,13 @@
+---
+description: Calendar editing rules (days/weeks/months)
+globs:
+  - 01_calendar/**/*.md
+alwaysApply: false
+---
+When modifying calendar files:
+- Preserve the section structure (Commitments, Maintenance, Focus blocks, Scheduled tasks).
+- Use 24h times HH:MM-HH:MM.
+- Prefer links to routines in 01_calendar/recurring and plans in 04_areas.
+- Do not dump long notes into the day file; put them in logs/records and link them.
+- Day files must have YAML front matter with required fields: id, type, area, status, created, updated.
+- Date format: YYYY-MM-DD for days, YYYY-Www for weeks, YYYY-MM for months.

@@ -3,7 +3,7 @@
 ## 元数据
 
 - **类型**: BestPractice
-- **适用场景**: 在交付任何 Proposal 前（Plan、Design Doc、Methodology Doc、Framing Doc、Retrospective、给用户消费的 inline 回复或多 section 长 response）执行 self-review
+- **适用场景**: 在交付任何 Proposal 前（Plan、Design Doc、Methodology Doc、Framing Doc、Retrospective、给用户消费的 inline 回复或多 section 长 response、带 evidence verdict 的 PM-actionable reply）执行 self-review
 - **创建日期**: 2026-04-25
 - **来源**: 多次 doc 交付后被用户当场指出 reader-state 结构性失败的实战经验，加上 R13 Self-Review Before Handoff 的 protocol 化需求
 
@@ -31,6 +31,7 @@ R13 规定交付 Proposal 前必须 self-review。COMMUNICATION.md 第一性原�
 
 - 即将交付 Plan、Design Doc、Methodology Doc、Framing Doc、Retrospective 给用户
 - 即将给用户回一段多 section 长 response（>3 段且涉及 framing / 决策 / 推荐）
+- 即将给用户 surface 一个会影响 PM 信念、证据入账、verification verdict、review verdict 或下一步执行授权的 substantive reply
 - 修改了 R13 涵盖的 doc 后再次交付（即使是小改也要重跑相关 stage）
 - 用户问 "review 一下" / "自己看看" / "你 review 过了吗"
 
@@ -44,22 +45,72 @@ R13 规定交付 Proposal 前必须 self-review。COMMUNICATION.md 第一性原�
 
 ## 目标、边界、验收
 
-**目标**：交付前对 Proposal 完成结构 + 内容 + 风格三层 review，输出明确的 "改了 X 处 + 保留 Y 处及理由" 报告。
+**目标**：交付前先完成 artifact routing，再对 Proposal 完成结构 + 内容 + 风格三层 review，输出明确的 "改了 X 处 + 保留 Y 处及理由" 报告。
 
 **边界**：
 
 - 只 review 即将交付的 Proposal 本身，不顺手扩 scope 改其他 doc
-- 只跑 4 份参考定义的 review 维度，不引入临时新维度
+- 只跑 Layer 0 artifact routing + 4 份参考定义的 review 维度，不引入临时新维度
 - 跳过任何 stage 必须显式声明，禁止静默跳过
 
 **验收**（review 通过判定）：
 
-- Stage 1-3 全部跑过，每个 stage 有 explicit pass/fix 记录
+- Layer 0 + Stage 1-3 全部跑过，每个 layer / stage 有 explicit pass/fix 记录
 - 4 份参考全部对照过（或显式声明跳过及理由）
 - Reader-state 5 问全部跑过且都过
-- 输出 self-review 报告包含：改动 list（每条带 §引用 + 修法）+ 保留 list（每条带理由）+ 跳过 list（每条带理由）
+- 输出 self-review 报告包含：Layer 0 artifact classification + 改动 list（每条带 §引用 + 修法）+ 保留 list（每条带理由）+ 跳过 list（每条带理由）
 
 ---
+
+## 强制 references
+
+下表 4 个 reference 是 doc self-review 强制必读. agent 触发本 skill 时先 read 这 4 个, 然后再进 Layer 0.
+
+| Reference | Path | 何时必读 | 何时可跳过 | Stage 用途 |
+|---|---|---|---|---|
+| **COMMUNICATION** | `09_soul/core/COMMUNICATION.md` | 任何 Proposal 都必读 (universal 风格 contract) | 不可跳过 | 3 (风格审) |
+| **First Principles** | `09_soul/axioms/FP_first_principles.md` | 任何 Proposal 都必读 (FP1-FP7 是 universal first principles) | 不可跳过 | 1+2 (结构 + 内容审) |
+| **Reader State and Judgment Gain** | `09_soul/skills/bestpractice_reader_state_and_judgment_gain.md` | 任何 Proposal 都必读 (Stage 1 reader-state 5 问 source) | 不可跳过 | 1 (结构审) |
+| **Skill Writing** | `09_soul/skills/bestpractice_skill_writing.md` | 涉及 SKILL / contract / rule / axiom design 的 Proposal | Proposal 是纯 status update / fact answer 时可跳过 | 2 (内容审, 钉不变量 / 检测式 boundary) |
+
+---
+
+## Layer 0：Artifact Routing 与 Review Boundary（先于三阶段）
+
+Stage 1-3 审的是 Proposal 的结构、内容和风格。它们不判断某条 evidence 是否应该进入信念层，也不替代 domain-specific independent reviewer。任何 substantive reply 在进入 Stage 1 前，先做 Layer 0 classification。
+
+### Layer 0 自检问
+
+| # | 自检问 | 如果答案是 yes |
+|---|---|---|
+| L0-Q1 | 这份输出是否只是 prose proposal / plan / framing，而不产生证据 verdict？ | 跑本 skill 三阶段即可 |
+| L0-Q2 | 这份输出是否在设计 SKILL / contract / rule / axiom？ | Stage 2 必须使用 `bestpractice_skill_writing.md` 检查不变量与检测式 boundary |
+| L0-Q3 | 这份输出是否包含 evidence-bearing claim、verification finding、source-quality judgment、事实真伪 verdict？ | 本 skill 只能审 prose；必须显式说明是否已有 `evidence_record` 与 independent `evidence-reviewer` pass |
+| L0-Q4 | 这份输出是否会改变 PM belief、触发 PM ack、改变 thesis claim、或授权 portfolio / research workflow 下一步？ | 必须区分 author provisional reading、independent reviewer verdict、PM-only decision；不能用 self-review 冒充授权 |
+| L0-Q5 | 这份输出是否引用外部事实、quote、transcript、date、price、filing、policy statement？ | Stage 2 内容审必须检查 source surface、time semantics、quote location；必要时转入对应 domain reviewer |
+
+### Layer 0 输出
+
+每次 self-review 报告顶部先写一行：
+
+`Layer 0 classification: <proposal_only | skill_contract | evidence_bearing | pm_belief_update | mixed>; required independent reviewer: <none | evidence-reviewer | project-review | theme-report-reviewer | other>.`
+
+如果 classification 是 `evidence_bearing` 或 `pm_belief_update`，还必须写：
+
+- `author_status`: 这只是作者 provisional reading，还是已经有 independent reviewer verdict
+- `artifact_status`: 是否已有落盘 artifact（如 `evidence_record`）和对应 review log
+- `handoff_status`: 交付给 PM 的是问题、建议、还是已审 verdict
+
+### Layer 0 边界
+
+| 禁止式 | 检测式（无声违反时长什么样） |
+|---|---|
+| 不允许用 doc self-review 替代 evidence-reviewer | 回复里给出 source-quality / quote truth verdict，但没有对应 `evidence_record`、没有 `ai_review_log[]` entry，或没有声明这是 author provisional reading |
+| 不允许把 author reading 写成 reviewer verdict | 句子说 "验证结论是 X"，但实际只有 verifier / drafter 自己读了工具输出，独立 reviewer 没跑 |
+| 不允许把 PM-only belief update 写成 agent 已完成动作 | 回复里说 thesis 应该修改 / evidence 应该 ack，但没有明确这是待 PM 决策 |
+| 不允许只做风格修正后交付 evidence verdict | self-review 报告只列破折号、否定句、语气问题，没有 L0 classification 和 evidence review boundary |
+
+Layer 0 通过后，再进入 Stage 1。Layer 0 如果判定需要 independent reviewer，而该 reviewer 还没跑，最终回复只能交付 status / blocker / next-step request，不能交付 verified verdict。
 
 ## 三阶段执行序
 
@@ -90,7 +141,7 @@ R13 规定交付 Proposal 前必须 self-review。COMMUNICATION.md 第一性原�
 
 ### Stage 2：内容审
 
-**输入**：Stage 1 修过的 doc + 4 份参考中按场景适用的 (skill writing / AI product design)
+**输入**：Stage 1 修过的 doc + bestpractice_skill_writing (涉及 SKILL / contract / rule / axiom design 的 Proposal)
 
 **操作**：
 
@@ -130,6 +181,8 @@ R13 规定交付 Proposal 前必须 self-review。COMMUNICATION.md 第一性原�
 ```
 ## Self-Review 报告
 
+Layer 0 classification: <...>
+
 改了 N 处：
 | # | 问题 | 修法 |
 |---|---|---|
@@ -153,6 +206,7 @@ R13 规定交付 Proposal 前必须 self-review。COMMUNICATION.md 第一性原�
 
 | 禁止式 | 检测式（无声违反时长什么样） |
 |---|---|
+| 不允许跳过 Layer 0 artifact routing | 输出含 evidence verdict / PM belief implication，但 review 报告没有说明这是 prose-only、evidence-bearing、还是 PM belief update |
 | 不允许跳过 reader-state 5 问而声称 review 通过 | 交付的 doc 有结构性 reader-state 失败（重复段 / 缺 priority / 缺执行序 / abstract 没传达核心收益），但 review 报告里没提到这些维度 |
 | 不允许把 Stage 3 风格审当成 self-review 全部 | review 报告通篇都是 em dash / negation 这种局部 fix，没有 reader-state 维度的 fix 或 explicit pass |
 | 不允许跳过 4 份参考中任一条而不显式声明 | review 报告只引用 3 份参考的 finding，第 4 份既没出现 finding 也没出现 "skipped because Y" |
@@ -168,6 +222,7 @@ R13 允许在具体 Proposal 上下文不涉及某条参考时跳过那一条（
 
 - **可以跳过整个 stage**：如 Stage 2 内容审在纯 framing doc 上没有可论证的 claim，跳过 Stage 2 (内容审)，但必须在最终报告写 "跳过 Stage 2 因为本 doc 不含可证伪 claim"
 - **可以跳过单条参考**：如 doc 不涉及 skill / contract 设计，跳过 Skill Writing Best Practice 检查
+- **不可以跳过 Layer 0**：artifact routing 对所有 substantive Proposal 适用。即使最后判定为 `proposal_only`，也要写明
 - **不可以跳过 Stage 1**：reader-state 5 问对所有 Proposal 适用，没有跳过场景
 - **不可以跳过 Stage 3**：风格审对所有 Proposal 适用
 - **不可以静默跳过**：任何跳过必须在最终报告显式声明
@@ -178,6 +233,7 @@ R13 允许在具体 Proposal 上下文不涉及某条参考时跳过那一条（
 
 | 陷阱 | 表现 | 应对 |
 |---|---|---|
+| 把 self-review 当 independent review | author 自己读完工具输出，跑一遍 doc self-review，就把 finding 当 reviewer verdict 给 PM | Layer 0 先分类。evidence-bearing 输出必须显式声明是否需要 `evidence-reviewer`，未跑时只能说 provisional |
 | 把手工挑刺当 self-review 全部 | 通篇都是 em dash / negation / 重复词 这种局部 fix，没有 reader-state 维度的检查 | 强制先跑 Stage 1，Stage 1 全部应用后再进 Stage 3 |
 | 加内容时破坏父结构对称性 | 在 numbered list 第 N 条下塞 12 行嵌套表格，破坏其他 N-1 条 1 行的平衡 | Stage 1 "同级 section 对称性" 检查即可 catch |
 | 跳过参考不声明 | 只跑 reader-state 5 问就交付，没碰 skill writing / AI product design | 报告强制 4 份参考逐条说明 used / skipped + 理由 |
@@ -198,4 +254,37 @@ R13 允许在具体 Proposal 上下文不涉及某条参考时跳过那一条（
 
 ---
 
-**最后更新**: 2026-04-25
+## 与项目级 doc-review skills 的关系
+
+本 skill (`bestpractice_doc_self_review`) 是 **universal 自审 skill**, 跨项目跨 doc 类型适用. 所有 Proposal 交付前必跑.
+
+trading_platform 项目下另有 4 个 **domain-specific review skills**, 各自审一种特定 artifact 类别. doc_self_review 跟这 4 个 skill 关系是 **upstream universal vs downstream domain-specific**, 不是替代关系:
+
+| Skill (path) | Reviews what artifact | Trigger | 跟 doc_self_review 的边界 |
+|---|---|---|---|
+| `.claude/skills/project-review/SKILL.md` | engineering commit (charter-alignment phases / schema / contract / skill cluster / validator / harness extensions) | peer Claude/Cursor session 落 commit + user 说 "独立 review 下" | doc_self_review 跑在 **author 自己** 交付前; project-review 跑在 **同事 commit 后** independent review. project-review §3.5 commit scope itemization 是 doc_self_review Stage 1 reader-state Q4 (decision sharpened) 在 commit-layer 的具体化 |
+| `.claude/skills/theme-report-reviewer/SKILL.md` | theme report draft (`data/research/theme_update_drafts/<theme_id>.ds.md`) | DS-written draft exist + owner decision exist | doc_self_review 跑在任何 **prose proposal** 交付前; theme-report-reviewer 跑在 **theme report draft** 这一类 prose, 加 adversarial review + 可选 Perplexity external verification + structured verdict. theme-report-reviewer 的"compliance/style gating"对应 doc_self_review Stage 3 风格审, 但加 theme-package + owner_decision contract 检查 |
+| `.claude/skills/evidence-reviewer/SKILL.md` | evidence_record artifact (`data/research/evidence_ledger/<weekiso>/<id>.json`) | authoring persona (verifier / adversary / pm / scanner / sweeper) 已写 evidence_record | doc_self_review 跑在 **author surface 给 user 之前** prose-layer self-audit; evidence-reviewer 跑在 **author 写完 JSON artifact 之后** structured-data-layer independent audit. evidence-reviewer 是 charter §II + B.0.7 信念层授权 break self-attestation loop 的 structural enforcement, 不是 prose self-review |
+| `.claude/skills/theme-report-debater/SKILL.md` | theme report draft (same as theme-report-reviewer 但 BEFORE compliance gating) | theme report writer produced draft + 在 theme-report-reviewer 之前 | doc_self_review 是 **author self-audit** 单方; theme-report-debater 是 **adversarial content-logic critic** independent agent. debater 攻 coupling consistency / reasoning chain integrity / mechanism proxy closure / cross-thesis weaving, 是 doc_self_review Stage 2 内容审在 theme-report 域的 adversarial 强化版 |
+
+### 触发 sequence
+
+不同 artifact 触发不同 skill chain:
+
+- **Prose proposal (plan / design doc / framing / inline reply)**: 只跑 `bestpractice_doc_self_review` (本 skill) 三阶段, 不触发 4 个 project-level
+- **Engineering commit**: author 跑 `bestpractice_doc_self_review` 在 commit message + 改动 doc; 同事跑 `project-review` independent. 两 skill 在不同时点 / 不同 persona run, 不冲突
+- **Theme report draft**: author 跑 `bestpractice_doc_self_review` on draft prose; 然后 `theme-report-debater` adversarial pass; 然后 `theme-report-reviewer` compliance/style gating. doc_self_review 在 chain 最前
+- **Evidence_record JSON artifact**: author (verifier / adversary 等) 跑 `bestpractice_doc_self_review` on 起草过程的 reasoning prose (e.g. evidence_summary 字段); 然后 `evidence-reviewer` independent audit JSON artifact. 两 skill 在不同 layer (prose vs structured data)
+
+### 共同 invariant (跨 5 skills shared)
+
+5 个 review skill 共享 4 条 universal invariant:
+
+1. **Independent reviewer ≠ author**: review skill 由非 author persona run (project-review / theme-report-reviewer / evidence-reviewer / theme-report-debater 由 independent agent run; doc_self_review 由 author run on author's own work, 但 author 必须 step out of authoring mindset 走 reviewer mindset, 这是 hardest case)
+2. **审完输出 explicit verdict + fix list**: 不允许 "感觉 OK" / "整体没问题" 类 vague conclusion
+3. **跳过任何 stage / sub-check 必须显式 narrate skip + reason**: 不允许 silent skip
+4. **检测式 boundary 配 禁止式**: 每条 invariant 配 "无声违反时长什么样" 检测式 (per `bestpractice_skill_writing.md` 原则五)
+
+---
+
+**最后更新**: 2026-04-28

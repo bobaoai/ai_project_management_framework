@@ -2,7 +2,7 @@
 id: axiom_t11_timestamp_semantics_explicit_2026
 category: technical
 created: 2026-04-18T22:59:00-07:00
-updated: 2026-04-19T00:15:00-07:00
+updated: 2026-05-03T13:05:00-07:00
 ---
 
 > Self-demonstration: this axiom's own `created` / `updated` fields use the
@@ -58,6 +58,18 @@ DST 的根因仍然是同名异义：`-04:00` 这个后缀字符串描述的是�
 
 正确形状是**让库自己 parse，parse 不出就把异常翻译成本地的 domain error**：守卫的职责是"把 stdlib 的 `ZoneInfoNotFoundError` / `ValueError` / `TypeError` 转成 `TimeSemanticsMismatch`,带上原 message",不是"自己重新发明 parser"。这条原则适用范围远不止时间——任何时候发现自己在为标准库已覆盖的语法写黑名单或正则，都应该回头委托给库本身。
 
+### 2.7 日期级观测不能伪装成精确时刻
+
+外部 source 经常只给日期，不给精确发布时间。系统仍可能需要一个可排序的 UTC anchor，但这个 anchor 的精度必须显式声明，否则 date-level 事实会被下游误读成 precise publication instant。
+
+正确形状是把两个事实分开：
+
+1. `observed_precision` 说明精度：`datetime` 表示精确时刻已知，`date` 表示只知道日期。
+2. `observed_at_utc` 提供可排序 anchor：精确时刻已知时写真实时刻；只有日期时，写该日期在业务语义时区下的保守截止时刻。
+3. `observed_note` 解释转换：date-level cutoff 是排序和 freshness 的保守锚，不是外部 source 的真实发布时间。
+
+在市场系统里，date-level conservative cutoff 的常用规则是：给定 `observed_date=2026-04-09` 和 `market_tz="America/New_York"`，取 `2026-04-09 23:59:59 America/New_York`，再投影为 `observed_at_utc="2026-04-10T03:59:59Z"`。这个规则把"这一天已经结束前它应被视为可观察"表达清楚，同时保留 `observed_precision: "date"` 和 `observed_note`，防止任何下游把它当成精确发布时间。
+
 ## 3. 应用判定
 
 ### 何时使用
@@ -76,6 +88,14 @@ DST 的根因仍然是同名异义：`-04:00` 这个后缀字符串描述的是�
 | `*_session_date_et` | XNYS / NYSE ET 市场会话日 | `session_date_et` |
 | `*_session_date_ct` | CMES CT trading day | `session_date_ct` |
 | `*_market_day` + `market_tz` | 按该资产 calendar 解析的 market day（generic） | `market_day` + `market_tz: "America/New_York"` |
+
+### 观测精度约定
+
+当 schema 同时需要可排序的 UTC anchor 和精度声明时，用：
+
+- `observed_precision: "datetime"`：`observed_at_utc` 是真实精确时刻。
+- `observed_precision: "date"`：`observed_at_utc` 是 date-level conservative cutoff，由业务语义时区的当日 `23:59:59` 投影到 UTC。
+- `observed_note`：必须说明 cutoff 规则和原始日期来源，避免下游误读。
 
 ### 比较契约
 
@@ -117,3 +137,4 @@ DST 把"时区标签 → UTC offset"从常量变成时间函数，必须在编�
 4. 如果代码里有"市场墙钟时刻 → UTC 时刻"的转换，它走的是 IANA tz + 交易所 calendar，还是开发者自己拼的 fixed offset / 硬编 16:00 ET？后者在 DST 切换日和早收市日一定会错，必须改回前者。
 5. 如果代码里出现 `timedelta(days=N)` 用来表达"N 个交易日前 / 同一墙钟时刻 N 天前"，它对 DST 切换日是否成立？如果不成立，是否应该改用交易所 calendar 的 `previous_session()`？
 6. 如果代码里写了"以 + / - 开头则拒绝"、"必须含 / "、"匹配某 ISO 形状正则"这类校验，标准库（`ZoneInfo`、`datetime.fromisoformat`、`pandas.Timestamp`）是不是已经能 raise 同样的错？如果是，把校验改成"调一次库 + 翻译异常",删掉黑名单/正则。
+7. 如果 source 只给日期，schema 是否显式写了 `observed_precision: "date"` 和 `observed_note`？`observed_at_utc` 是否只是 conservative cutoff，而不是伪装成精确发布时间？

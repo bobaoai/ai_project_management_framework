@@ -17,7 +17,7 @@ Hoveath 的初心是 portable digital self：drop `09_soul/` 进任何 workspace
 |---|---|---|
 | [`installation_guide.md`](installation_guide.md) | Hoveath → 项目 | 把 09_soul/ drop 进新 workspace 后的 8 阶段 SOP（Phase 1-8 机制 / 验收 / 项目侧填空点）+ 跨 agent runtime 适配点。任何项目装 Hoveath 都参照这份走 |
 | [`distillation_protocol.md`](distillation_protocol.md) | 项目 → Hoveath | 项目内的 09_<agent>/ + entry doc + skills 反向蒸馏为 Hoveath upstream 的 portable templates。8 阶段 SOP（S0-S8）+ placeholder 协议 + round-trip 验证 |
-| （待补）`add_new_agent_projection.md` | 跨 agent 扩展 | 加新 agent runtime（如 09_codex/）时建立投影的协议 |
+| [`add_new_agent_projection.md`](add_new_agent_projection.md) | 跨 agent 扩展 | 加新 agent runtime（如 09_codex/）时建立投影的协议 |
 
 ## 跟其他层的关系
 

@@ -96,7 +96,7 @@ inline 速查：
 
 ## 边界与提醒
 
-- **不要触碰旧 Cursor 投影**：[`.cursor/rules/`](.cursor/rules/) 已是 frozen 历史，新增 rule 一律去 `.claude/`
+- **Cursor 投影已恢复为 active secondary**：[`.cursor/rules/00_hoveath_always.mdc`](.cursor/rules/00_hoveath_always.mdc) 是 Cursor canonical entry；改 Cursor runtime 时同步维护 [`09_cursor/`](09_cursor/) 与 `.cursor/skills/`
 - **不要把母仓库当成 trading_platform 的克隆**：trading_platform 项目的具体业务术语 / Fed 视角 / 持仓概念都不属于这里
 - **任何编辑 09_soul/core/* 后**：跑 `python 09_soul/bridging/mirror_sync.py --check`；drift 时跑 `--apply`
 - **任何新增 09_soul/axioms/ 文件**：必须在 [`09_soul/axioms/INDEX.md`](09_soul/axioms/INDEX.md) 同步登记，否则未来 lazy-load 找不到

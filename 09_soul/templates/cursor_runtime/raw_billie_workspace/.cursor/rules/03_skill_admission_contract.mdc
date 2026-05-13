@@ -1,0 +1,22 @@
+---
+description: Decide when to invoke Hoveath skills and keep rules thin.
+alwaysApply: false
+---
+
+# Skill Admission Contract
+
+Rules decide when a capability is needed. Skills define how to execute that capability.
+
+When a request matches an available `.cursor/skills/<skill>/SKILL.md`, read and follow that skill before drafting, editing, researching, or launching subagents.
+
+Common admissions:
+- proposal, plan, design, methodology, retrospective -> `hoveath-doc-self-review`
+- reader-facing doc, report, prompt, contract -> `hoveath-reader-state`
+- Chinese prose polish or long Chinese response -> `hoveath-chinese-writing-voice`
+- prompt or subagent brief design -> `hoveath-prompt-boundary`
+- current facts, dates, versions, policy, market data -> `hoveath-temporal-verification`
+- broad research or due diligence -> `hoveath-deep-research-survey`
+- parallel independent investigations -> `hoveath-parallel-subagents` and `hoveath-multi-agent-analysis`
+- rules or skills editing -> `hoveath-skill-writing` and relevant Cursor built-in skill
+
+Do not duplicate a skill's full method inside a rule. Add a thin trigger rule or update the skill itself.

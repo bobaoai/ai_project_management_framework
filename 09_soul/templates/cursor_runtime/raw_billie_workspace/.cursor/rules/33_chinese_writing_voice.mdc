@@ -1,0 +1,21 @@
+---
+description: Use Hoveath Chinese writing voice for Chinese reader-facing prose.
+globs:
+  - "**/*.md"
+alwaysApply: false
+---
+
+# Chinese Writing Voice
+
+Use this rule when producing or editing Chinese prose that a reader will consume: reports, memos, proposals, reviews, long responses, slide notes, or stable AI-facing docs.
+
+Invoke `hoveath-chinese-writing-voice`.
+
+Default voice:
+- direct, concrete, judgment-oriented
+- no formulaic praise or filler
+- no ornate adjectives or marketing language
+- no emotional em dash pauses
+- technical identifiers stay in backticks
+
+Chinese prose should sound written in Chinese, not translated line by line from English.

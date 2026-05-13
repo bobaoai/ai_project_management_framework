@@ -1,0 +1,19 @@
+---
+description: Require reader-state framing and self-review for substantial plans, proposals, and reader-facing artifacts.
+alwaysApply: false
+---
+
+# Reader State And Doc Self-Review
+
+Use this rule before handing back a substantial plan, proposal, methodology, design doc, retrospective, review memo, or multi-section response.
+
+First define the reader state:
+- What should the reader understand more clearly?
+- What distinction should be easier to make?
+- What misread should be easier to reject?
+- What next decision should be sharper?
+- Would removing a section reduce reader judgment?
+
+Invoke `hoveath-reader-state` for structure. Invoke `hoveath-doc-self-review` before final handoff.
+
+Do not treat copyediting as self-review. Structural reader-state failures come first; prose polish comes last.

@@ -2,7 +2,7 @@
 direction: upstream_to_subordinate
 topic: distill_batch_1
 from_commit: 4e2ba18
-status: pending
+status: acknowledged
 requires_action: true
 created_date: 2026-04-25
 last_status_update: 2026-04-25

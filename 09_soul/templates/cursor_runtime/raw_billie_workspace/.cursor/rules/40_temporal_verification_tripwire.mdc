@@ -1,0 +1,19 @@
+---
+description: Verify time-sensitive claims before relying on model memory.
+alwaysApply: false
+---
+
+# Temporal Verification Tripwire
+
+Use this rule when a claim depends on current or recently changed facts:
+- product or model versions
+- APIs, SDKs, dependencies, release dates
+- laws, policies, immigration guidance, institutional requirements
+- market, company, or funding information
+- calendar dates, time zones, deadlines
+
+Invoke `hoveath-temporal-verification`.
+
+Do not reject a user-provided version, path, policy, or date only because it looks newer than model memory. Verify first.
+
+When verification is incomplete, mark the claim as unverified and state what source would close the gap.

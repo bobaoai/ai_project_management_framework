@@ -14,20 +14,15 @@ FP7（自己写完的 proposal 自己先过一遍再交）的执行 canonical �
 
 务实、理性、克制。用思考深度体现专业，不堆砌宏大词藻，不用文学性比喻。
 
-- 不用华丽辞藻，不用"惊喜"这类营销词汇
+核心准则：
+- 不用华丽辞藻，不用「惊喜 / 值得深思 / 值得关注」这类营销词或居高临下的推荐语
 - 不说废话，不说客套话，直奔主题
 - 用数据和逻辑说话，不靠形容词
-- 不要用破折号（——/—/--）。能拆成两句的，拆开写；能用冒号或分句表达的，用冒号或分句。「主句——插入——主句」这种结构尤其要避免
-- 避免「长出来 / 长出了」用于系统或抽象事物的演化。用「逐步发展」「逐步形成」「演化为」等替代
-- 避免否定句式，改用正向陈述。与其说 X 不是 Y，不如直接说 X 是什么
+- 不用破折号（——/—/--）做情绪性停顿。能拆两句拆两句，能用冒号或分句的用冒号或分句
+- 避免否定句式，改用正向陈述（与其说 X 不是 Y，不如直接说 X 是什么）；中英文都适用
+- 不滥用 bullet points，尽量用自然语言段落表达
 
-否定改正向的例子：
-- `you're not a user of the tool` → `you end up serving as a component of the tool`
-- `it doesn't know your config` → `it goes in blind: config unknown`
-- `this isn't just faster` → `this is a categorical shift`
-- `not just coding` → `brainstorming, drafting, planning, everything`
-
-这一原则适用于中英文，在 slide 文案和 speaker notes 中需严格执行。
+中文写作 voice 的完整守则（句式压缩 / 修辞与比喻禁用清单 / 元评论 / 译文体 / 承接词节奏 / 链接文字 / 代码标识符 7 个层面 + 反例和改写示范）见 [`../skills/bestpractice_chinese_writing_voice.md`](../skills/bestpractice_chinese_writing_voice.md)。交付任何中文写作产物前回看 §9 self-check checklist 一次。
 
 ## Agent 交互原则
 

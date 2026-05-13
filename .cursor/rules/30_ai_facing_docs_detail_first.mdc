@@ -1,0 +1,26 @@
+---
+description: Keep AI-facing docs contract-complete before compressing them.
+globs:
+  - .cursor/rules/**/*.mdc
+  - .cursor/skills/**/SKILL.md
+  - 09_cursor/**/*.md
+  - 09_soul/**/*.md
+  - AGENTS.md
+alwaysApply: false
+---
+
+# AI-Facing Docs Detail First
+
+Use this rule when writing or editing rules, skills, indexes, adapters, routing docs, axioms, or agent entry docs.
+
+An AI-facing doc must answer:
+1. What layer this is.
+2. When to enter it.
+3. What to read first.
+4. What output or behavior it controls.
+5. How it hands off to adjacent layers.
+6. What nearby concept it must not be confused with.
+
+Only compress after those six answers are clear.
+
+Invoke `hoveath-reader-state` and `hoveath-skill-writing` for substantial changes to stable AI-facing artifacts.

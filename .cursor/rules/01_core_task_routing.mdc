@@ -1,0 +1,20 @@
+---
+description: Route each substantive request to the correct Hoveath mother-repo truth surface before acting.
+alwaysApply: false
+---
+
+# Core Task Routing
+
+Use this rule when a request touches multiple work surfaces, when the open file may be misleading, or when the user asks for planning, cleanup, review, writing, research, installation, distillation, or system maintenance.
+
+Start with `09_cursor/routing/task_mainlines.md`.
+
+Routing order:
+1. Identify the mainline: axiom, skill, mirror sync, installation, distillation, template, example management, retrospective, writing, research, or debug.
+2. Choose the first authority from the routing table.
+3. Read the local truth surface before editing or making a strong recommendation.
+4. Apply downstream skills only after the mainline is clear.
+
+Do not let an open file, host-project example, raw template snapshot, date, or task phrase bypass top-level routing.
+
+If a request touches both portable source and a host-project example, route to portable-source ownership first, then decide whether the example is evidence, template input, or local-only material.

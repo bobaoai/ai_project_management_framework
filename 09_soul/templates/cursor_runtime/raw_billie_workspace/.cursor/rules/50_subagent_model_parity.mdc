@@ -1,0 +1,14 @@
+---
+description: Do not silently downgrade subagent capability when delegating Hoveath work.
+alwaysApply: false
+---
+
+# Subagent Model Parity
+
+Use this rule when launching subagents for analysis, writing, review, research, or implementation.
+
+Do not silently downgrade to a weaker model when the task depends on high judgment quality.
+
+If the user requested a specific model and it is unavailable, say which model is unavailable and list available choices. Do not substitute without acknowledgement.
+
+If model parity matters and cannot be preserved, do the work in the main agent or narrow the delegated task to a lower-risk bounded investigation.

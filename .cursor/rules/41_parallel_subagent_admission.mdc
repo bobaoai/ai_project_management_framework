@@ -1,0 +1,20 @@
+---
+description: Admit parallel subagents only when independent work and synthesis value justify it.
+alwaysApply: false
+---
+
+# Parallel Subagent Admission
+
+Use this rule before launching parallel subagents.
+
+Invoke `hoveath-parallel-subagents`. For analysis synthesis, also invoke `hoveath-multi-agent-analysis`.
+
+Parallel work is justified only when:
+- the task can split into at least two independent investigations
+- each investigation is large enough to benefit from isolation
+- overlap is intentional for cross-checking, not accidental duplication
+- the final answer needs synthesis across findings
+
+Do not use subagents for a narrow lookup, a known file read, or a single-symbol search.
+
+When using parallel subagents, state each agent's scope, expected overlap, and required return format in the prompt.

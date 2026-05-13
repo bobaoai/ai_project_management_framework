@@ -1,0 +1,24 @@
+---
+description: Due diligence and research synthesis rules for work-area investigations.
+globs:
+  - 04_areas/work/due_diligent/**/*.md
+  - 04_areas/work/Oracle/**/*.md
+  - 04_areas/work/**/research/**/*.md
+alwaysApply: false
+---
+
+# Work Due Diligence Research
+
+Use this rule for due diligence, market research, source verification, external facts, and broad research synthesis under `04_areas/work/`.
+
+Read the relevant area materials first. If the claim depends on current external information, invoke `hoveath-temporal-verification` before answering.
+
+For broad or multi-source research, invoke `hoveath-deep-research-survey`. Use parallel subagents only when the research can be split into independent dimensions with meaningful overlap.
+
+Output should distinguish:
+- verified facts with sources
+- plausible interpretations
+- open questions or missing evidence
+- recommended next checks
+
+Do not collapse source collection and judgment into one unsupported summary.

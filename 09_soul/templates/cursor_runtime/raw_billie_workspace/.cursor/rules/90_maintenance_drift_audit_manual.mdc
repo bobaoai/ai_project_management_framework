@@ -1,0 +1,12 @@
+---
+description: Drift audit + maintenance plan (invoke manually as @90_maintenance_drift_audit_manual)
+alwaysApply: false
+---
+Run a drift audit (PLAN only unless user says apply):
+- Find files missing required YAML fields.
+- Find ghost tasks referenced in day files without a task file.
+- Find active items with no next_review.
+- Identify day files bloated with notes that should be moved to logs/area plans.
+- Check for tasks >1h without breakdown suggestions.
+- Verify time estimates use 30-minute resolution.
+Output: a cleanup plan with the smallest safe diffs.

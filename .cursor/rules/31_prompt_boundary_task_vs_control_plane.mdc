@@ -1,0 +1,27 @@
+---
+description: Keep downstream prompts focused on task-plane information, not orchestration metadata.
+alwaysApply: false
+---
+
+# Prompt Boundary: Task Plane vs Control Plane
+
+Use this rule when writing subagent prompts, worker LLM prompts, reviewer briefs, writer instructions, or prompt templates.
+
+Invoke `hoveath-prompt-boundary`.
+
+Keep task-plane content:
+- writing goal
+- factual boundary
+- allowed evidence
+- required judgments
+- output format
+- forbidden prose modes
+
+Remove control-plane content:
+- orchestration details
+- persona-source labels
+- caller-internal routing rationale
+- guardrails already guaranteed by input structure
+- package assembly notes
+
+Self-check: each sentence should change the worker's output quality. If it only describes how the caller prepared the worker, delete it.

@@ -93,6 +93,9 @@
 - [Mirror Sync（09_soul → 09_<agent> 投影同步）](./bestpractice_mirror_sync.md) ✅ — zero-metadata mirror + 外置 manifest；配合 `09_soul/bridging/mirror_sync.py` 做 drift 检测与 sync
 - [Prose Without Editorial Meta（写关于世界，不写关于稿件）](./bestpractice_prose_without_editorial_meta.md) ✅ — sentence-level 守门：reader-facing 报告与 stable AI-facing artifact 都禁止 editorial meta / conversation attribution / workflow time-window deictics / rule invocation as endorsement
 - [Prompt Boundary（task-plane vs control-plane）](./bestpractice_prompt_boundary.md) ✅ — A14 的 canonical 操作路径：下游 prompt 只放改变 worker 输出质量的信息，编排 / persona-source label / 已被结构性保证的 guardrail 一律删
+- [External Agent Builder（Hoveath 子体调用）](./bestpractice_external_agent_builder.md) ✅ — 把 Claude Code CLI、DeepSeek、OpenAI、Cursor subagent 等外部 AI 执行面变成可控、可审计、可中断、可复盘的 Hoveath 子体；覆盖 prompt cache、prompt boundary、runner log、preflight、claim/status gate、quota hard-stop 与 staged model tiering
+- [External Worker General Module](./bestpractice_external_worker_general_module.md) ✅ — worker stable prefix 的去重 `WORKER_CHARTER / GENERAL_MODULE`；只能提供通用工作方式，不能替代任务专属 `CUSTOMIZE_MODULE` 或 source-family `DATA_DEPENDENT_MODULE`
+- [External Writer Merge Rule](./external_writer_merge_rule.md) ✅ — caller-side 合并规则；约束 main agent 如何把 external writer draft 当 advisory input 使用，不进入普通 worker stable prefix
 
 ---
 

@@ -18,7 +18,7 @@
 
 启动 install 前先回答：
 
-1. **目标 agent runtime 是？** Claude Code / OpenCode / Codex / 其他。本 SOP 默认 Claude Code（`<entry-doc>` = `CLAUDE.md`、`<agent>` = `claude`）；其他 agent 看 [`add_new_agent_projection.md`](add_new_agent_projection.md)（待补）
+1. **目标 agent runtime 是？** Claude Code / OpenCode / Codex / 其他。本 SOP 默认 Claude Code（`<entry-doc>` = `CLAUDE.md`、`<agent>` = `claude`）；其他 agent 看 [`add_new_agent_projection.md`](add_new_agent_projection.md)
 2. **同用户跨项目还是新用户？** 同用户：`09_<agent>/core/USER.md` 的 source 段直接复用；新用户：先在 `09_soul/core/USER.md` 改 portable profile
 3. **新项目还是已有项目转 Hoveath？** 新项目：8 阶段顺序走；已有项目：Phase 0 加「现状盘点」步，识别哪些工作面已存在、哪些可继承
 
@@ -192,7 +192,7 @@ Phase 1（身份核心）  ← 阻塞门，必须先稳定
 
 | 概念 | Claude Code | OpenCode | Codex | 通用 |
 |---|---|---|---|---|
-| entry doc | `CLAUDE.md` | `AGENTS.md` | `.codex/<...>` | `<entry-doc>` |
+| entry doc | `CLAUDE.md` | `AGENTS.md` | `AGENTS.md` | `<entry-doc>` |
 | skill dir | `.claude/skills/` | `.opencode/skills/`（待确认） | TBD | `.<agent>/skills/` |
 | settings | `.claude/settings.json` | `opencode.json` | TBD | `.<agent>/<config>` |
 | subagent 调用 | Agent tool + subagent_type | （待确认） | TBD | 各自 native |
@@ -200,7 +200,7 @@ Phase 1（身份核心）  ← 阻塞门，必须先稳定
 | memory | `~/.claude/projects/<path>/memory/` | （待确认） | TBD | 各自 native |
 | persistent state | auto-memory 协议 | （待确认） | TBD | 各自 native |
 
-第一行的 `<entry-doc>` 等占位贯穿本 SOP；其他每行的 native 等价见 [`add_new_agent_projection.md`](add_new_agent_projection.md)（待补）。
+第一行的 `<entry-doc>` 等占位贯穿本 SOP；其他每行的 native 等价见 [`add_new_agent_projection.md`](add_new_agent_projection.md)。
 
 ---
 

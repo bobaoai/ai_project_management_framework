@@ -1,0 +1,19 @@
+---
+description: Maintain 09_soul to 09_cursor mirror discipline without editing mirrored source sections directly.
+globs:
+  - 09_soul/**/*.md
+  - 09_cursor/core/**/*.md
+alwaysApply: false
+---
+
+# Mirror Sync Contract
+
+Use this rule when editing portable Hoveath source files, Cursor projection core files, or suspected mirror drift.
+
+Invoke `hoveath-mirror-sync`.
+
+Source-of-truth lives in `09_soul/` for portable identity and skill material. `09_cursor/` is the Cursor projection and may include project-local addenda.
+
+Do not edit a mirrored source section in `09_cursor/` when the intended change belongs in `09_soul/`.
+
+After changing portable source material, check and refresh the Cursor projection using the mirror sync protocol. Keep source, projection, and manifest changes together.

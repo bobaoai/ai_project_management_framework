@@ -1,6 +1,6 @@
 # AGENTS.md — Hoveath 母仓库
 
-> **主投影已迁移到 Claude Code**。本文件保留为 sunset 指针 + 框架仓的 mission 简述。详细 entry 见 [`CLAUDE.md`](CLAUDE.md)。
+> Runtime 状态表 + 非 Cursor/Claude 入口指针。Cursor 的 canonical entry 是 [`.cursor/rules/00_hoveath_always.mdc`](.cursor/rules/00_hoveath_always.mdc)，Claude Code 的 canonical entry 是 [`CLAUDE.md`](CLAUDE.md)。
 
 ## Mission
 
@@ -13,10 +13,10 @@ This repo is the **source framework / 母仓库**, not a host project's operatio
 | Runtime | Status | Entry |
 |---|---|---|
 | Claude Code | **active**（主投影） | [`CLAUDE.md`](CLAUDE.md) + [`09_claude/`](09_claude/) + [`.claude/`](.claude/) |
-| Cursor | frozen / sunset | [`.cursor/rules/`](.cursor/rules/) 仅保留 sunset 指针 |
+| Cursor | **active secondary**（本地模板 dogfood） | [`.cursor/rules/00_hoveath_always.mdc`](.cursor/rules/00_hoveath_always.mdc) + [`09_cursor/`](09_cursor/) + [`.cursor/skills/`](.cursor/skills/) |
 | OpenCode / Codex / 其他 | 未实施 | 按 [`09_soul/handoff/add_new_agent_projection.md`](09_soul/handoff/add_new_agent_projection.md)（待补）协议建立 |
 
-非 Claude-Code 的 agent runtime（含 Cursor）打开本仓时，请直接读 [`CLAUDE.md`](CLAUDE.md) 与 [`09_claude/core/PROJECT_ADAPTER.md`](09_claude/core/PROJECT_ADAPTER.md)。
+非 Claude-Code / Cursor 的 agent runtime 打开本仓时，先读本文件判断当前主投影，再按对应 runtime 入口进入。
 
 ## Repo Purpose
 
@@ -29,10 +29,10 @@ This repo is the **source framework / 母仓库**, not a host project's operatio
 
 When editing this repo, prefer improving portability over optimizing for one host project.
 
-母仓库本身的 `09_claude/` / `CLAUDE.md` / `.claude/` 是**唯一例外** — 它们是母仓库自己的 runtime，目的是让母仓库的 framework 维护工作能在 Claude Code 里被 dogfood。
+母仓库本身的 runtime 投影是例外：`09_claude/` / `CLAUDE.md` / `.claude/` 用于 Claude Code dogfood，`09_cursor/` / `.cursor/` 用于 Cursor runtime dogfood。
 
 ## Safety
 
 - Do not embed nested git repos
 - Keep deprecated imported materials clearly marked rather than silently deleting them
-- Cursor sunset 后不在 `.cursor/rules/` 加新 rule；新 rule 一律去 `09_claude/rules/`
+- 不要把 host 项目的业务 overlay 提升进母仓 runtime。Cursor runtime 可吸收的是通用运行层，不是 billie_workspace 的 EB1-B / PIM / Nathan persona。

@@ -1,0 +1,20 @@
+---
+description: Retrieve Hoveath axioms when a task needs higher-frame judgment or user philosophy alignment.
+alwaysApply: false
+---
+
+# Axiom Retrieval Triggers
+
+Use this rule when the task asks for strategy, architecture, prioritization, AI workflow design, retrospective judgment, or a question about how Bokan thinks.
+
+First read `09_cursor/axioms/INDEX.md`, then open only the relevant axiom files.
+
+Trigger map:
+- AI management, delegation, agent reliability -> A03, A04, A17, A19
+- prompt design, context, memory, docs -> A05, A08, A14, T03
+- hidden assumptions, better framing, true goal -> A16
+- reader, persona, doc usefulness -> A20
+- verification, trust, current facts -> V02, V04, T11
+- priority, bottleneck, leverage -> M03, X03
+
+Axioms inform judgment. They do not override local truth surfaces, source materials, or explicit user constraints.

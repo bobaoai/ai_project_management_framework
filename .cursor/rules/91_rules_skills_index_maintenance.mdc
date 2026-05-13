@@ -1,0 +1,23 @@
+---
+description: Update rule and skill indexes whenever Cursor runtime files change.
+globs:
+  - .cursor/rules/**/*.mdc
+  - .cursor/skills/**/SKILL.md
+  - 09_cursor/rules/INDEX.md
+  - 09_cursor/skills/INDEX.md
+alwaysApply: false
+---
+
+# Rules And Skills Index Maintenance
+
+Use this rule when adding, renaming, deleting, or materially changing rules or skills.
+
+Required index updates:
+- `09_cursor/rules/INDEX.md` for `.cursor/rules/`
+- `09_cursor/routing/task_mainlines.md` when routing or first-authority behavior changes
+- `09_cursor/skills/INDEX.md` for `09_cursor/skills/` or `.cursor/skills/`
+- `09_cursor/core/PROJECT_ADAPTER.md` when local truth surfaces or promotion boundaries change
+
+Do not leave old rule names, old manual invocation handles, or stale numbering in docs.
+
+After changes, search for old filenames and invocation handles.

@@ -1,0 +1,21 @@
+---
+description: Keep Cursor project skills as physical copies of 09_cursor skill bodies, not pointer wrappers.
+globs:
+  - .cursor/skills/**/SKILL.md
+  - 09_cursor/skills/**/*.md
+alwaysApply: false
+---
+
+# Cursor Skill Physical Copy Contract
+
+Use this rule when creating, editing, or syncing `.cursor/skills/<skill>/SKILL.md`.
+
+Cursor project skills are physical copies. Each `SKILL.md` must contain:
+1. Cursor-required YAML frontmatter: `name` and `description`.
+2. The corresponding `09_cursor/skills/*.md` body embedded directly after the frontmatter.
+
+Do not replace a skill body with routing text such as "read `09_cursor/skills/...`".
+
+When updating a source skill under `09_cursor/skills/`, refresh the matching `.cursor/skills/<skill>/SKILL.md` body and keep the frontmatter intact.
+
+Update `09_cursor/skills/INDEX.md` when adding, removing, or changing the skill set.

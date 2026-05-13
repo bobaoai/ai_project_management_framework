@@ -48,7 +48,7 @@ Layer A 已经存在。Layer B/C templates 缺失时，可插拔承诺只在 Lay
 
 ```
 <project>/
-├── <entry-doc>                    # CLAUDE.md / AGENTS.md / .codex/<...>，agent native entry
+├── <entry-doc>                    # CLAUDE.md / AGENTS.md / other agent-native entry
 ├── .<agent>/
 │   ├── settings.json              # permissions / hooks
 │   ├── skills/<...>               # 项目业务 skill + best-practice 实例

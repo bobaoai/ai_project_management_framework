@@ -1,0 +1,13 @@
+---
+description: Task management rules
+globs:
+  - 02_tasks/**/*.md
+alwaysApply: false
+---
+When modifying task files:
+- All tasks must have YAML front matter with required fields: id, type, area, status, created, updated.
+- Use 30-minute resolution for time estimates (0.5h, 1h, 1.5h, 2h, etc.).
+- Complex tasks (>1h, need 2+ sessions) should suggest breakdown automatically.
+- Tasks are candidates until scheduled into a day file's focus block.
+- Never delete tasks; archive via status=archived/done.
+- Completed tasks use strikethrough: `- [x] ~~Task description~~`

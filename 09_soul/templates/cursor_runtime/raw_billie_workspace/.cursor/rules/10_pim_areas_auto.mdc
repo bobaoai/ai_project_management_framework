@@ -1,0 +1,12 @@
+---
+description: Area plan rules (health/skincare/fitness/work)
+globs:
+  - 04_areas/**/*.md
+alwaysApply: false
+---
+When modifying area plans/records:
+- Ensure next_review exists for plans and routines.
+- Changes must include (a) what changed, (b) why, (c) what to watch for.
+- If user mentions a reaction/outcome, write a log entry and link it back to the plan.
+- All area files must have YAML front matter with required fields: id, type, area, status, created, updated.
+- Use 30-minute resolution for time estimates (0.5h, 1h, 1.5h, etc.).

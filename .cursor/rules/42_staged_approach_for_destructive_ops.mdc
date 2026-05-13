@@ -1,0 +1,20 @@
+---
+description: Use staged execution and dry runs before destructive or bulk operations.
+alwaysApply: false
+---
+
+# Staged Approach For Destructive Ops
+
+Use this rule before bulk edits, migrations, deletes, external writes, API mutations, exports, or any operation that is hard to undo.
+
+Invoke `hoveath-staged-approach`.
+
+Default sequence:
+1. Collect or inspect inputs.
+2. Produce a preview or dry run.
+3. Apply only after scope and reversibility are clear.
+4. Verify the result.
+
+Destructive operations include file deletion, overwrites, database writes, API POST/PUT/DELETE, publishing, email or message sending, and large generated changes.
+
+If no rollback path exists, say so before acting.

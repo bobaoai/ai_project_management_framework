@@ -1,0 +1,22 @@
+---
+description: Protect hard commitments and keep PIM changes plan-first.
+globs:
+  - 01_calendar/**/*.md
+  - 02_tasks/**/*.md
+  - 04_areas/**/*.md
+alwaysApply: false
+---
+
+# PIM Hard Commitment Safety
+
+Use this rule when changing calendar, task, routine, or area planning files.
+
+Hard commitments are not moved, deleted, shortened, or reclassified unless the user explicitly asks for that specific change.
+
+Default behavior:
+- Propose a PLAN first unless the user says `apply` or ends the request with `!`.
+- Keep day files short; move durable reasoning to area plans, logs, records, or project materials.
+- Preserve required YAML fields: `id`, `type`, `area`, `status`, `created`, `updated`.
+- Use 30-minute estimates: `0.5h`, `1h`, `1.5h`, `2h`.
+
+If a desired schedule cannot fit without moving a hard commitment, say so directly and ask what should give.

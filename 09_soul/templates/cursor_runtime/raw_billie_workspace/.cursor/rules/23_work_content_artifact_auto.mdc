@@ -1,0 +1,24 @@
+---
+description: Content artifact rules for work-area drafts, reports, reviews, and strategy docs.
+globs:
+  - 04_areas/work/**/*.md
+alwaysApply: false
+---
+
+# Work Content Artifact
+
+Use this rule when drafting, rewriting, reviewing, auditing, or improving a work-area document.
+
+Before editing or judging, identify:
+- the reader
+- the desired reader state after reading
+- the local source materials that control facts
+- whether this is a plan, final artifact, review note, or scratch file
+
+Invoke relevant skills:
+- `hoveath-reader-state` for structure and judgment gain
+- `hoveath-doc-self-review` for proposals, plans, methodologies, and substantial handoffs
+- `hoveath-prose-without-editorial-meta` for reader-facing artifacts
+- `hoveath-chinese-writing-voice` for Chinese writing
+
+Content work can proceed more directly than PIM maintenance when the user names a file and asks to draft, rewrite, review, or audit it.

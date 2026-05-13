@@ -1,0 +1,4 @@
+interface:
+  display_name: "Theme Content Maintainer"
+  short_description: "Maintain theme content, package evidence, and prepare the downstream writer handoff"
+  default_prompt: "Refresh a theme from local research first, and operate at GPT-5.4 parity with the parent agent. Work under the upstream research-theme-report-owner. Assemble the writer package when needed, preserve the background context and debate structure required by the downstream writer-handoff step, and produce a PM-readable theme draft without changing ranking unless explicitly requested. Keep editorial or process commentary out of the main article body: no comparisons to prior drafts, no package-delta narration, and no 'what was added this round' language outside logs or review notes."
