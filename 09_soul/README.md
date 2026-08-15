@@ -33,7 +33,7 @@ Hoveath 在 agent runtime 选择上保持 agnostic，但当前主投影是 Claud
 │
 ├── skills/                   ← Execution 层 best-practice 模板
 │   ├── INDEX.md
-│   ├── bestpractice_doc_self_review.md      (R13 canonical 路径)
+│   ├── bestpractice_doc_self_review.md      (R14 canonical 路径)
 │   ├── bestpractice_retrospective_writing.md
 │   ├── bestpractice_mirror_sync.md
 │   └── ...                   (parallel subagent / staged approach / debugging / 等)

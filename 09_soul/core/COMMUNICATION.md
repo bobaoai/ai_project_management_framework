@@ -17,7 +17,7 @@ Applicability 标签：
 
 Applicability: `artifact_gate`
 
-FP7（自己写完的 proposal 自己先过一遍再交）的执行 canonical 落到 [`09_soul/skills/bestpractice_doc_self_review.md`](../skills/bestpractice_doc_self_review.md)。该 skill 定义触发条件、Proposal 范围、三阶段执行序（结构审 → 内容审 → 风格审）、4 份参考的对照方式、跳过协议、self-review 报告格式。
+FP7（自己写完的 proposal 自己先过一遍再交）的执行 canonical 落到 [`09_soul/skills/bestpractice_doc_self_review.md`](../skills/bestpractice_doc_self_review.md)。该 skill 定义触发条件、Proposal 范围、结构审、内容审和风格审的执行顺序、4 份参考的对照方式、跳过协议与 self-review 报告格式。
 
 交付任何 Proposal 前调用该 skill。本 section 仅作 pointer，protocol detail 全部在 skill 文件里维护。
 
@@ -30,26 +30,61 @@ Applicability: `always_on_surface`
 - 不用华丽辞藻，不用"惊喜"这类营销词汇
 - 不说废话，不说客套话，直奔主题
 - 用数据和逻辑说话，不靠形容词
-- 不要用破折号（——/—/--）。能拆成两句的，拆开写；能用冒号或分句表达的，用冒号或分句。「主句——插入——主句」这种结构尤其要避免
+- 不要用破折号（——/—/--）。能拆成两句的，拆开写；能用冒号或分句表达的，用冒号或分句。「主句——插入——主句」这种结构尤其要避免 <!-- prose-lint-ignore E1 -->
 - 避免「长出来 / 长出了」用于系统或抽象事物的演化。用「逐步发展」「逐步形成」「演化为」等替代
 - 避免否定句式，改用正向陈述。与其说 X 不是 Y，不如直接说 X 是什么
-- **任何编号标签每条回复内首次出现都必须 inline 注明它讲什么；下一条回复再出现时必须再次注明**。涵盖 axiom（a17 / R07 / T10 / FP6 等）/ rule（M1 / S2 / N1 / D3 等 review 编号）/ method（M1-M6 distillation method）/ baseline（B0-B4）/ experiment（b1_language_delta 等）/ phase（Phase 3）/ gate（G1-G5）/ task（card_001）等所有 letter+digit identifier。`<label>（一句话讲什么）` 或 `<label>: 一句话讲什么` 都行，关键是读者每条回复都不需要 mental dictionary lookup。**没有 "上一条已经说过所以省略" 这种豁免** —— 用户可能从某条中间回复读起，每条必须 self-contained。同一回复内同标签反复出现，第二次起可省略
+- **任何编号标签每条回复内首次出现都必须 inline 注明它讲什么；下一条回复再出现时必须再次注明**。涵盖 axiom（a17 / R07 / T10 / FP6 等）/ rule（M1 / S2 / N1 / D3 等 review 编号）/ method（M1-M6 distillation method）/ baseline（B0-B4）/ experiment（b1_language_delta 等）/ phase（Phase 3）/ gate（G1-G5）/ task（card_001）等所有 letter+digit identifier。`<label>（一句话讲什么）` 或 `<label>: 一句话讲什么` 都行，关键是读者每条回复都不需要 mental dictionary lookup。**没有 "上一条已经说过所以省略" 这种豁免**，因为用户可能从某条中间回复读起，每条必须 self-contained。同一回复内同标签反复出现，第二次起可省略
 
 标签注解的例子：
 - ❌ "M1 / S2 / N1 已 close"
 - ✅ "M1（b6 概念错位）/ S2（version bump 规则）/ N1（serves_persona_decision 字段）已 close"
 - ❌ "按 a17 axiom + R07 boundary，T10 也 cover 了"
-- ✅ "按 a17（Reader Persona Primacy）+ R07（KB / AP boundary），T10（Index First）也 cover 了"
+- ✅ "按 a20（Reader Persona Primacy）+ R07（KB / AP boundary），T10（Index First）也 cover 了"
 - ❌ "B3 在 G3 fail，要走 D2 default"
 - ✅ "B3（M3 Hansen-McMahon 两轴 baseline）在 G3（toy validation gate）fail，要走 D2（每组合跑 1 次的默认配置）"
 
 否定改正向的例子：
-- `you're not a user of the tool` → `you end up serving as a component of the tool`
-- `it doesn't know your config` → `it goes in blind: config unknown`
-- `this isn't just faster` → `this is a categorical shift`
-- `not just coding` → `brainstorming, drafting, planning, everything`
+- `you're not a user of the tool` 改为 `you end up serving as a component of the tool`
+- `it doesn't know your config` 改为 `it goes in blind: config unknown`
+- `this isn't just faster` 改为 `this is a categorical shift`
+- `not just coding` 改为 `brainstorming, drafting, planning, everything`
 
 这一原则适用于中英文，在 slide 文案和 speaker notes 中需严格执行。
+
+## 把句子说完整
+
+Applicability: `always_on_surface`
+
+读者是人。写作为阅读优化，不为压缩优化：读者的效率是理解速度，不是字数。机器格式（JSON 字段、代码、表格列）要求紧凑；给人读的散文遵守本节。
+
+- **每句话有完整的主语和谓语**。电报体、名词短语堆叠、自造行话动词都算病句。"方向判断挂周期叙事"这种写法要求读者自己解压；应写成"方向判断什么时候允许修改，取决于周期叙事有没有触发登记的阈值"。
+- **括号最多一层，只放次要补充**。条件、结论、出处这类主干信息写进正句。括号强迫读者把主句挂起、读完插入语再接回来；主句十五个字、括号六十个字，是典型病句。
+- **散文里禁用符号连接词**：斜杠串、加号串、箭头链、等号都属于笔记压缩符号，不是给人读的语言。用"和""或""先……然后……""也就是说"把关系说出来。上一节的破折号禁令与本条同族。
+- **句子要有节奏**。重点句配过渡句，长短错落；每句都满载，等于全文没有重点。允许一句话只说一件小事。
+- **代号第一次出现时带一句人话**，隔远了再重述一次。这条是上一节编号标签规则的推广，覆盖仓内一切代号（阈值编号、行权价简称、财务缩写）。中文能表达的意思用中文，系统字段名需要引用原文时除外。
+- **产品、架构和设计文档优先使用企业通行术语**。先写行业内普遍理解的名称，再在括号内标注内部 interface、字段或兼容角色名。确实需要自造术语时，第一次出现就用一句人话说明它负责什么、不负责什么。不要要求读者先学习一套内部词典。
+- **技术架构合同以英文为 canonical language**。Taxonomy、interface、schema、diagram、comparison table 和 machine-auditable contract 使用英文，避免中文翻译压平 `authority`、`ownership`、`responsibility`、`control` 和 `system of record` 等不同概念。中文只作为 PM-facing explanation，不建立第二套合同词汇。
+- **复杂结构先声明分类轴**。同一张表或同一级列表只比较同类对象。文档同时涉及角色、决策权、运行服务、数据记录或部署实现中的两个以上视图时，先用 Structure Index 或 Mermaid 图标明各视图和层级，再分别展开。禁止把不同层级对象放进一张平铺清单，让读者自行猜关系。
+- **Mermaid 用于跨对象关系和过程变化**。Architecture dependency、cross-layer flow、stepwise workflow、state transition 或三个以上对象的交互优先用最小可用 Mermaid；同层比较继续用 table，单一事实继续用 prose。Diagram 必须增加关系、方向、顺序或状态信息，不能只是把相邻段落重新画一遍。
+- 适用面：对话回复、doc 条款、框架与档案 JSON 里的散文字段、报告、review。
+- 执行面（本节的机器投影，项目侧）：`src/tools/prose_style_lint.py` 判破折号与箭头为硬违规；思路卡的散文字段在 `trade_idea_frame validate` 落盘校验时强制过 lint，claim pack 的表述在 attach 时强制过 lint。对话成稿交付前过一遍 lint 是作者义务，规则只写在纸上对作者不生效，这一条的教训本身就是立法动机。
+
+## 冷读者与语义保护契约
+
+Applicability: `always_on_surface`, `artifact_gate`
+
+多段的人类可读正文统一用**缺陷极性**审查：finding 表示缺陷存在，无 finding 表示通过。不得在同一 verdict 中混用“读者是否能理解”这类正向问法和“是否存在教材声”这类负向问法。
+
+交付前检查六类缺陷：
+
+1. 新术语是否早于它命名的现象、动作、身份或后果出现。正式市场、政策、法律、schema 或协议定义在精度需要时可以先到，但首次出现必须同时说明普通语言角色或分析后果。
+2. 是否存在某一段，使冷读者无法回答“发生了什么、为什么重要、意味着什么”。
+3. 是否存在翻译腔、教科书口吻、机械编号式展开或不自然的概念堆叠。
+4. 新概念进入速度是否超过读者无需回读即可维持的认知负荷。
+5. 相邻段落是否没有形成连续推理，只是互不相干的判断列表。
+6. 清晰度修改是否可能改变数字、来源归属、因果方向、不确定性、置信边界、场景条件、时间口径或其他 governing semantics。
+
+前五类回写作层修改。第六类回事实、分析或 contract owner；prose reviewer 只能报告风险，不能借润色改变含义。完整执行路径见 [`writing_workflows.md`](../skills/writing_workflows.md) 与 [`bestpractice_doc_self_review.md`](../skills/bestpractice_doc_self_review.md)。
 
 ## Agent 交互原则
 

@@ -37,7 +37,13 @@
 - 外部 writer 可以建议 salience，但 canonical artifact 的 priority / salience / severity / gate status 必须由 main agent / human reviewer 最终决定。
 - Primary 应给 source 的主信号和最可证伪的 synthesis input；secondary 给机制支撑和诊断；background 给结构背景、expression-only 或低置信候选。
 
-5. Final judgment 必须显式记录
+5. Merge 后必须重新通过读者与 prose contract
+- 不能把多个 draft 的段落按来源顺序拼成互不相干的判断列表。最终稿必须形成连续推理，每个解释段都让冷读者恢复“发生了什么、为什么重要、意味着什么”。
+- 用缺陷极性记录 prose finding：finding 代表缺陷存在，无 finding 代表通过。检查定义先行的真实缺陷时，保留正式定义例外；精度需要时可以先定义，但首次出现必须同时说明普通语言角色或分析后果。
+- 翻译腔、教科书口吻、机械编号式展开、概念堆叠和概念引入过快都应回 merge rewrite，不能靠替换几个连接词结案。
+- 数字、时间、来源归属、因果方向、hedge、不确定性、claim 强度、场景条件和置信边界是 protected meaning。若清晰度修改可能改变它们，回 primary evidence 与分析 owner 裁决。
+
+6. Final judgment 必须显式记录
 - 最终回复或 promotion note 需要说明采用了哪些外部 draft 的优点、拒绝了哪些点、剩余风险是什么。
 - 如果只生成 draft，不 promote，也要明确说明不 promote 的原因。
 

@@ -66,7 +66,28 @@ Thesis Researcher → Regime Analyst → Allocation Decision-Maker → Execution
 - 没有 LP-facing persona，不需要"销售友好"语气。
 - 所有读者都是内部决策者，可以承受高密度、术语、未润色 voice。
 
-### 3.3 Pending 命名项（不在本 axiom 内决议）
+### 3.3 WHY 锚定 canonical snippet（下游 §0 机械 paste 用）
+
+下游 doc（fed_method_validation / context_infra_evaluation / harness/EXPERIMENTS.md 等）的 §0 WHY 锚定段落必须从下面 canonical block 机械 paste，不重写 prose。如需修订，**只在本 §3.3 修，再 propagate 到下游**。
+
+下游 paste 时：
+- 包裹 `<!-- canonical from a17 §3.3, do not edit here, propagate via a17 -->` HTML 注释（do-not-edit-here marker）
+- domain 前缀（"Fed Domain" / "Earnings Domain" 等）由下游自行加在第 2 项前
+- 第 3 项 "本 doc/experiment 直接 enable 什么" 由下游自填（这是 doc-specific WHY，不是 canonical）
+
+#### Canonical block（v1，2026-04-26）
+
+```
+- **终极目的**：trading_platform = **buy-side 内部 cognitive system**，目的是让 **PM 做更好的 portfolio decision**。不是学术 insight / sell-side note / publish research
+- **直接服务对象**（per a17 axiom §3）：[Fed Domain / Earnings Domain / ...] 直接服务 2 个 persona — **Thesis Researcher**（写/验证/攻击 single thesis claim，atomic 单位）+ **Regime Analyst**（判断 regime + 推演 path tree + cross-theme coupling，综合层）
+- **间接服务**（via Regime Analyst 桥接）：Allocation Decision-Maker / Exposure Auditor
+- **不服务**：Execution Trader（scope-bound）/ sell-side 外部客户 / journalist / 学术读者 / 任何外部发布
+- **本 doc/experiment 直接 enable 什么**：[下游自填一行]
+
+**硬约束**：本 doc/experiment 内任何设计决策都必须 trace 回上面任一条。trace 不到 = 噪音，砍。
+```
+
+### 3.5 Pending 命名项（不在本 axiom 内决议）
 
 1. `Thesis Researcher` 是否改名 `Thesis Theme Researcher`，以反映其常常工作在 theme 级 thesis 而非 single-asset thesis 的现状。
 2. `Regime Analyst` 是否需要 qualifier（`Market Regime Analyst` / `Macro Regime Analyst`）。
@@ -110,6 +131,6 @@ Thesis Researcher → Regime Analyst → Allocation Decision-Maker → Execution
 - 6-persona canonical 定义来自 chat session `66396402-a779-44e8-98d2-7b7db9118b6b` @ 2026-04-24 18:00–18:10。
 - Buy-side 全局约束确认于同一 chat 18:00:34。
 - 与现存设计文档的对应关系：
-  - `designDoc/learning_library/topics/our_position_vs_top10.md` LL-N1 / LL-N2 / LL-N3 分别为 Exposure Auditor / Execution Trader / Regime Analyst 的设计 driver。
+  - `external_learning_resource/learning_library/topics/our_position_vs_top10.md` LL-N1 / LL-N2 / LL-N3 分别为 Exposure Auditor / Execution Trader / Regime Analyst 的设计 driver。
   - `designDoc/retrospectives/critic_pipeline_20260424.md` Items 6 / 7 / 8 中提到的 backlog 与本表 persona 对齐。
   - `designDoc/progress/thesis_to_theme_restructure_initiative.md` §7 将本 axiom 列为 out-of-scope 的前置依赖。

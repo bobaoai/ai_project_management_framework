@@ -99,6 +99,12 @@ retrospective 里每个 Item 若涉及某个 skill / 某段代码 / 某个 doc �
 
 inline 形态：在被改的 skill / 代码 / doc 顶部或对应段落加一行 `<!-- follow-up from <retrospective_path>: <一句话提醒> -->`，或者用项目约定的 follow-up tag（具体语法由 INDEX schema 规定）。
 
+### Step 5：按共享写作契约验收正文
+
+Retrospective 是给未来执行者和 reviewer 读的稳定 artifact。交付前调用 `workflow_internal_writing.md` 与 `bestpractice_doc_self_review.md`，并用缺陷极性检查术语顺序、段落三问、翻译腔或教材声、概念负荷、跨段连续推理。
+
+Retrospective 的 protected meaning 还包括：Item 的 `status`、`validation` 类型、`follow_up_trigger`、日期、已验证与待验证的边界，以及失败到 lesson 的因果方向。为求顺畅而改动这些字段或把“待 dogfood”写成“已验证”，必须退回 retrospective owner，不属于 prose 修订。
+
 ---
 
 ## 验收
@@ -109,6 +115,7 @@ retrospective 算写完，必须满足：
 - INDEX 索引行已加，时间倒序正确
 - 至少 1 条 follow-up inline 到对应执行点（如果该轮真有升级机会；零升级机会的 retrospective 通常不该写）
 - entry 内容遵守 INDEX 顶部声明的 schema
+- 正文已通过共享写作契约，且 prose 修改没有改变状态、验证类型、触发条件、日期或因果 lesson
 
 ---
 

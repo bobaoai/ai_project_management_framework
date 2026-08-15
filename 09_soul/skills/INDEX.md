@@ -9,9 +9,10 @@
 
 ## 本地化状态
 
-这批 skills 采用 copy-first 导入策略，当前分为两类：
+这批 skills 采用 copy-first 导入策略，当前分为三类：
 - **已本地化**：路径和主要依赖已对齐到 `09_soul/`
 - **已弃用（保留脚印）**：原始材料保留，但本地缺少对应项目或脚本，暂不作为可直接执行的能力
+- **保留脚印（本仓无适用面）**：从上游 [grapeot/context-infrastructure](https://github.com/grapeot/context-infrastructure) 同步进来，内容完整可读，但本仓没有对应的工作面（iOS、App Store、学术论文、家居硬件等）。留在母体是为了让后续与上游对账时 diff 干净，不投影到 `09_claude/` 或 `.claude/skills/`
 
 本地路径约定：
 - 工具：`09_soul/tools/`
@@ -52,13 +53,19 @@
 - [Gemini 图片生成与放大](./gemini_image_generation.md) — CLI 工具：文生图、图片编辑、分辨率放大
 - [增长数据分析](./growth_analytics.md) ⚙️ — 三个 CLI 查询网站流量（GA4）、邮件订阅（Kit）、Twitter 互动（Typefully）
 - [Typefully Metrics CLI](./typefully_metrics.md) ⚙️ — 通过浏览器 session 凭据查询 Twitter impression、engagement、followers 数据
-- [Typefully 发帖 CLI](./typefully_post.md) ⚙️ — 通过 Typefully v2 API 创建草稿、排期发布和即时推送 Twitter/X 内容
+- [Claude Code CLI](./claude_code.md) ✅ — 非交互调用 `claude -p`、模型与权限参数、AI 调用 AI 的文件响应模式
+- [Claude Code CLI Adapter Pointer](./bestpractice_claude_code_cli_runner.md) ✅ — 指针文件：Claude Code CLI 是 provider adapter 而非 Agent 定义，canonical 契约在 `bestpractice_agent_runtime_module_builder.md`
+- [Antigravity CLI 文件式调用](./antigravity_cli.md) 保留脚印（本仓无适用面）— 本仓不使用 Antigravity
+- [OpenReview API](./openreview.md) 保留脚印（本仓无适用面）— 查询 ICLR / NeurIPS / ICML 论文 metadata 与作者 profile
+- [Apple Compressor](./compressor.md) 保留脚印（本仓无适用面）— macOS 视频转码
 
 ### Workflow（工作流）
 
 特定任务的完整工作流程。
 
 - [并行 Subagent 工作流](./workflow_parallel_subagents.md) ✅ — 调用后台 agent、并行执行多个 subagent
+- [分析写作工作流](./workflow_analytical_writing.md) ✅ — 分析类 prose 从素材到成稿的完整流程编排
+- [Typefully 发帖 CLI](./typefully_post.md) ⚙️ — 推文草稿创建与排期发布
   - **必读**：初次使用并行 subagent 前，必须先读此 skill
   - **禁止轮询**：agent 运行期间不要反复调用 `background_output`，系统会自动通知
   - 判断标准：任务可拆分为 ≥2 个子任务，每个 ≥5 tool calls
@@ -73,14 +80,25 @@
 - [知识飞轮设计模式](./workflow_knowledge_flywheel.md) — 笨数据+笨方法+笨模型=精知识
 - [视频下载与语音识别工作流](./workflow_bilibili_whisper_transcription.md) 已弃用（保留脚印）— 原始项目已脱离当前工作区
 - [延时执行技能](./delayed_execution.md) ⚙️ — 定时任务：sleep + 后台执行，或 OpenCode API 智能任务
-- [分析写作工作流](./workflow_analytical_writing.md) — 调研素材转化为有判断力的分析文章；含 Thesis Catalog（6 视角）+ 五阶段执行流程
-- [项目脚手架与重整](./project_scaffold.md) — 散装脚本/临时目录 → 标准项目结构（docs/src/scripts/tests）；含 public/private intake gate + 隐私扫描
+- [写作工作流路由](./writing_workflows.md) ✅ — root skill：分流内部与外部写作，并统一缺陷极性、冷读段落、概念负荷、连续推理和 protected meaning 契约
+- [外部写作与成文工作流](./workflow_external_writing.md) ✅ — 对外文章：独立视角、多阶段重写、终端冷读、缺陷极性和 source/分析语义保护
+- [内部写作工作流](./workflow_internal_writing.md) ✅ — 内部 memo 与 RFC：结论先行、定义先行例外、段落三问、概念负荷和连续推理
+- [后台任务巡检](./workflow_watchdog.md) ✅ — 派出长时任务后设巡检 wake-up，区分"真实在忙"与"卡在重试循环"，后者直接 kill 掉换方法
+- [项目脚手架与重整](./project_scaffold.md) ✅ — 把散装脚本目录整理成可长期维护的标准项目形态；含 public / private intake gate 与交付前隐私扫描
+- [Playwright Ajax 抓取](./playwright_ajax_capture.md) ✅ — 用真实浏览器观察异步接口，再据此写抓取逻辑
+- [公开一致预期净利润审计](./workflow_public_consensus_net_income_audit.md) ✅ — 混用 MarketScreener / Yahoo / MarketWatch 时把 consensus net income 整理成可审计表格，显式区分 direct value 与 derived value
+- [多源 AI 会话检索](./ai_session_search_archive.md) ⚙️ — 先词法后语义检索历史 AI 会话；依赖 `ai_session_export` 产出的归档
+- [科研论文调研与写作](./workflow_research_paper_survey_writing.md) 保留脚印（本仓无适用面）
+- [iOS UI 自动化](./ios_ui_automation.md) 保留脚印（本仓无适用面）
 
 ### BestPractice（最佳实践）
 
 通用的最佳实践和经验教训。
 
 - [AI 编程核心方法论](./bestpractice_ai_programming_mindset.md) ✅ — 70%问题、成功标准、可验证性
+- [中文写作守则](./bestpractice_chinese_writing_voice.md) ✅ — 中文行文的语态、节奏与禁忌词面
+- [External Agent Builder（Hoveath 子体调用）](./bestpractice_external_agent_builder.md) ✅ — 以 Hoveath 人格构建并调用外部子体 agent 的边界与装配方式
+- [External Worker General Module](./bestpractice_external_worker_general_module.md) ✅ — 外部 worker 的通用工作方式模块；与任务专属 CUSTOMIZE_MODULE 分层
 - [API Key 管理与调用](./bestpractice_api_key_management_1password_cli.md) ✅ — 使用 1Password CLI 安全管理密钥
 - [面试评估框架](./bestpractice_interview_evaluation.md) ✅ — Trait > Skill、AI 作弊识别、技术深度探测
 - [Markdown 转 HTML 最佳实践](./bestpractice_markdown_html_conversion.md) ✅
@@ -89,19 +107,41 @@
 - [多 Agent 并行 analysis](./bestpractice_multi_agent_analysis.md) ✅ — Topic 分割 50% 重叠、交叉验证
 - [AI 辅助调试诊断](./bestpractice_ai_debugging_diagnosis.md) ✅ — "代码改不好"的根因诊断决策树
 - [AI 产品设计原则](./bestpractice_ai_product_design.md) ✅ — 线性聊天 vs 知识工作、感知规则解耦
-- [产品/技术决策逆向工程](./bestpractice_product_decision_analysis.md) ✅ — 五步拆解框架：还原决策空间 → 识别选择 → 反推约束 → 暴露 trade-off → 定位成本结构
-- [GUI 自动化方法论](./bestpractice_gui_automation.md) ✅ — 将无 API 系统转变为可编程接口：HAR 导出、书签注入、Playwright / Claude Computer Use
-- [PDF 转 Markdown](./bestpractice_pdf_to_markdown.md) ✅ — 默认用 Docling（MIT、综合 0.882），避免 PyMuPDF4LLM（AGPL）和 Marker（GPL）
-- [Skill 写作指南（Meta-Skill）](./bestpractice_skill_writing.md) ✅ — 写 skill 时优先定义目标、边界、验收标准与输出规格，避免把 skill 写成 SOP；含 AI-facing detail-first 6 问 + 不变量/检测式边界
-- [读者状态与判断增益优先](./bestpractice_reader_state_and_judgment_gain.md) ✅ — 先定义读者读完后获得什么判断能力，再决定 section、prompt、contract 与 detail；含 multi-agent handoff reader-gain 化 §
-- [Doc Self-Review（交付前自审 doc）](./bestpractice_doc_self_review.md) ✅ — R13 的 canonical 执行路径：三阶段（结构审 → 内容审 → 风格审）+ 4 份参考 + 跳过协议 + 自审报告格式
-- [Retrospective Writing（dogfood 周期复盘）](./bestpractice_retrospective_writing.md) ✅ — 触发条件 / INDEX 先行 / schema（status + validation kind + follow_up_trigger）/ follow-up inline 到执行点
+- [Skill 写作指南（Meta-Skill）](./bestpractice_skill_writing.md) ✅ — 写 skill 时优先定义目标、边界、验收标准与输出规格，避免把 skill 写成 SOP；含 AI-facing detail-first 6 问、不变量/检测式边界、冷读概念顺序与受保护语义
+- [读者状态与判断增益优先](./bestpractice_reader_state_and_judgment_gain.md) ✅ — 先定义读者读完后获得什么判断能力，再决定 section、prompt、contract 与 detail；含 reader start-state 概念顺序与 multi-agent handoff reader-gain 化
+- [Doc Self-Review（交付前自审 doc）](./bestpractice_doc_self_review.md) ✅ — R14 的 canonical 执行路径：三阶段（结构审 → 内容审 → 风格审）+ 冷读缺陷检查 + 受保护语义 + 4 份参考 + 跳过协议 + 自审报告格式
+- [Retrospective Writing（dogfood 周期复盘）](./bestpractice_retrospective_writing.md) ✅ — 触发条件 / INDEX 先行 / schema / follow-up inline / prose 验收与状态、验证类型、因果 lesson 保护
 - [Mirror Sync（09_soul → 09_<agent> 投影同步）](./bestpractice_mirror_sync.md) ✅ — zero-metadata mirror + 外置 manifest；配合 `09_soul/bridging/mirror_sync.py` 做 drift 检测与 sync
+- [分析写作质量标准](./bestpractice_analytical_writing.md) ✅ — 分析 prose 的正面质量标准：因果链、alternative、judgment transfer、so-what、calibration、narrative arc、冷读概念顺序与分析语义保护
 - [Prose Without Editorial Meta（写关于世界，不写关于稿件）](./bestpractice_prose_without_editorial_meta.md) ✅ — sentence-level 守门：reader-facing 报告与 stable AI-facing artifact 都禁止 editorial meta / conversation attribution / workflow time-window deictics / rule invocation as endorsement
 - [Prompt Boundary（task-plane vs control-plane）](./bestpractice_prompt_boundary.md) ✅ — A14 的 canonical 操作路径：下游 prompt 只放改变 worker 输出质量的信息，编排 / persona-source label / 已被结构性保证的 guardrail 一律删
-- [External Agent Builder（Hoveath 子体调用）](./bestpractice_external_agent_builder.md) ✅ — 把 Claude Code CLI、DeepSeek、OpenAI、Cursor subagent 等外部 AI 执行面变成可控、可审计、可中断、可复盘的 Hoveath 子体；覆盖 prompt cache、prompt boundary、runner log、preflight、claim/status gate、quota hard-stop 与 staged model tiering
-- [External Worker General Module](./bestpractice_external_worker_general_module.md) ✅ — worker stable prefix 的去重 `WORKER_CHARTER / GENERAL_MODULE`；只能提供通用工作方式，不能替代任务专属 `CUSTOMIZE_MODULE` 或 source-family `DATA_DEPENDENT_MODULE`
-- [External Writer Merge Rule](./external_writer_merge_rule.md) ✅ — caller-side 合并规则；约束 main agent 如何把 external writer draft 当 advisory input 使用，不进入普通 worker stable prefix
+- [Agent Runtime Module Builder](./bestpractice_agent_runtime_module_builder.md) ✅ — 把 Skill Package 导出的 Module 与 domain-owned Workflow 注册为 provider-neutral、可评估、可审计、可版本演进的 Runtime release；SDK、API、CLI 与 durable backend 均为 adapter
+- [Agent Module General Module](./bestpractice_agent_module_general_module.md) ✅ — worker stable prefix 的去重 `WORKER_CHARTER / GENERAL_MODULE`；只能提供通用工作方式，不能替代任务专属 `CUSTOMIZE_MODULE` 或 source-family `DATA_DEPENDENT_MODULE`
+- [External Writer Merge Rule](./external_writer_merge_rule.md) ✅ — caller-side 合并规则；external draft 只作 advisory，merge 后重建连续推理并保护事实、因果与不确定性
+- [产品与技术决策逆向工程](./bestpractice_product_decision_analysis.md) ✅ — 五步拆解：还原设计空间 → 识别选择 → 反推约束 → 判断 trade-off → 推演意图；用于评估外部产品与竞品动作
+- [GUI 自动化方法论](./bestpractice_gui_automation.md) ✅ — 给没有 API 的东西造一个 API
+- [内部文档排版与视觉组件](./bestpractice_internal_visuals.md) ✅ — 内部 memo / RFC / 周报的视觉化规范；形式独立承载价值，减少读者读字时间
+- [外部中文 Prose 诊断词汇表](./bestpractice_external_prose.md) ✅ — 对外中文行文的教材声、认知负荷、段落连续性、定义例外和语义保护诊断
+- [PDF 转 Markdown](./bestpractice_pdf_to_markdown.md) ✅ — 配套 CLI 在 `09_soul/tools/pdf_to_markdown_cli.py`
+- [学术论文下载与转换](./bestpractice_academic_paper_conversion.md) 保留脚印（本仓无适用面）
+- [iOS 测试加速](./ios_test_acceleration.md) 保留脚印（本仓无适用面）
+
+### Review Module（评审模块）
+
+供 Agent Runtime 装配的评审模块，不是给人直接读的操作手册。
+
+- [Skill Review Module](./review_module_skill_review.md) ✅ — 审 SKILL.md 的完整性、清晰度与契约质量，输出 typed findings
+
+### Reference / Deployment（参考与部署）
+
+上游同步进来的参考资料与部署手册。
+
+- [外部文章启发性分析视角](./reference_writing_thesis_catalog.md) ✅ — thesis catalog：写对外文章时可套用的分析视角清单
+- [External Prose Lint CLI](./external_prose_lint.md) ⚙️ — 确定性行文校验；明确不判断定义顺序、段落三问、认知负荷、连续推理或语义漂移
+- [论文下载](./skill_download_paper.md) 保留脚印（本仓无适用面）— 与 `bestpractice_academic_paper_conversion.md` 内容重复，上游自身冗余
+- [Mac Universal Clipboard 重置](./mac_universal_clipboard.md) 保留脚印（本仓无适用面）
+- [App Store Connect 命令行发布](./deployment_app_store_connect_cli.md) 保留脚印（本仓无适用面）
+- [GitHub Actions 部署到 Koyeb](./deployment_github_actions_koyeb.md) 保留脚印（本仓无适用面）
 
 ---
 

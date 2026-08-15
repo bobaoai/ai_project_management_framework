@@ -1,3 +1,9 @@
+---
+name: reader-state-and-judgment-gain
+type: system-module
+description: 先定义读者读完后获得什么判断能力，再决定 section / prompt / contract / detail
+---
+
 # 读者状态与判断增益优先
 
 ## 元数据
@@ -83,6 +89,21 @@ artifact 常见的假进步有四种：
 
 如果答案不明确，这段 instruction 很可能只是 workflow bulk。
 
+### 原则五：reader start-state 决定概念出场顺序
+
+定义 reader end-state 之后，还要检查读者从起点走到终点的认知路径。一个新概念只能依赖读者已经知道，或正文已经建立的对象、现象、任务和边界。
+
+默认顺序是：
+
+1. 先给读者可识别的对象、现象或任务
+2. 说明它与已有认知的关键差异
+3. 说明这项差异会改变什么判断、行动或 handoff
+4. 再给需要长期复用的正式名称
+
+这不是禁止定义先行。Schema、协议或法律式术语可能需要先定义以保证精确，但首次出现时必须同时给出通俗角色或操作影响，不能让读者先记住一个到后文才有用途的名字。
+
+解释性段落完成后，冷读者应能恢复三个信息：正在说什么、为什么重要或成立、它意味着什么。纯字段表、枚举和代码块不强制套用段落结构，但其用途与下游影响必须由邻近文字建立。
+
 ---
 
 ## 适用方法
@@ -131,13 +152,15 @@ artifact 常见的假进步有四种：
 
 ## 自检问题
 
-在交付前，至少检查这五件事：
+在交付前，至少检查这七件事：
 
 1. 读者读完后会更清楚什么。
 2. 读者会更能区分什么。
 3. 哪种误读现在更容易被拒绝。
 4. 下一步判断或决策会被怎样 sharpen。
 5. 如果删掉某一段，读者的判断能力是否真的下降。
+6. 新概念是否只依赖读者已经拥有或前文已经建立的认知。
+7. 解释性段落是否让冷读者恢复“什么、为什么、意味着什么”。
 
 ---
 
@@ -145,7 +168,7 @@ artifact 常见的假进步有四种：
 
 > **来源**：trading_platform critic pipeline 复盘（Writer → Debater → Writer rebuttal → Reviewer → Stage 3 Writer）发现：管线产出可用，但**最大摩擦是「每个 SKILL 告诉 agent 该做什么，而不是告诉它下一个读者读完后能新做什么」**。一旦每条 handoff artifact 显式声明 reader-gain，format 类争议消失、silent drift 变可检测、prompt 增量从主观判断变成"能否补上已知 reader-gain gap"。
 
-在多 agent / 多 stage pipeline 里，前面三层（artifact / instruction / sentence）都不够 — 还要加第四层：**每个 handoff 都是一次 reader-state 转移，每一步都要显式 declare 下一个读者新解锁什么判断能力**。
+在多 agent / 多 stage pipeline 里，前面四层（artifact / instruction / paragraph / sentence）都不够，还要加第五层：**每个 handoff 都是一次 reader-state 转移，每一步都要显式 declare 下一个读者新解锁什么判断能力**。
 
 ### 把 handoff 当 contract，不当传送带
 
@@ -201,4 +224,4 @@ handoff 失败的典型不是 format 错，而是**正确格式 + 正确 section
 
 ---
 
-**最后更新**: 2026-04-25
+**最后更新**: 2026-08-08

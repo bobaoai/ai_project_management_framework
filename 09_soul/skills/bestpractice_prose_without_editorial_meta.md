@@ -1,3 +1,9 @@
+---
+name: prose-without-editorial-meta
+type: system-module
+description: 句子级守门（写关于世界，不写关于稿件；禁 editorial meta / conversation attribution / workflow deictics）
+---
+
 # Prose Without Editorial Meta（写关于世界，不写关于稿件）
 
 ## 元数据
@@ -5,11 +11,11 @@
 - **类型**: BestPractice
 - **适用场景**: 写任何"读者读完后会带着判断走"的产物 — PM/客户面向的报告、stable AI-facing artifact（design doc / skill / rule / axiom / AGENTS.md / CLAUDE.md）、对外沟通文案
 - **创建日期**: 2026-04-25
-- **来源**: 从 trading_platform 项目 `09_claude/rules/35_pm_writing_contract.md` §3 蒸馏。trading_platform 在 PM-facing report 里反复发现 editorial meta 把"分析师在描述市场"退化成"编辑在描述这份草稿"，并把同样的 guardrail 扩展到所有 stable AI-facing artifact
+- **来源**: 从 trading_platform 项目 `09_claude/rules/35_pm_writing_contract.md` §4 蒸馏。trading_platform 在 PM-facing report 里反复发现 editorial meta 把"分析师在描述市场"退化成"编辑在描述这份草稿"，并把同样的 guardrail 扩展到所有 stable AI-facing artifact
 
 ---
 
-## 核心原则
+## 写作内容守门原则
 
 **写关于世界，不写关于稿件。**
 
@@ -77,22 +83,26 @@
 - **A20 读者 Persona 优先**：先锁定读者，本 skill 把"读者要带走世界判断"具体化成 prose-level guardrail
 - **FP4 输出说重点**：editorial meta 是 FP4 最常见的违反方式之一
 - **`bestpractice_reader_state_and_judgment_gain.md`**：reader-state-first 是 artifact-level（产物形态契约），本 skill 是 sentence-level（句子级守门）。两者 stack 用
-- **`bestpractice_doc_self_review.md`** R13/FP7：self-review 风格审阶段调本 skill 做最后扫一遍
+- **`bestpractice_doc_self_review.md`** R14/FP7：self-review 风格审阶段调本 skill 做最后扫一遍
+
+本 skill 不判断概念引入顺序、段落三问、认知负荷、推理连续性或改写后的语义保持。这些是综合冷读与内容审职责，分别落在 `bestpractice_doc_self_review.md` 的 Stage 1 和 Stage 2。把它们塞进本 skill 会混淆“句子是否在谈稿件”和“正文是否容易理解”两类 finding。
 
 ---
 
-## 4. 三层契约的位置
+## 4. 四层契约的位置
 
-PM Writing 完整契约是三层 stack（来自 trading_platform 35_pm_writing_contract.md）：
+PM Writing 完整契约是四层 stack（来自 trading_platform 35_pm_writing_contract.md）：
 
 | 层 | 内容 | canonical skill |
 |---|---|---|
 | Artifact 层 | reader end-state：读完能 rank/compare/decide/带走什么问题 | `bestpractice_reader_state_and_judgment_gain.md` §reader-state-first |
 | Instruction 层 | reader gain：编辑 prompt / section spec 时先定义"这一层新解锁什么判断能力" | `bestpractice_reader_state_and_judgment_gain.md` §reader-gain-before-instruction-detail |
+| Paragraph 层 | 概念按 reader start-state 的依赖顺序出现；解释段落可恢复什么/为什么/意味着什么；改写保护分析状态 | `bestpractice_reader_state_and_judgment_gain.md` 原则五 + `bestpractice_analytical_writing.md` 原则七至八 |
 | Sentence 层 | 写关于世界、不写关于稿件 | **本 skill** |
 
-如果 artifact 通过 1 但败在 3，读者拿到的是 meta-essay 而不是分析。
-如果 1+3 通过、2 在迭代时漏，prompt 越改越重却不带来更锐利的 reader judgment。
+如果 artifact 通过 1 但败在 Paragraph 层，读者知道目的地，却无法顺着概念和推理到达。
+如果前三层通过但败在 Sentence 层，读者拿到的是 meta-essay 而不是分析。
+如果 Artifact、Paragraph、Sentence 层通过，但 Instruction 层在迭代时漏，prompt 越改越重却不带来更锐利的 reader judgment。
 
 ---
 

@@ -47,7 +47,7 @@
 ### FP7 自己写完的 proposal 自己先过一遍再交
 对照 Self-Review 4 份参考检查反模式（重要性 vs 修复面排序 / 结果定义 vs 结构强加 / scope drift / reader-judgment-gain failures），先修再交。canonical 执行路径在 [`09_soul/skills/bestpractice_doc_self_review.md`](../skills/bestpractice_doc_self_review.md)。
 
-应用判定：交付 Plan / Design Doc / Methodology Doc / Framing Doc / Retrospective / 多 section 长 response 前，触发 R13 + Self-Review skill。
+应用判定：交付 Plan / Design Doc / Methodology Doc / Framing Doc / Retrospective / 多 section 长 response 前，触发 R14 + Self-Review skill。
 
 ---
 
