@@ -1,6 +1,6 @@
 ---
 title: Contract Audit Architecture
-status: proposal
+status: active_draft
 layer: T0
 t0_layer_id: the_contract_audit
 canonical_owner: designDoc/the_contract_audit.md
@@ -19,9 +19,9 @@ reader_persona:
 title: Contract Audit Architecture
 layer: T0
 t0_layer_id: the_contract_audit
-status: proposal
+status: active_draft
 canonical_owner: designDoc/the_contract_audit.md
-registry_path: designDoc/temp/smoke/src/audit/modules/the_contract_audit/registry.py
+registry_path: src/audit/modules/the_contract_audit/registry.py
 scope: three-surface model, typed registry architecture, Design Doc / Registry / SKILL.md synchronization discipline, three-layer audit mechanism, registry inheritance model for ~60 modules
 non_goals:
   - Design Doc writing freedom and review gate procedure (the_design_doc_management)
@@ -39,11 +39,12 @@ outputs:
   - three-layer audit mechanism (capsule recovery + structural validation + semantic audit)
   - Design Doc / Registry synchronization discipline
 truth_surfaces:
-  - designDoc/temp/smoke/src/audit/base.py
-  - designDoc/temp/smoke/src/audit/modules/the_contract_audit/registry.py
-  - designDoc/temp/smoke/src/audit/modules/research_technical/registry.py
-  - designDoc/temp/smoke/designDoc/research_20_technical_module_smoke_design.md
+  - src/audit/base.py
+  - src/audit/modules/the_contract_audit/registry.py
+  - src/audit/modules/the_skill_management/registry.py
+  - src/audit/modules/research_technical/registry.py
   - .claude/skills/agent-the-contract-audit/SKILL.md
+  - .claude/skills/agent-the-skill-management/SKILL.md
   - .claude/skills/agent-research-technical-analysis/SKILL.md
 downstream_consumers:
   - all T1 module Design Docs with typed registries

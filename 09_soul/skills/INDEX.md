@@ -52,6 +52,7 @@
 - [Gemini 图片生成与放大](./gemini_image_generation.md) — CLI 工具：文生图、图片编辑、分辨率放大
 - [增长数据分析](./growth_analytics.md) ⚙️ — 三个 CLI 查询网站流量（GA4）、邮件订阅（Kit）、Twitter 互动（Typefully）
 - [Typefully Metrics CLI](./typefully_metrics.md) ⚙️ — 通过浏览器 session 凭据查询 Twitter impression、engagement、followers 数据
+- [Typefully 发帖 CLI](./typefully_post.md) ⚙️ — 通过 Typefully v2 API 创建草稿、排期发布和即时推送 Twitter/X 内容
 
 ### Workflow（工作流）
 
@@ -72,6 +73,8 @@
 - [知识飞轮设计模式](./workflow_knowledge_flywheel.md) — 笨数据+笨方法+笨模型=精知识
 - [视频下载与语音识别工作流](./workflow_bilibili_whisper_transcription.md) 已弃用（保留脚印）— 原始项目已脱离当前工作区
 - [延时执行技能](./delayed_execution.md) ⚙️ — 定时任务：sleep + 后台执行，或 OpenCode API 智能任务
+- [分析写作工作流](./workflow_analytical_writing.md) — 调研素材转化为有判断力的分析文章；含 Thesis Catalog（6 视角）+ 五阶段执行流程
+- [项目脚手架与重整](./project_scaffold.md) — 散装脚本/临时目录 → 标准项目结构（docs/src/scripts/tests）；含 public/private intake gate + 隐私扫描
 
 ### BestPractice（最佳实践）
 
@@ -86,6 +89,9 @@
 - [多 Agent 并行 analysis](./bestpractice_multi_agent_analysis.md) ✅ — Topic 分割 50% 重叠、交叉验证
 - [AI 辅助调试诊断](./bestpractice_ai_debugging_diagnosis.md) ✅ — "代码改不好"的根因诊断决策树
 - [AI 产品设计原则](./bestpractice_ai_product_design.md) ✅ — 线性聊天 vs 知识工作、感知规则解耦
+- [产品/技术决策逆向工程](./bestpractice_product_decision_analysis.md) ✅ — 五步拆解框架：还原决策空间 → 识别选择 → 反推约束 → 暴露 trade-off → 定位成本结构
+- [GUI 自动化方法论](./bestpractice_gui_automation.md) ✅ — 将无 API 系统转变为可编程接口：HAR 导出、书签注入、Playwright / Claude Computer Use
+- [PDF 转 Markdown](./bestpractice_pdf_to_markdown.md) ✅ — 默认用 Docling（MIT、综合 0.882），避免 PyMuPDF4LLM（AGPL）和 Marker（GPL）
 - [Skill 写作指南（Meta-Skill）](./bestpractice_skill_writing.md) ✅ — 写 skill 时优先定义目标、边界、验收标准与输出规格，避免把 skill 写成 SOP；含 AI-facing detail-first 6 问 + 不变量/检测式边界
 - [读者状态与判断增益优先](./bestpractice_reader_state_and_judgment_gain.md) ✅ — 先定义读者读完后获得什么判断能力，再决定 section、prompt、contract 与 detail；含 multi-agent handoff reader-gain 化 §
 - [Doc Self-Review（交付前自审 doc）](./bestpractice_doc_self_review.md) ✅ — R13 的 canonical 执行路径：三阶段（结构审 → 内容审 → 风格审）+ 4 份参考 + 跳过协议 + 自审报告格式

@@ -1,6 +1,6 @@
 ---
 title: Skill Writing Governance
-status: proposal
+status: active_draft
 layer: T0
 t0_layer_id: the_skill_management
 reader_persona:
@@ -17,8 +17,9 @@ reader_persona:
 title: Skill Writing Governance
 layer: T0
 t0_layer_id: the_skill_management
-status: proposal
+status: active_draft
 canonical_owner: designDoc/the_skill_management.md
+registry_path: src/audit/modules/the_skill_management/registry.py
 scope: SKILL.md surface governance — writing principles, required content areas, reviewer contract, registry alignment, style rules
 non_goals:
   - Design Doc writing freedom and review gate (the_design_doc_management)
@@ -310,9 +311,9 @@ needs_registry_sync
 
 ## 9. 写作流程
 
-### 9.1 Writer Agent
+### 9.1 Writer
 
-Skill 写作由 agent 执行。Writer 的输入：
+Writer 是 Tool（A18 Layer 1，`tool_skill_writer`），由 the_external_agent_management 管理的 atomic external agent handle。Writer 的输入：
 
 1. 本文档（写作原则 + surface authority）
 2. [Portable-Skill-Writing]（详细原则、验收标准、陷阱表）
@@ -341,7 +342,7 @@ Self-review 发现的问题由 writer 自行修复后再提交 reviewer。如果
 
 ### 9.3 Reviewer
 
-Reviewer 在 SKILL.md 准备投入使用时运行。检查 §8.2 的 10 项。Reviewer 可以：
+Reviewer 是 Tool（A18 Layer 1，`tool_skill_reviewer`），由 the_external_agent_management 管理的 atomic external agent handle。Reviewer 在 SKILL.md 准备投入使用时运行。检查 §8.2 的 10 项。Reviewer 可以：
 
 - 补 frontmatter
 - 补遗漏的 registry id
@@ -365,6 +366,38 @@ Reviewer 不可以：
 6. Reviewer 补 audit 结构或提出 findings
 7. Author 修改后 reviewer 重新检查
 8. 通过后 SKILL.md 可投入使用
+
+### 9.5 Automated Workflow
+
+§9.4 是作者视角的完整流程（8 步，包含人工初稿和 self-review）。自动化编排是其中的子集。
+
+`workflow_skill_write_review_loop`（Workflow，A18 Layer 3）是 3 步自动化循环：
+
+| 步骤 | 工具 | Gate |
+|---|---|---|
+| invoke_writer | `tool_skill_writer` | — |
+| invoke_reviewer | `tool_skill_reviewer` | `gate_skill_review_passed` |
+| apply_fixes | — | — |
+
+Workflow 不包含 §9.4 步骤 1-3（作者初稿和 self-review），只覆盖步骤 4-7 的自动化部分。
+
+### 9.6 Agent
+
+`agent_skill_management`（Agent，A18 Layer 4）拥有 `workflow_skill_write_review_loop`，在 Workflow 骨架上叠加判断增益。
+
+**Objective**：produce a SKILL.md that passes the independent skill reviewer（accept_as_is 或 accept_with_notes）within 3 rounds。
+
+**Policy**：invoke writer → invoke reviewer → parse verdict → if accept: write SKILL.md, stop。If needs_author_revision: edit SKILL.md based on findings, re-invoke reviewer。If needs_registry_sync: report to user, stop。Max 3 review-edit rounds; if still needs_author_revision after 3, escalate to user。
+
+**Stop condition**：reviewer returns accept_as_is 或 accept_with_notes（pass），或 needs_registry_sync（escalate），或 3 rounds exhausted（escalate to user）。
+
+### 9.7 Artifacts
+
+| Artifact | Kind | 路径 | 设计意图 |
+|---|---|---|---|
+| `artifact_skill_writer_prompt_template` | config_artifact | `src/audit/modules/the_skill_management/skill_writer_prompt.md` | 组装 writer prompt 的模板，含 governance + module 插槽。单文件模板，非 multi-part content asset，分类为 Artifact 而非 Material。 |
+| `artifact_skill_reviewer_prompt_template` | config_artifact | `src/audit/modules/the_skill_management/skill_reviewer_prompt.md` | 组装 reviewer prompt 的模板，含 S1-S10 检查项和 YAML 输出格式。同上分类逻辑。 |
+| `artifact_skill_review_log` | audit_artifact | `audit_log/<module_id>/skill_review_<skill_dir>_<date>.yaml` | reviewer verdict 和 findings 的持久化记录。每次 review 生成一个文件，是 audit 输出而非持久内容资产。 |
 
 ## 10. Adjacent T0 Boundaries
 
