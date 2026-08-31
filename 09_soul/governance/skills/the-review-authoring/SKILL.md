@@ -1,36 +1,18 @@
-# Skill 写作指南（Meta-Skill）
-
-## 元数据
-
-- **类型**: BestPractice
-- **适用场景**: 需要创建、重写、评审或收敛 skill 文件时
-- **创建日期**: 2026-03-29
-- **来源**: Skill 设计与多轮 agent 迭代经验总结
-
+---
+name: the-review-authoring
+description: 依据一条精确、已审查的 SystemChangePlan step，为一个明确的 Reviewer 编写或修订完整 prompt source。只编写 task-specific sections 1 至 3，并与机械注入的 Review Contract 通用规则和目标 Design checklist 组成候选；不执行审核、注册 Module 或发布 Runtime release。
+metadata:
+  skill_class: primary_agent_development
+  primary_agent_entry_role: authoring
+  primary_agent_entry_subject: system_change_plan_step
+  first_authority_ref: designDoc/the_review_contract.md
 ---
 
-## 这个文件是干什么的
+# Reviewer Prompt 编写
 
-Skill 文件是给 AI agent 的能力定义。写得好的 skill 会提高 agent 完成任务的成功率、边界感和自校验能力。写得差的 skill 常见两种失败：
+## 0. AI-facing Authoring Rules
 
-- 把 agent 写成机械执行 SOP 的脚本
-- 因为目标、边界、验收标准不清，导致 agent 在错误方向上展开
-
-本文件定义写好一个 skill 的核心原则、验收标准和已知陷阱。它不是模板，也不规定固定章节顺序。
-
----
-
-## 基础公理（详见 axioms）
-
-本文件的方法论建立在以下公理之上：
-
-- **T02**：结果确定性优于过程确定性
-- **T03**：上下文隔离
-- **T07**：隔离-处理-验证闭环
-- **A12**：AI 原生开发范式
-
----
-
+<!-- embedded-resource:soul:bestpractice_ai_facing_writing:start -->
 ## 核心原则
 
 ### 原则一：结果确定性优先于过程确定性
@@ -196,206 +178,159 @@ Skill 的执行者通常没有作者当时的讨论上下文。写作顺序必�
 
 ---
 
-## Skill 文件应该包含什么
+<!-- embedded-resource:soul:bestpractice_ai_facing_writing:end -->
 
-以下不是固定模板，而是一个成熟 skill 通常需要覆盖的内容区域。
+## 1. Task
 
-### 元数据
+本 Skill 接收一条 exact reviewed `SystemChangePlan` Reviewer-source step，为一个由目标 Design
+authority 定义判断标准的 Reviewer 编写或修订 prompt source。
 
-至少说明：
+完整 Reviewer prompt 使用五个固定章节：
 
-- 类型（`API Guide` / `Workflow` / `BestPractice` / `Tutorial`）
-- 适用场景
-- 输出位置
-- 创建日期与更新时间
+1. `0. review_contract_universal`；
+2. `1. Review Task`；
+3. `2. Inputs, Decision, and Output`；
+4. `3. Boundaries and Failure Routing`；
+5. `4. Design Review Checklist`。
 
-### 目标与边界
+本 Skill 只编写第 1 至 3 节。第 0 节由 Review Contract 拥有，第 4 节由目标 Design authority
+拥有；两者由 code 根据已登记的 canonical source ref 和 hash 机械注入。成功结果是一份完整、冻结、
+返回 Skill Management 的 Reviewer prompt candidate。本 Skill 不执行 `reviewer_reviewer`，不审核
+自己的候选，不生成 Skill package closure，不注册 Module，也不选择 provider、model 或 Runtime
+profile。
 
-要说明这个 skill：
+Exact prompt candidate 必须使用已注册的 `reviewer_reviewer` Runtime Module 完成独立审核。Module
+route 未注册、未准入或不可执行时，停止交付并返回 Runtime registration 或 execution 的真实
+owner；Prompt author 不自审，Primary Agent 不直接代审。
 
-- 做什么
-- 不做什么
+## 2. Reader Gain
 
-边界尤其重要。很多时候，一个清晰的不做什么，比模糊的做什么更能防止 agent 跑偏。
+冷启动 Primary Agent 只读本 Skill、exact reviewed Plan step、Review Contract 和目标 Design
+authority 后，可以：
 
-### 验收标准
+1. 判断请求是否属于 Reviewer prompt source authoring；
+2. 写清 Reviewer 要审什么、使用哪些输入、作出什么判断、返回什么结果；
+3. 把 target-specific instruction 与 universal instruction、Design checklist 和 invocation data 分开；
+4. 形成无需聊天历史或 ambient repository search 也能执行的完整 Reviewer prompt candidate；
+5. 在 owner、subject、checklist、schema 或 failure route 不完整时停止，并返回真实 owner。
 
-成功条件必须可测试。
+## 3. Entry and Exit
 
-- 能自动化验证的，优先写成自动化检查
-- 不能自动化验证的，写成人工审计标准
+### 3.1 Entry
 
-每条标准都应具体到一个没有上下文的新 agent 也能据此判断任务是否完成。
+只有以下条件全部成立时才进入：
 
-### 可用资源与边界
+1. 存在一条 exact reviewed `SystemChangePlan` step，且 authoring method 指向
+   `the-review-authoring`；
+2. step 指定唯一 Reviewer identity、目标 Design authority、被审 subject kind 和 intended result；
+3. Review Contract 的 universal source 与目标 Design authority 的 checklist source 均可解析；
+4. Reviewer 的 input、output、verdict meaning 和 failure owner 已由对应 authority 定义；
+5. 新建任务已比较现有 Reviewer source peer set；更新任务已取得当前 accepted prompt source。
 
-需要写清楚：
+Reviewer 名字、附近 prompt、旧 review output、Runtime Module 或 provider session 不能替代上述
+entry 条件。
 
-- 能用哪些工具
-- 可以读哪些路径
-- 依赖哪些外部系统
-- 哪些限制条件不可违反
+### 3.2 Exit
 
-重点不是“世界上有什么”，而是“这个 skill 内部什么能用、什么不能做”。
+- Plan step、Reviewer identity、target Design authority 或 subject kind 不一致时，停止并返回 System
+  Change Governance。
+- Checklist、input/output meaning、verdict meaning 或 failure owner 未由目标 Design authority
+  定义时，停止并返回该 authority。
+- Universal source、checklist source、current prompt 或 exact bytes 无法重现时，返回
+  `blocked_reproducibility`，不创建候选。
+- 请求实际改变 Review Contract、目标 Design、Skill lifecycle、Runtime registration 或 release 时，
+  退出到对应 owner，不把该变更写进 Reviewer prompt。
+- Authoring 完成后把 exact candidate 与 deterministic composition result 返回 Skill Management；
+  containing Skill candidate 先完成 Skill review，再把 exact prompt 交给独立 `reviewer_reviewer`。
 
-### 方法论建议
+## 4. Execution Contract
 
-这是可参考但不必强制遵循的部分，例如：
+### 4.1 Inputs and Authority
 
-- 分析框架
-- 分组策略
-- 优先级排序逻辑
+本 Skill 只使用以下冻结输入：
 
-要明确哪些是硬约束，哪些只是建议。
+1. exact reviewed `SystemChangePlan` 与目标 step；
+2. `designDoc/the_review_contract.md`；
+3. 目标 Design authority 及其 exact Reviewer checklist source；
+4. Reviewer identity、subject kind、review purpose 和 intended result；
+5. allowed core context、optional supporting context 和禁止读取的 context；
+6. input schema、output schema、semantic validator 和 verdict meaning；
+7. Review Contract universal source 的 exact ref；
+8. 更新任务的 current accepted prompt source、predecessor 和必须保留的 meaning。
 
-### 已知陷阱
+Plan 决定本次 scope。目标 Design authority 决定 Reviewer 要判断的 subject meaning、checklist、
+output 和 verdict。Review Contract 决定共同审核纪律与固定 layout。Skill Management 决定 prompt
+source 作为 Skill artifact 的完整性。Runtime 只在下游执行已注册 Module。
 
-应记录真实发生过的失败模式，并尽量包括：
+Prior finding 只作为 evidence。Primary Agent 必须先核对 quoted evidence、owner、scope 和 intended
+result，再决定它是否属于本次 candidate；不能把外审建议直接改写成新 authority。
 
-- 失败表现
-- 为什么会发生
-- 应对方式
+### 4.2 Output and Completion
 
-不要在初版里为了凑完整性而凭空预测“可能的坑”。一个新 skill 完全可以没有这一节。只有某个错误真的发生过，并且未来高概率会重复，才值得上升到 meta 层。
+成功时返回：
 
-### 输出规格
+1. Reviewer identity、目标 Design authority、subject kind 和 intended result；
+2. 完整的第 1 至 3 节 source；
+3. 由 code 机械加入第 0 节和第 4 节后的完整五章节 prompt candidate；
+4. universal source、Design checklist source、input/output schema 和 semantic validator 的 exact refs；
+5. changed surfaces、preserved meaning、明确排除项和 predecessor；
+6. deterministic composition result，以及后续可交给 `reviewer_reviewer` 的 exact subject。
 
-需要写清楚：
+Candidate 只有在以下结果全部成立时才完成：
 
-- 格式
-- schema
-- 存放路径
+- 冷启动 Reviewer 能判断 exact subject、允许证据、判断顺序、输出对象、verdict 和 failure route；
+- 第 1 至 3 节没有复制或改写第 0 节和第 4 节；
+- invocation data 没有进入 fixed prompt source；
+- deterministic code 可以验证五个章节各出现一次、顺序固定、两个机械注入章节逐字同源；
+- prompt 没有新增目标 Design 未要求的 object、field、workflow、state、policy 或 mechanism；
+- Reviewer author、独立 Reviewer、subject owner、Runtime execution identity 和 admission owner 保持分离。
 
-如果有 JSON schema，给一个完整示例通常比抽象描述更易被 agent 正确消费。
+本 Skill 不计算或手改 hash，不写 manifest/schema/fixture，不生成 host projection，不返回 review verdict，
+不注册、执行、发布或部署 Reviewer Module。
 
----
+## 5. Boundaries
 
-## 验收标准（这个 meta-skill 自身的）
+| Boundary | 本 Skill 的职责 | 无声违反时的可观察结果 |
+| --- | --- | --- |
+| System Change 与 authoring | 只执行一个已审 Plan step | Prompt 扩大到 Plan 未列出的 Reviewer、Design、Skill、Code 或 Runtime surface |
+| Review Contract 与 target Design | 保留 universal 规则和 target checklist 的独立权责 | 第 1 至 3 节重复、概括或改写第 0 节或第 4 节 |
+| Authoring 与 review | 形成 candidate 后返回 Skill Management；Skill review 通过后再交给独立 `reviewer_reviewer` | Authoring invocation 自己返回 `passed`，或跳过 containing Skill review 直接声明 prompt 完成 |
+| Prompt source 与 invocation data | 固定 instruction 只描述稳定任务 | Candidate 包含本次 subject bytes、临时路径、prior output、credential 或 execution record |
+| Skill 与 Runtime | 交付完整 prompt source 和 handoff | Candidate 声称 Module 已 registered、provider 已绑定或 release 已 admitted |
+| Deterministic 与 semantic | Code 检查 layout、source、hash 和 schema；Reviewer 判断意义闭包 | 模型被要求核对 byte equality，或 code 被要求推断 checklist 是否充分 |
+| Subject 与 context | Core context 只帮助判断 exact subject | Reviewer 获准把辅助材料变成新的 review subject 或修改 peer contract |
 
-一个 skill 文件写好之后，可以用下面这些标准检查。
+## 6. Method
 
-### 结果导向检查
+### 6.1 冻结 Reviewer 边界
 
-文件中是否有明确、可测试的验收标准？
+先写出 Reviewer identity、target Design authority、subject kind、intended result、allowed context、
+output、verdict meaning 和 failure owner。任何一项缺失时停止 authoring，不用通用措辞掩盖空缺。
 
-一个新 agent 只读这份 skill 文件，能否判断任务是否完成？
+### 6.2 编写第 1 节 Review Task
 
-如果不能，说明验收标准还不够具体。
+第 1 节说明 Reviewer 的目的、Reader Gain、exact frozen subject 和 intended result。它必须让执行者
+知道自己的判断会帮助哪个 owner 作出什么决定，同时不把辅助 context 或未来 implementation 当成
+被审对象。
 
-### 无冗余步骤
+### 6.3 编写第 2 节 Inputs, Decision, and Output
 
-文件中是否存在大量“第一步、第二步、第三步”式的流程指令？
+第 2 节逐项列出 required core input、可按需读取的 supporting context、禁止读取的 context、判断顺序、
+output schema、semantic validator 和 verdict meaning。Required input 必须足以完成判断；supporting
+context 只能解释 subject，不能扩大 subject。
 
-如果有，检查每一步是否真的必要。大多数情况下可以改写为：
+### 6.4 编写第 3 节 Boundaries and Failure Routing
 
-- 目标
-- 约束
-- 验收标准
-- 方法论建议
+第 3 节明确 Reviewer 不得编辑、批准、注册、执行或发布 subject，不得把 peer、parent、child 或
+implementation 的问题写成当前 subject finding。证据不足时返回 `blocked` 和缺失输入；可由当前
+candidate owner 修复的缺陷返回 `non_pass`；全部要求满足时才返回 `passed`。
 
-只有当顺序本身会改变结果时，才保留顺序要求。
+### 6.5 机械组装与交接
 
-### 陷阱覆盖
+由 code 把 Review Contract 的第 0 节和目标 Design authority 的第 4 节注入候选，并检查章节 identity、
+唯一性、顺序、source bytes、hash、schema 和 projection closure。Primary Agent 只消费检查结果，不手改
+机械章节或生成 hash。
 
-是否记录了真实发生过的失败模式？
-
-如果这是一个全新 skill，可以先留空。不要编造陷阱。
-
-### 边界清晰度
-
-agent 的关键边界是否足够明确？
-
-例如：
-
-- 哪些工具能用
-- 哪些结果算越界
-- 哪些产物必须落盘
-- 哪些限制条件不可违反
-
-模糊边界会让 skill 失去约束力。
-
-### 不变量与检测式边界
-
-是否显式区分了「必须钉死的不变量」和「留开给 agent 的实现细节」？
-
-每一条关键边界，是否同时给出了**无声违反时长什么样**的可观察特征，而不只是禁止句？
-
-如果一个 skill 只有禁止式边界、没有检测式描述，agent 在自由发挥时就没有自校验的把手，越界很容易在下游才被发现。
-
-### 冷读与语义保持
-
-一个不了解作者讨论过程的新 agent，能否按正文顺序建立所需概念，而不需要先记住一组尚未解释的术语？
-
-解释性段落是否让它恢复“正在描述什么、为什么需要、会改变什么”？正式定义、字段表和枚举可以采用更紧凑的形态，但用途与执行影响必须可恢复。
-
-把候选 Skill 与 governing source 对照后，是否确认措辞优化没有改变数字、identity、authority、因果方向、不确定性、兼容性、失败或停止条件？
-
-### 信息密度
-
-文件是否保持了合理长度？
-
-每一段是否都在增加 agent 成功完成任务的概率？
-
-如果删掉一段话，对结果没有明显影响，就应考虑删掉。
-
----
-
-## 常见陷阱
-
-| 陷阱 | 表现 | 应对 |
-|------|------|------|
-| 把 skill 写成 SOP | 通篇第一步第二步，agent 变成机械执行 | 改写为目标+约束+验收标准+方法论建议 |
-| 验收标准模糊 | “输出质量高”、“分析深入” | 改成可测条件，例如“所有判断必须引用 item_id” |
-| 过度约束过程 | 规定 agent 必须用某一种方法 | 硬约束只放在结果层，方法层写成建议 |
-| 遗漏边界条件 | 没说明数据缺失、工具失败、超时怎么办 | 至少覆盖“无数据”和“工具不可用”两个退化场景 |
-| 堆砌背景知识 | 大段领域背景，占用上下文窗口 | 只保留直接影响执行的知识，其余用路径引用 |
-| 封装错误信息 | CLI/工具输出笼统错误，丢失原始上下文 | 尽量透传 status code、response body、异常类型等底层信息 |
-| 忘记更新 `INDEX.md` | skill 写了但没人能找到 | 新增或重写 skill 后立刻更新索引 |
-| 过度追求压缩与整洁 | 文档更短了，但 entry condition、truth surface 或 handoff 消失 | 先保证 AI-facing contract 完整，再做压缩 |
-| 钉错层级 | 把 prose 风格、章节顺序、段落结构钉死，却没钉 canonical path、identity、freshness 契约 | 钉不变量、留开实现；少而准的硬约束比多而细的过程指令更值钱 |
-| 只写禁止式边界 | 「不要做 X」覆盖很全，但 agent 走捷径产出表面合规 artifact 时无人察觉 | 每条关键边界配一句「无声违反时长什么样」的检测式描述 |
-| 抽象名称先于操作支点 | 开头连续定义对象和缩写，读者要读到后文才知道它们解决什么问题 | 先建立任务、对象或差异；正式定义必须先出现时立即给通俗角色和操作影响 |
-| 概念一次引入过多 | 一段同时出现多个互相依赖的新名词，任何一句都无法独立执行 | 按依赖关系拆开；每个概念先完成用途或影响闭环再引入下一个 |
-| 润色造成 contract 漂移 | 句子更顺，但 authority、兼容性、停止条件或不确定性被改写 | 对照 governing source 做受保护语义检查；冲突返回 owner，不替 authority 决定 |
-| Process leak / 对话归因 / workflow 时间窗 deictic | 在稳定 artifact（SKILL / design doc / rule / axiom）正文里出现「PM 在 X 提出 / 上一轮讨论 / 本轮 / 这次 / 当前 dogfood / 在 Plan A 启动前 / 我们刚才决定 / 按 Rule N 我们决定」之类语言；读者无法独立于本次对话理解这段话 | 归因 → 直接陈述设计取舍本身；时间窗 → 换成版本号 / 节序号 / 日期；rule / axiom 引用作贯穿性 framing convention（如 SKILL 顶部统一的 `Reader gain (Rule 36)` 序章 + 紧跟 reader-gain 描述）允许；只禁止 ad-hoc「按 Rule N 背书 / 按 Rule N 我们决定」；process 语言只放 changelog、handoff notes、temporary review artifact 或 git commit message |
-
----
-
-## 与现有 skill 的关系
-
-写新 skill 前，先检查当前 host 已安装的 Skill 清单，确认没有重复。
-
-如果已有类似 skill，优先考虑：
-
-- 扩充已有 skill
-- 拆出 reference 文件
-- 或在已有 skill 上补充验收标准和边界
-
-而不是无条件新建一个近似重复的 skill。
-
-格式参考可看：
-
-- `bestpractice_ai_programming_mindset.md`
-- `workflow_deep_research_survey.md`
-- `share_report.md`
-
-但要记住，核心原则比格式更重要：
-
-- 结果确定性优先于过程确定性
-- 写 enabling 的指导，而不是 SOP
-
----
-
-## 何时使用这份 Meta-Skill
-
-以下场景应优先回读本文件：
-
-- 新建一个 skill
-- 大改一个已有 skill
-- 发现 agent 经常在同一个 skill 上跑偏
-- 发现 skill 越写越长、越像脚本
-- 想判断一个 skill 是“没写清目标”，还是“写了太多过程”
-
----
-
-**最后更新**: 2026-08-08
+冻结后的 exact prompt candidate 返回 Skill Management。Containing Skill candidate 先完成
+`skill_candidate_reviewer`；通过后，exact prompt 再进入独立 `reviewer_reviewer`。Finding 只作为
+evidence 返回 author；任何修订形成新的 exact candidate，并重新经过同一组 deterministic checks。

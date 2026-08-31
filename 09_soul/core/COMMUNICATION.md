@@ -67,7 +67,7 @@ Applicability: `always_on_surface`
 - **复杂结构先声明分类轴**。同一张表或同一级列表只比较同类对象。文档同时涉及角色、决策权、运行服务、数据记录或部署实现中的两个以上视图时，先用 Structure Index 或 Mermaid 图标明各视图和层级，再分别展开。禁止把不同层级对象放进一张平铺清单，让读者自行猜关系。
 - **Mermaid 用于跨对象关系和过程变化**。Architecture dependency、cross-layer flow、stepwise workflow、state transition 或三个以上对象的交互优先用最小可用 Mermaid；同层比较继续用 table，单一事实继续用 prose。Diagram 必须增加关系、方向、顺序或状态信息，不能只是把相邻段落重新画一遍。
 - 适用面：对话回复、doc 条款、框架与档案 JSON 里的散文字段、报告、review。
-- 执行面（本节的机器投影，项目侧）：`src/tools/prose_style_lint.py` 判破折号与箭头为硬违规；思路卡的散文字段在 `trade_idea_frame validate` 落盘校验时强制过 lint，claim pack 的表述在 attach 时强制过 lint。对话成稿交付前过一遍 lint 是作者义务，规则只写在纸上对作者不生效，这一条的教训本身就是立法动机。
+- 执行面由各项目在自己的 `PROJECT_ADAPTER.md`、validator registry 和测试中绑定。可确定判断的格式规则应由项目代码硬拦；缺少项目级 validator 时，本节仍是作者与 Reviewer 的交付门，但不得虚构已经存在的机器执法。
 
 ## 冷读者与语义保护契约
 

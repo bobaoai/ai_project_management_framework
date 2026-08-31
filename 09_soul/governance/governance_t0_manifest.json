@@ -1,0 +1,98 @@
+{
+  "manifest_version": "governance_t0_manifest_v3",
+  "charter": {
+    "mode": "project_specific",
+    "target": "designDoc/the_charter.md"
+  },
+  "retired_t0_targets": [
+    "designDoc/the_capability_management.md",
+    "designDoc/the_data_residency.md",
+    "designDoc/the_workflow_management.md"
+  ],
+  "portable_t0_contracts": [
+    {
+      "t0_layer_id": "the_agency_platform",
+      "source": "09_soul/governance/t0/the_agency_platform.md",
+      "target": "designDoc/the_agency_platform.md",
+      "sha256": "d3b5919cf97d6c7a07cd6096e9ab9240e09f97883207b9f0714be0aa2f5e47bb"
+    },
+    {
+      "t0_layer_id": "the_agent_runtime",
+      "source": "09_soul/governance/t0/the_agent_runtime.md",
+      "target": "designDoc/the_agent_runtime.md",
+      "sha256": "aeb5c26b720e2d2822979716877f14dfe9fe0caa12d5fd5ee9bbf2a473f6433d"
+    },
+    {
+      "t0_layer_id": "the_product_authorization",
+      "source": "09_soul/governance/t0/the_product_authorization.md",
+      "target": "designDoc/the_product_authorization.md",
+      "sha256": "0237bada24375a0d11eb881e1e533616a71a37a53d320566ff5ccc7a7b26e3a7"
+    },
+    {
+      "t0_layer_id": "the_task_routing",
+      "source": "09_soul/governance/t0/the_task_routing.md",
+      "target": "designDoc/the_task_routing.md",
+      "sha256": "ea1162eb63f3c3b213abb087aa6d3cfb93bf46ff9e98bae608bb468e8cfb2d1b"
+    },
+    {
+      "t0_layer_id": "the_system_change_governance",
+      "source": "09_soul/governance/t0/the_system_change_governance.md",
+      "target": "designDoc/the_system_change_governance.md",
+      "sha256": "8f82bcd7a510fc4216e26ef5649c31089dcefb66946758d906034997fa42a155"
+    },
+    {
+      "t0_layer_id": "the_data_governance",
+      "source": "09_soul/governance/t0/the_data_governance.md",
+      "target": "designDoc/the_data_governance.md",
+      "sha256": "eaaf2288f690496588101b74243a6ff6b1a30680ebcd72306e57d7629214f4b8"
+    },
+    {
+      "t0_layer_id": "the_timestamp_semantic",
+      "source": "09_soul/governance/t0/the_timestamp_semantic.md",
+      "target": "designDoc/the_timestamp_semantic.md",
+      "sha256": "741800aa4a1697fface2ac883636b14828bfa4d241cf95b3489cc39000e1c6f6"
+    },
+    {
+      "t0_layer_id": "the_design_doc_management",
+      "source": "09_soul/governance/t0/the_design_doc_management.md",
+      "target": "designDoc/the_design_doc_management.md",
+      "sha256": "989398d0a743f4dce51c440ce4fe04f79bc4e3f39732484f624456b5e249acf8"
+    },
+    {
+      "t0_layer_id": "the_skill_management",
+      "source": "09_soul/governance/t0/the_skill_management.md",
+      "target": "designDoc/the_skill_management.md",
+      "sha256": "c65505ed3bb946a9b974d930de886c3809434ac1ba73643c2db0ba0ddac5a24b"
+    },
+    {
+      "t0_layer_id": "the_review_contract",
+      "source": "09_soul/governance/t0/the_review_contract.md",
+      "target": "designDoc/the_review_contract.md",
+      "sha256": "5c48f45d71a1a73983ebdbe3ae8c8be5231a788fce4cd6e121c6f656811bf061"
+    },
+    {
+      "t0_layer_id": "the_software_delivery",
+      "source": "09_soul/governance/t0/the_software_delivery.md",
+      "target": "designDoc/the_software_delivery.md",
+      "sha256": "a452993f10e8cdedfef5dfade3b2f51c34a64451b48d6e9866fa9c1ce0c826d0"
+    }
+  ],
+  "artifact_contracts": [
+    {
+      "artifact_contract_id": "design_document_artifact_contract",
+      "owner_t0_layer_id": "the_design_doc_management",
+      "source": "09_soul/governance/t0/validation/artifact_contracts/design_artifact_contract.json",
+      "source_sha256": "c9330a8549e169c7c41ce347d6e8f07208e5236f029c16fcff80b3ce2c6c0a7c",
+      "adapter": "09_soul/governance/t0/validation/artifact_contracts/design_artifact_contract.py",
+      "adapter_sha256": "2d49710a53e8cf2dc48a360aabb1e45099020bd39e745ec869cc05aa19c03ba7"
+    },
+    {
+      "artifact_contract_id": "skill_definition_artifact_contract",
+      "owner_t0_layer_id": "the_skill_management",
+      "source": "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.json",
+      "source_sha256": "c3dbdfe109c656dc88dded2f501414212ed46a52bbd7d1f54556eec70cd25339",
+      "adapter": "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.py",
+      "adapter_sha256": "5dfe5e26611a5994bcb23e6a91c68e013398a030a60764067c1f903c0852e5eb"
+    }
+  ]
+}

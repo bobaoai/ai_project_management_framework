@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema:engineering_change_reviewer_output@v3",
+  "title": "Engineering Change Reviewer Output",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": {"type": "string", "minLength": 1},
+        "severity": {"enum": ["block", "fix", "note"]},
+        "path": {"type": ["string", "null"]},
+        "evidence": {"type": "string", "minLength": 1},
+        "impact": {"type": "string", "minLength": 1},
+        "accountable_owner_ref": {"type": "string", "minLength": 1},
+        "required_change": {"type": "string", "minLength": 1}
+      },
+      "required": ["finding_id", "severity", "path", "evidence", "impact", "accountable_owner_ref", "required_change"]
+    },
+    "gate_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {"type": "string", "minLength": 1},
+        "disposition": {"enum": ["passed", "failed", "blocked", "not_required"]},
+        "observation": {"type": "string", "minLength": 1}
+      },
+      "required": ["command_id", "disposition", "observation"]
+    }
+  },
+  "properties": {
+    "engineering_layer_disposition": {"enum": ["passed", "non_pass", "blocked"]},
+    "software_delivery_readiness": {"enum": ["ready_to_commit", "accepted", "changes_required", "not_reproducible"]},
+    "prose_and_meaning_preservation": {"type": "string", "minLength": 1},
+    "subject_closure": {"type": "string", "minLength": 1},
+    "gate_results": {"type": "array", "items": {"$ref": "#/$defs/gate_result"}},
+    "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+    "safe_next_step": {"type": "string", "minLength": 1}
+  },
+  "required": ["engineering_layer_disposition", "software_delivery_readiness", "prose_and_meaning_preservation", "subject_closure", "gate_results", "findings", "safe_next_step"],
+  "allOf": [
+    {
+      "if": {"type": "object", "properties": {"software_delivery_readiness": {"enum": ["ready_to_commit", "accepted"]}}},
+      "then": {"type": "object", "properties": {"engineering_layer_disposition": {"const": "passed"}}}
+    },
+    {
+      "if": {"type": "object", "properties": {"software_delivery_readiness": {"const": "changes_required"}}},
+      "then": {"type": "object", "properties": {"engineering_layer_disposition": {"const": "non_pass"}}}
+    },
+    {
+      "if": {"type": "object", "properties": {"software_delivery_readiness": {"const": "not_reproducible"}}},
+      "then": {"type": "object", "properties": {"engineering_layer_disposition": {"const": "blocked"}}}
+    }
+  ]
+}
