@@ -44,7 +44,7 @@ non_goals:
   - legacy migration inventory、implementation history 或 changelog
   - non-time schema 与 domain semantics
 inputs:
-  - 要求新建或修改 time-bearing data semantics 的 exact reviewed SystemChangePlan step
+  - 授权的新建或修改 time-bearing data semantics 目标与现有依据；已有已审计划时附对应步骤
 outputs:
   - timestamp role 与 storage vocabulary
   - comparison 与 clock-domain invariant
@@ -72,7 +72,7 @@ verification_hooks:
 
 ```mermaid
 flowchart LR
-    P["Exact reviewed SystemChangePlan step"] --> D["Timestamp Semantics Design candidate"]
+    P["授权修改目标与现有依据<br/>已有计划时附对应步骤"] --> D["Timestamp Semantics Design candidate"]
     D --> R["Role 与 storage meaning"]
     D --> C["Clock-domain 与 comparison law"]
     D --> Z["Timezone、DST 与 distributed-clock safety"]
@@ -363,15 +363,15 @@ health 或 validity。反过来，synchronized clock 也不能证明 causal orde
 9. Distributed protected decision 缺少、过期、不健康、回退、不匹配或不可验证的 profile/evidence 时
    必须 fail closed。
 10. 手工复制的 per-class matrix、predicate list 或 coverage table 永远不成为 current registration truth。
-11. 每个 material Timestamp Design candidate 绑定要求该变更的 exact reviewed `SystemChangePlan` step；
-    该 binding 不把 Timestamp authority 转移给 System Change Governance。
+11. Material Timestamp Design candidate 可依据明确授权请求直接进入 DDM 方法；已有已审
+    `SystemChangePlan` 时附对应步骤。Timestamp 的专业规则、Design 审核与 owner 决定保持独立。
 
 ## 8. Peer Boundaries
 
 | Peer T0 | Timestamp Semantics 提供 | Peer T0 继续拥有 |
 | --- | --- | --- |
 | Design Doc Management | 本 T0 的 owned object、authority 与 required design result | Design layer law、`design_contract_reviewer` 的 checklist 与 output meaning，以及 Design candidate 的 review requirement |
-| System Change Governance | 供 planning 判断 Timestamp Design 是否受影响的 scope boundary，并消费 exact reviewed `SystemChangePlan` step | change scope、affected surfaces、dependency order、owner、authoring method、reviewer 与 completion plan |
+| System Change Governance | 提供 Timestamp Design 的 scope boundary；采用计划路径时消费已审 `SystemChangePlan` 的对应步骤 | 计划的 change scope、affected surfaces、dependency order、owner、authoring method、reviewer 与 completion plan；计划不成为直接授权 Design 请求的前置 |
 | Product Authorization | protected authorization/grant 的 time role 与 cross-clock comparison law | permission、entitlement、allow/deny 与 authorization lifecycle |
 | Agent Runtime | execution、lease、retry 与 recovery record 的 time-role、clock-domain、ordering 与 fencing requirement | Module/Workflow execution、Attempt、retry、recovery 与 Runtime record ownership |
 | Data Governance | retention、migration、backup、restore 与 destruction policy 使用的 time role 和 comparison law | 数据政策、residency、retention duration、migration 与 destruction decision |

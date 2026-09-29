@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema:project_documentation_reviewer_output@v1",
+  "title": "Project Documentation Reviewer Output",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observation": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "source_ref",
+        "locator",
+        "observation"
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "block",
+            "fix",
+            "note"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "requirement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "impact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "accountable_owner_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_change": {
+          "type": "string",
+          "minLength": 1
+        },
+        "check_id": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "reader_task_and_stage",
+            "problem_scope_and_outcome",
+            "business_meaning_and_evidence",
+            "solution_reasoning_and_tradeoffs",
+            "behavior_flow_and_handoff",
+            "technical_and_cross_document_coherence",
+            "project_adaptation_and_actual_state",
+            "completion_failure_and_next_action",
+            "prose_and_meaning_preservation"
+          ]
+        }
+      },
+      "required": [
+        "finding_id",
+        "severity",
+        "evidence",
+        "requirement",
+        "impact",
+        "accountable_owner_ref",
+        "required_change",
+        "check_id"
+      ]
+    },
+    "check_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "check_id": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "reader_task_and_stage",
+            "problem_scope_and_outcome",
+            "business_meaning_and_evidence",
+            "solution_reasoning_and_tradeoffs",
+            "behavior_flow_and_handoff",
+            "technical_and_cross_document_coherence",
+            "project_adaptation_and_actual_state",
+            "completion_failure_and_next_action",
+            "prose_and_meaning_preservation"
+          ]
+        },
+        "disposition": {
+          "type": "string",
+          "minLength": 1,
+          "enum": [
+            "passed",
+            "finding",
+            "not_applicable",
+            "not_run"
+          ]
+        },
+        "assessment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "finding_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "check_id",
+        "disposition",
+        "assessment",
+        "finding_ids"
+      ]
+    }
+  },
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "passed",
+        "non_pass",
+        "blocked"
+      ]
+    },
+    "check_results": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "$ref": "#/$defs/check_result"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "safe_next_step": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "verdict",
+    "check_results",
+    "findings",
+    "safe_next_step"
+  ]
+}

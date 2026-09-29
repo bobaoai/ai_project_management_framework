@@ -70,7 +70,7 @@ def test_production_portable_t0_release_is_clean() -> None:
     report = release.check_governance_t0_release(REPO_ROOT)
 
     assert report.is_clean
-    assert report.contract_count == 11
+    assert report.contract_count == 13
     assert report.charter_target == "designDoc/the_charter.md"
 
 
@@ -111,50 +111,20 @@ def test_artifact_contract_binding_rejects_unknown_owner(tmp_path: Path) -> None
         release.load_governance_t0_manifest(tmp_path, manifest_path)
 
 
-def test_all_portable_t0s_use_one_exact_intent_capsule_shape() -> None:
-    expected_keys = {
-        "layer",
-        "t0_layer_id",
-        "status",
-        "canonical_owner",
-        "owned_system_object",
-        "scope",
-        "non_goals",
-        "inputs",
-        "outputs",
-        "truth_surfaces",
-        "runtime_triggers",
-        "downstream_consumers",
-        "open_decisions",
-        "review_gate",
-        "runtime_surface_ledger",
-        "verification_hooks",
-    }
-    paths = [
-        REPO_ROOT / "designDoc/the_charter.md",
-        *sorted((REPO_ROOT / "09_soul/governance/t0").glob("the_*.md")),
-    ]
-    for path in paths:
-        body = path.read_text(encoding="utf-8")
-        assert sum(
-            line == "## 0. Intent Capsule" for line in body.splitlines()
-        ) == 1
-        capsule = body.split("## 0. Intent Capsule", maxsplit=1)[1]
-        yaml_body = capsule.split("```yaml", maxsplit=1)[1].split(
-            "```", maxsplit=1
-        )[0]
-        keys = {
-            line.split(":", maxsplit=1)[0]
-            for line in yaml_body.splitlines()
-            if line and not line[0].isspace() and ":" in line
-        }
-        if path.name == "the_charter.md":
-            assert keys in (
-                expected_keys,
-                expected_keys - {"t0_layer_id"},
-            )
-        else:
-            assert keys == expected_keys
+def test_portable_t0_sources_satisfy_ddm_artifact_structure() -> None:
+    module_path = MODULE_PATH.parent / "artifact_contracts/design_artifact_contract.py"
+    spec = importlib.util.spec_from_file_location("portable_ddm_structure", module_path)
+    assert spec is not None and spec.loader is not None
+    validator = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = validator
+    spec.loader.exec_module(validator)
+    manifest = release.load_governance_t0_manifest(REPO_ROOT)
+    assert manifest.portable_t0_contracts
+    for entry in manifest.portable_t0_contracts:
+        payload = (REPO_ROOT / entry.source).read_bytes()
+        result = validator.validate_artifact(payload, layer="t0")
+        assert result.subject_sha256 == _hash(payload)
+        assert result.layer == "t0"
 
 
 def test_check_reports_missing_charter_and_target(tmp_path: Path) -> None:

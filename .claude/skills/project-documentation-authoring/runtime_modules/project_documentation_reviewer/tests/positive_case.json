@@ -1,0 +1,7 @@
+{
+  "case_id": "project_documentation_reviewer_positive_case_v1",
+  "case_kind": "positive",
+  "module_id": "project_documentation_reviewer",
+  "mutation": "Use the complete declared project-documentation output fixture.",
+  "expected_disposition": "schema_accepted"
+}

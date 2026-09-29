@@ -4,7 +4,7 @@ import hashlib
 import importlib.util
 import json
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 from jsonschema import Draft202012Validator, ValidationError
@@ -442,7 +442,7 @@ def test_production_governance_skill_release_is_clean() -> None:
     manifest = release.load_governance_skill_manifest(REPO_ROOT)
 
     assert report.is_clean
-    assert report.skill_count == 7
+    assert report.skill_count == 8
     assert report.projection_count == sum(
         len(package_file.projections)
         for skill in manifest.portable_governance_skills
@@ -456,6 +456,7 @@ def test_production_governance_skill_release_is_clean() -> None:
         "the-review-authoring": "designDoc/the_review_contract.md",
         "engineering-code-design": "designDoc/the_software_delivery.md",
         "engineering-change-review": "designDoc/the_software_delivery.md",
+        "experiment-authoring": "designDoc/the_agent_experiment_design.md",
     }
     actual = {
         skill.skill_id: (
@@ -1255,6 +1256,39 @@ def test_instruction_resource_hash_mismatch_uses_stable_error(
     assert "selection hash mismatch" in str(caught.value)
 
 
+def test_candidate_text_selection_does_not_relax_published_selection(tmp_path: Path) -> None:
+    manifest_path = _write_fixture_project(tmp_path)
+    _add_instruction_resource_fixture(tmp_path, manifest_path, embedded_payload=b"## Selected\ncanonical instruction\n")
+    resource = release.load_governance_skill_manifest(tmp_path).instruction_resources[0]
+    source = tmp_path / resource.source
+    source.write_bytes(source.read_bytes().replace(b"canonical instruction", b"new authoring text"))
+    before = manifest_path.read_bytes()
+    assert release.select_candidate_instruction_resource_bytes(resource, source.read_bytes()) == b"## Selected\nnew authoring text\n"
+    with pytest.raises(release.GovernanceSkillReleaseError, match="selection hash mismatch"):
+        release._select_instruction_resource_bytes(resource, source.read_bytes())
+    with pytest.raises(release.GovernanceSkillReleaseError, match="selection hash mismatch"):
+        release.check_governance_skill_release(tmp_path)
+    assert manifest_path.read_bytes() == before
+
+
+@pytest.mark.parametrize("problem", ["encoding", "line_endings", "missing_boundary", "duplicate_boundary"])
+def test_candidate_selection_still_rejects_invalid_source_text(tmp_path: Path, problem: str) -> None:
+    manifest_path = _write_fixture_project(tmp_path)
+    _add_instruction_resource_fixture(tmp_path, manifest_path, embedded_payload=b"## Selected\ncanonical instruction\n")
+    resource = release.load_governance_skill_manifest(tmp_path).instruction_resources[0]
+    payload = (tmp_path / resource.source).read_bytes()
+    if problem == "encoding":
+        payload = b"\xff\n" + payload
+    elif problem == "line_endings":
+        payload = payload.replace(b"\n", b"\r\n")
+    elif problem == "missing_boundary":
+        payload = payload.replace(b"## Unselected", b"## Renamed")
+    else:
+        payload += b"## Selected\n"
+    with pytest.raises(release.GovernanceSkillReleaseError):
+        release.select_candidate_instruction_resource_bytes(resource, payload)
+
+
 def test_missing_instruction_source_uses_stable_error(tmp_path: Path) -> None:
     manifest_path = _write_fixture_project(tmp_path)
     _add_instruction_resource_fixture(
@@ -1944,11 +1978,13 @@ def test_skill_authoring_method_is_distinct_from_skill_management_t0() -> None:
     )
 
     assert skill.required_t0_layer_ids == (
+        "the_identifier_and_reference_semantics",
         "the_review_contract",
         "the_skill_management",
         "the_system_change_governance",
+        "the_timestamp_semantic",
     )
-    assert skill.primary_agent_entry_subject == "system_change_plan_step"
+    assert skill.primary_agent_entry_subject == "skill_definition"
     skill_source = next(
         package_file
         for package_file in skill.package_files
@@ -2015,17 +2051,31 @@ def test_engineering_reviewer_output_schema_is_strict_projection_ready() -> None
     )
 
     assert registration["output_schema_ref"] == (
-        "schema:engineering_change_reviewer_output@v3"
+        "schema:engineering_change_reviewer_output@v6"
     )
     assert schema["$id"] == registration["output_schema_ref"]
-    assert all(
-        clause[branch]["type"] == "object"
-        for clause in schema["allOf"]
-        for branch in ("if", "then")
-    )
+    assert schema["properties"]["verdict"]["enum"] == [
+        "passed",
+        "non_pass",
+        "blocked",
+    ]
+    assert set(schema["required"]) == {"verdict", "check_results", "findings", "safe_next_step"}
+    Draft202012Validator.check_schema(schema)
+    current = {"verdict": "passed", "check_results": [
+        {"check_id": str(i), "disposition": "passed", "assessment": "Declared result verified.", "finding_ids": []}
+        for i in range(1, 10)
+    ], "findings": [], "safe_next_step": "Proceed within the declared scope."}
+    validator = Draft202012Validator(schema)
+    validator.validate(current)
+    with pytest.raises(ValidationError):
+        validator.validate(current | {"software_delivery_readiness": "accepted"})
+    with pytest.raises(ValidationError):
+        validator.validate({"engineering_layer_disposition": "passed", "software_delivery_readiness": "accepted",
+                            "prose_and_meaning_preservation": "passed", "subject_closure": {},
+                            "gate_results": [], "findings": [], "safe_next_step": "Proceed."})
 
 
-def test_engineering_reviewer_input_carries_plan_body_and_subject_mode() -> None:
+def test_engineering_reviewer_input_carries_plan_body_and_exact_commit() -> None:
     module_root = (
         REPO_ROOT
         / "09_soul/governance/skills/engineering-change-review/runtime_modules/"
@@ -2040,18 +2090,21 @@ def test_engineering_reviewer_input_carries_plan_body_and_subject_mode() -> None
     Draft202012Validator.check_schema(schema)
     assert registration["input_schema_ref"] == schema["$id"]
     assert schema["properties"]["system_change_plan_step"] == {
-        "$ref": "#/$defs/hashed_body"
+        "anyOf": [{"$ref": "#/$defs/hashed_body"}, {"type": "null"}]
     }
 
     hashed_body = {"ref": "ref", "sha256": "a" * 64, "body": "body"}
     payload = {
-        "schema_version": "engineering_change_reviewer_input_v3",
+        "schema_version": "engineering_change_reviewer_input_v6",
+        "required_check_ids": [str(i) for i in range(1, 10)],
         "module_id": "engineering_change_reviewer",
-        "system_change_plan_step": hashed_body,
+        "review_purpose": "implementation",
+        "system_change_plan_step": None,
+        "code_design_review": hashed_body,
+        "context_documents": [],
         "subject": {
-            "subject_mode": "commit_ref",
-            "base_ref": "base",
-            "commit_ref": "commit",
+            "commit_ref": "1" * 40,
+            "parent_ref": "2" * 40,
             "subject_sha256": "b" * 64,
             "diff_sha256": "c" * 64,
             "paths": [
@@ -2063,7 +2116,6 @@ def test_engineering_reviewer_input_carries_plan_body_and_subject_mode() -> None
             ],
         },
         "code_design_basis": hashed_body,
-        "change_set_manifest": hashed_body,
         "sandbox_command_plan": {
             "ref": "commands",
             "sha256": "e" * 64,
@@ -2075,22 +2127,31 @@ def test_engineering_reviewer_input_carries_plan_body_and_subject_mode() -> None
     validator = Draft202012Validator(schema)
     validator.validate(payload)
     with pytest.raises(ValidationError):
+        validator.validate(payload | {"schema_version": "engineering_change_reviewer_input_v5"})
+    with pytest.raises(ValidationError):
+        validator.validate(payload | {"required_check_ids": ["1"]})
+    plan_payload = payload | {
+        "review_purpose": "code_design", "subject": None, "code_design_review": None,
+    }
+    validator.validate(plan_payload)
+    with pytest.raises(ValidationError):
+        validator.validate(payload | {"code_design_review": None})
+    with pytest.raises(ValidationError):
+        validator.validate(plan_payload | {"subject": payload["subject"]})
+    with pytest.raises(ValidationError):
         validator.validate(
             payload
             | {
                 "subject": payload["subject"] | {"commit_ref": None},
             }
         )
-    validator.validate(
-        payload
-        | {
-            "subject": payload["subject"]
-            | {
-                "subject_mode": "pre_commit_candidate",
-                "commit_ref": None,
-            }
-        }
-    )
+    with pytest.raises(ValidationError):
+        validator.validate(payload | {"change_set_manifest": hashed_body})
+    with pytest.raises(ValidationError):
+        validator.validate(
+            payload
+            | {"subject": payload["subject"] | {"subject_mode": "commit_ref"}}
+        )
 
 
 def test_readme_skill_table_matches_manifest_identity_and_role() -> None:
@@ -2244,9 +2305,6 @@ def test_structure_review_is_merged_into_design_reviewer() -> None:
     input_schema = json.loads(
         (module_root / "schemas/input.schema.json").read_text(encoding="utf-8")
     )
-    prompt = (module_root / "prompt.md").read_text(encoding="utf-8")
-    flattened = " ".join(prompt.split())
-
     assert not any("structure_change_reviewer/" in source for source in package_sources)
     assert not (
         REPO_ROOT
@@ -2259,11 +2317,14 @@ def test_structure_review_is_merged_into_design_reviewer() -> None:
     assert "peer_contract" in input_schema["$defs"]["context_document"][
         "properties"
     ]["context_role"]["enum"]
-    assert "peer_authority_and_inheritance" in flattened
-    assert "拆分、合并" in flattened
-    assert "predecessor/successor coverage" in flattened
-    assert "StructureChangeProposal" in flattened
-    assert "不能从 ambient repository 推断" in flattened
+    registration = json.loads((module_root / "module_registration.json").read_text())
+    assert registration["skill_id"] == "the-design-authoring"
+    assert registration["owner_contract_path"] == "designDoc/the_design_doc_management.md"
+    assert {"candidate_documents", "context_documents"} <= set(input_schema["required"])
+    required_checks = {
+        row["const"] for row in input_schema["properties"]["required_check_ids"]["prefixItems"]
+    }
+    assert {"layer_owner_and_parent", "peer_authority_and_inheritance", "boundary_coherence"} <= required_checks
 
 
 def test_system_change_plan_reviewer_has_no_general_routing_registry_contract() -> None:
@@ -2377,6 +2438,13 @@ def test_reviewer_module_prompts_share_one_universal_review_style() -> None:
             "reviewer_reviewer/prompt.md",
             "09_soul/governance/skills/engineering-change-review/runtime_modules/"
             "engineering_change_reviewer/prompt.md",
+            "09_soul/governance/skills/experiment-authoring/runtime_modules/"
+            "experiment_reviewer/prompt.md",
+        },
+        "t0:experiment_review_checklist": {
+            "09_soul/governance/skills/experiment-authoring/SKILL.md",
+            "09_soul/governance/skills/experiment-authoring/runtime_modules/"
+            "experiment_reviewer/prompt.md",
         },
     }
     assert "t0:contract_audit_universal_review_style" not in instruction_payloads
@@ -2418,7 +2486,7 @@ def test_skill_candidate_reviewer_owns_complete_subject_method() -> None:
     assert "Skill Candidate Review Checklist Source" not in skill_source
     assert "skill-specific-review-checklist" not in skill_source
     assert "## 1. Review Task" in prompt_source
-    assert "## 4. Design Review Checklist" in prompt_source
+    assert "## 4. Subject Review Checklist" in prompt_source
     for check_id in (
         "identity_discovery_class_and_source",
         "task_and_reader_gain",
@@ -2507,7 +2575,7 @@ def test_skill_reviewer_slice_projections_are_exact(tmp_path: Path) -> None:
     )
 
 
-def test_skill_authoring_has_indexed_semantic_structure_and_owned_exits() -> None:
+def test_skill_authoring_has_indexed_structure_and_declared_authority() -> None:
     source = (
         REPO_ROOT
         / "09_soul/governance/skills/the-skill-authoring/SKILL.md"
@@ -2534,14 +2602,10 @@ def test_skill_authoring_has_indexed_semantic_structure_and_owned_exits() -> Non
         prefix = subheading.removeprefix("### ").split(" ", 1)[0]
         parent, child = prefix.split(".")
         assert parent.isdigit() and child.isdigit()
-    for disposition in (
-        "`blocked_reproducibility`",
-        "`blocked_boundary`",
-        "`blocked_owner`",
-    ):
-        assert disposition in source
-    assert "本 Skill 不计算 candidate hash" in source
-    assert "Authoring invocation 加载 Reviewer prompt 自审" in source
+    metadata = release._frontmatter_scalars(source.encode(), source="the-skill-authoring/SKILL.md")
+    assert metadata["primary_agent_entry_role"] == "authoring"
+    assert metadata["primary_agent_entry_subject"] == "skill_definition"
+    assert metadata["first_authority_ref"] == "designDoc/the_skill_management.md"
     assert "`soul:bestpractice_ai_facing_writing`" in source
     assert (
         "embedded-resource:soul:bestpractice_ai_facing_writing:start" in source
@@ -2555,28 +2619,16 @@ def test_skill_authoring_has_indexed_semantic_structure_and_owned_exits() -> Non
     assert not any(path.is_file() for path in retired_host_root.rglob("*"))
 
 
-def test_skill_management_defines_skill_meaning_without_owning_file_layout() -> None:
+def test_skill_management_content_table_matches_skill_artifact_contract() -> None:
     contract = (
         REPO_ROOT / "09_soul/governance/t0/the_skill_management.md"
     ).read_text(encoding="utf-8")
 
-    required_headings = (
-        "`Task`",
-        "`Reader Gain`",
-        "`Entry and Exit`",
-        "`Execution Contract`",
-        "`Boundaries`",
-        "`Method`",
-    )
-    complete_skill = contract.split("### 6.1 完整 Skill", 1)[1].split(
-        "### 6.2 Skill class", 1
-    )[0]
-
-    for heading in required_headings:
-        assert complete_skill.count(heading) == 1
-    assert "具体 heading 编号" in complete_skill
-    assert "`the-skill-authoring` 与 code-owned enforcement" in complete_skill
-    assert "这些是系统级完整性要求" in complete_skill
+    artifact = json.loads((REPO_ROOT / "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.json").read_text())
+    complete_skill = contract.split("### 6.1 ", 1)[1].split("\n### ", 1)[0]
+    declared = [line.split("`", 2)[1] for line in complete_skill.splitlines() if line.startswith("| `")]
+    assert declared == [section["heading"] for section in artifact["required_sections"]]
+    assert artifact["owner_t0_layer_id"] == "the_skill_management"
 
 
 def test_ddm_and_skill_review_instruction_consumer_mapping_is_exact() -> None:
@@ -2611,6 +2663,7 @@ def test_ddm_and_skill_review_instruction_consumer_mapping_is_exact() -> None:
     assert reviewer_module_ids == {
         "design_contract_reviewer",
         "engineering_change_reviewer",
+        "experiment_reviewer",
         "reviewer_reviewer",
         "skill_candidate_reviewer",
         "system_change_plan_reviewer",
@@ -2726,139 +2779,39 @@ def test_skill_reviewer_contract_is_exact_for_one_skill_candidate() -> None:
             }
         )
 
-    output_check_ids = set(output_schema["$defs"]["check_id"]["enum"])
-    assert output_check_ids == set(skill_checks)
-    assert "prose_and_meaning_preservation" not in output_check_ids
-    assert "prose_and_meaning_preservation" in output_schema["required"]
-    assert output_schema["properties"]["reviewed_subject_kind"] == {
-        "const": "skill_candidate"
-    }
-
-    output_validator = Draft202012Validator(output_schema)
+    output_ids = [*skill_checks, "prose_and_meaning_preservation"]
+    assert output_schema["$defs"]["check_result"]["properties"]["check_id"]["enum"] == output_ids
+    assert set(output_schema["required"]) == {"verdict", "check_results", "findings", "safe_next_step"}
+    path = REPO_ROOT / "09_soul/governance/t0/validation/artifact_contracts/skill_review_output.py"
+    spec = importlib.util.spec_from_file_location("skill_output_contract_package_test", path)
+    contract = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = contract
+    spec.loader.exec_module(contract)
     skill_output = {
-        "reviewed_subject_kind": "skill_candidate",
-        "layer_disposition": "passed",
-        "prose_and_meaning_preservation": "same bytes; no prose defect",
+        "verdict": "passed",
         "check_results": [
-            {
-                "check_id": check_id,
-                "disposition": "passed",
-                "assessment": f"candidate evidence for {check_id}",
-                "finding_ids": [],
-            }
-            for check_id in skill_checks
+            {"check_id": check_id, "disposition": "passed", "assessment": "Candidate evidence.", "finding_ids": []}
+            for check_id in output_ids
         ],
-        "findings": [],
-        "safe_next_step": "accountable owner decision",
+        "findings": [], "safe_next_step": "Use the reviewed candidate.",
     }
-    output_validator.validate(skill_output)
-    no_prompt_output = skill_output | {
-        "check_results": [
-            *skill_output["check_results"][:-1],
-            {
-                "check_id": "runtime_ready_prompt_closure_if_declared",
-                "disposition": "not_applicable",
-                "assessment": "candidate declares no Runtime-ready prompt",
-                "finding_ids": [],
-            },
-        ]
-    }
-    output_validator.validate(no_prompt_output)
+    contract.validate_skill_review_output(skill_output, multiple_prompt_payload)
+    no_prompt_output = json.loads(json.dumps(skill_output))
+    no_prompt_output["check_results"][-2]["disposition"] = "not_applicable"
+    contract.validate_skill_review_output(no_prompt_output, zero_prompt_payload)
+    with pytest.raises(ValueError, match="Declared prompt"):
+        contract.validate_skill_review_output(no_prompt_output, multiple_prompt_payload)
     with pytest.raises(ValidationError):
-        output_validator.validate(
-            skill_output | {"reviewed_subject_kind": "project_binding_addendum"}
-        )
-    with pytest.raises(ValidationError):
-        output_validator.validate(
-            skill_output
-            | {
-                "check_results": [
-                    {
-                        key: value
-                        for key, value in skill_output["check_results"][0].items()
-                        if key != "assessment"
-                    },
-                    *skill_output["check_results"][1:],
-                ]
-            }
-        )
-    with pytest.raises(ValidationError):
-        output_validator.validate(
-            skill_output
-            | {
-                "check_results": [
-                    {
-                        **skill_output["check_results"][0],
-                        "disposition": "not_applicable",
-                    },
-                    *skill_output["check_results"][1:],
-                ]
-            }
-        )
-    with pytest.raises(ValidationError):
-        output_validator.validate(
-            skill_output | {"check_results": skill_output["check_results"][:-1]}
-        )
-    with pytest.raises(ValidationError):
-        output_validator.validate(
-            skill_output
-            | {
-                "check_results": [
-                    skill_output["check_results"][1],
-                    skill_output["check_results"][0],
-                    *skill_output["check_results"][2:],
-                ]
-            }
-        )
-    with pytest.raises(ValidationError):
-        output_validator.validate(
-            skill_output
-            | {
-                "check_results": [
-                    {
-                        "check_id": skill_checks[0],
-                        "disposition": "finding",
-                        "assessment": "candidate is incomplete",
-                        "finding_ids": ["finding-1"],
-                    },
-                    *skill_output["check_results"][1:],
-                ],
-                "findings": [
-                    {
-                        "finding_id": "finding-1",
-                        "severity": "fix",
-                        "check_id": skill_checks[0],
-                        "evidence": "candidate is incomplete",
-                        "accountable_owner_ref": "designDoc/the_skill_management.md",
-                        "required_change": "restore the missing result",
-                    }
-                ],
-            }
-        )
-    with pytest.raises(ValidationError):
-        output_validator.validate(
-            skill_output
-            | {
-                "layer_disposition": "non_pass",
-                "check_results": [
-                    {
-                        **skill_output["check_results"][0],
-                        "disposition": "finding",
-                    },
-                    *skill_output["check_results"][1:],
-                ],
-                "findings": [
-                    {
-                        "finding_id": "finding-1",
-                        "severity": "fix",
-                        "check_id": skill_checks[0],
-                        "evidence": "candidate is incomplete",
-                        "accountable_owner_ref": "designDoc/the_skill_management.md",
-                        "required_change": "restore the missing result",
-                    }
-                ],
-            }
-        )
+        Draft202012Validator(output_schema).validate(skill_output | {"layer_disposition": "passed"})
+    for mutation in ("missing_assessment", "missing_check", "reorder", "duplicate", "wrong_not_applicable"):
+        broken = json.loads(json.dumps(skill_output))
+        if mutation == "missing_assessment": broken["check_results"][0].pop("assessment")
+        if mutation == "missing_check": broken["check_results"].pop()
+        if mutation == "reorder": broken["check_results"][0], broken["check_results"][1] = broken["check_results"][1], broken["check_results"][0]
+        if mutation == "duplicate": broken["check_results"][1] = dict(broken["check_results"][0])
+        if mutation == "wrong_not_applicable": broken["check_results"][0]["disposition"] = "not_applicable"
+        with pytest.raises((ValueError, ValidationError)):
+            contract.validate_skill_review_output(broken, multiple_prompt_payload)
 
 
 def test_system_change_plan_reviewer_output_check_ids_are_closed() -> None:
@@ -2879,10 +2832,10 @@ def test_system_change_plan_reviewer_output_check_ids_are_closed() -> None:
             "prefixItems"
         ]
     }
-    assert set(output_schema["$defs"]["semantic_check_id"]["enum"]) == expected
-    assert output_schema["$defs"]["semantic_check_results"]["uniqueItems"] is True
+    assert set(output_schema["$defs"]["check_result"]["properties"]["check_id"]["enum"]) == expected | {"prose_and_meaning_preservation"}
     assert "prose_and_meaning_preservation" not in expected
-    assert "prose_result" in output_schema["required"]
+    assert output_schema["properties"]["check_results"]["items"] == {"$ref": "#/$defs/check_result"}
+    assert set(output_schema["required"]) == {"verdict", "check_results", "findings", "safe_next_step"}
 
 
 def test_manifest_rejects_incomplete_runtime_module_export(
@@ -3407,6 +3360,106 @@ def test_apply_projects_declared_runtime_assets_only_to_canonical_package(
     ).exists()
 
 
+def _add_ordinary_package_file(
+    root: Path,
+    manifest_path: Path,
+    *,
+    relative: str,
+    hosts: tuple[str, ...],
+    body: bytes = b"# Guide\n",
+) -> bytes:
+    source = f"09_soul/governance/skills/engineering-example/{relative}"
+    source_path = root / source
+    source_path.parent.mkdir(parents=True, exist_ok=True)
+    source_path.write_bytes(body)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["portable_governance_skills"][0]["package_files"].append(
+        {
+            "source": source,
+            "sha256": _hash(body),
+            "embedded_resource_ids": [],
+            "projections": [
+                {
+                    "host_id": host,
+                    "target": (
+                        f"{release.HOST_TARGET_PREFIXES[host]}/"
+                        f"engineering-example/{relative}"
+                    ),
+                }
+                for host in hosts
+            ],
+        }
+    )
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    return body
+
+
+@pytest.mark.deterministic
+def test_apply_projects_ordinary_package_file_to_both_hosts(tmp_path: Path) -> None:
+    payload = _skill_payload() + b"\nSee [guide](references/guide.md).\n"
+    manifest_path = _write_fixture_project(tmp_path, source_payload=payload)
+    body = _add_ordinary_package_file(
+        tmp_path,
+        manifest_path,
+        relative="references/guide.md",
+        hosts=("claude", "codex"),
+    )
+
+    report = release.apply_governance_skill_release(tmp_path)
+
+    assert report.is_clean
+    assert report.projection_count == 4
+    assert release.check_governance_skill_release(tmp_path).is_clean
+    for host in (".claude", ".agents"):
+        skill_path = tmp_path / host / "skills/engineering-example/SKILL.md"
+        assert skill_path.read_bytes() == payload
+        assert (skill_path.parent / "references/guide.md").read_bytes() == body
+
+
+@pytest.mark.deterministic
+def test_ordinary_package_file_may_stay_claude_only(tmp_path: Path) -> None:
+    manifest_path = _write_fixture_project(tmp_path)
+    body = _add_ordinary_package_file(
+        tmp_path,
+        manifest_path,
+        relative="examples/sample.md",
+        hosts=("claude",),
+    )
+
+    report = release.apply_governance_skill_release(tmp_path)
+
+    assert report.is_clean
+    assert report.projection_count == 3
+    assert (
+        tmp_path / ".claude/skills/engineering-example/examples/sample.md"
+    ).read_bytes() == body
+    assert not (
+        tmp_path / ".agents/skills/engineering-example/examples/sample.md"
+    ).exists()
+
+
+@pytest.mark.deterministic
+def test_production_manifest_keeps_runtime_assets_out_of_codex() -> None:
+    manifest = release.load_governance_skill_manifest(REPO_ROOT)
+    hosts_by_kind: dict[str, list[set[str]]] = {"runtime": [], "ordinary": []}
+    for skill in manifest.portable_governance_skills:
+        package_root = release.SOURCE_PREFIX / skill.skill_id
+        for package_file in skill.package_files:
+            first = PurePosixPath(package_file.source).relative_to(
+                package_root
+            ).parts[0]
+            if first == "SKILL.md":
+                continue
+            kind = "runtime" if first == "runtime_modules" else "ordinary"
+            hosts_by_kind[kind].append(
+                {projection.host_id for projection in package_file.projections}
+            )
+
+    assert hosts_by_kind["runtime"]
+    assert all("codex" not in hosts for hosts in hosts_by_kind["runtime"])
+    assert hosts_by_kind["ordinary"]
+
+
 def test_manifest_rejects_runtime_asset_projected_to_codex(tmp_path: Path) -> None:
     manifest_path = _write_fixture_project(tmp_path)
     asset = b"Review.\n"
@@ -3547,6 +3600,56 @@ def test_manifest_rejects_project_local_source_identity(tmp_path: Path) -> None:
         release.GovernanceSkillReleaseError,
         match="project-local identity",
     ):
+        release.check_governance_skill_release(tmp_path)
+
+
+@pytest.mark.parametrize("tool", ["check.py", "tests/test_check.py"])
+def test_skill_can_reference_an_existing_portable_tool(tmp_path: Path, tool: str) -> None:
+    relative = f"09_soul/governance/t0/validation/{tool}"
+    payload = _skill_payload() + f"\nRun `python -B {relative}`.\n".encode()
+    _write_fixture_project(tmp_path, source_payload=payload, target_payload=payload)
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# Existing portable checker.\n")
+    report = release.check_governance_skill_release(tmp_path)
+    assert report.is_clean
+    assert (tmp_path / "09_soul/governance/skills/engineering-example/SKILL.md").read_bytes() == payload
+
+
+@pytest.mark.parametrize("reference", [
+    "09_soul/governance/t0/validation/missing.py",
+    "09_soul/governance/t0/validation/../outside.py",
+    "../09_soul/governance/t0/validation/check.py",
+    "/Users/example/09_soul/governance/t0/validation/check.py",
+])
+def test_portable_tool_exception_cannot_admit_bad_paths(tmp_path: Path, reference: str) -> None:
+    payload = _skill_payload() + f"\nRun `python {reference}`.\n".encode()
+    _write_fixture_project(tmp_path, source_payload=payload, target_payload=payload)
+    with pytest.raises(release.GovernanceSkillReleaseError):
+        release.check_governance_skill_release(tmp_path)
+
+
+def test_portable_tool_reference_cannot_follow_a_symlink(tmp_path: Path) -> None:
+    relative = "09_soul/governance/t0/validation/check.py"
+    payload = _skill_payload() + f"\nRun `python {relative}`.\n".encode()
+    _write_fixture_project(tmp_path, source_payload=payload, target_payload=payload)
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    outside = tmp_path / "outside.py"
+    outside.write_text("# Not a package tool.\n")
+    path.symlink_to(outside)
+    with pytest.raises(release.GovernanceSkillReleaseError, match="symlink"):
+        release.check_governance_skill_release(tmp_path)
+
+
+def test_portable_tool_reference_does_not_hide_a_project_path(tmp_path: Path) -> None:
+    relative = "09_soul/governance/t0/validation/check.py"
+    payload = _skill_payload() + f"\nRun `python {relative}` then `src/project.py`.\n".encode()
+    _write_fixture_project(tmp_path, source_payload=payload, target_payload=payload)
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# Existing portable checker.\n")
+    with pytest.raises(release.GovernanceSkillReleaseError, match="project-local identity"):
         release.check_governance_skill_release(tmp_path)
 
 

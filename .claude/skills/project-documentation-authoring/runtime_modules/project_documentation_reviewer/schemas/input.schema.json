@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema:project_documentation_reviewer_input@v1",
+  "title": "Project Documentation Reviewer Input",
+  "$defs": {
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "document_ref",
+        "owner_ref",
+        "title",
+        "body"
+      ]
+    },
+    "candidate_document": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "enum": [
+            "business_proposal",
+            "solution_design",
+            "technical_design",
+            "operating_instruction",
+            "project_update"
+          ]
+        },
+        "reader_action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "project_stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "formal_design": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "document_ref",
+        "owner_ref",
+        "title",
+        "body",
+        "purpose",
+        "reader_action",
+        "project_stage",
+        "formal_design"
+      ]
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "project_documentation_reviewer_input_v1"
+    },
+    "review_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "change_scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "goal",
+        "change_scope"
+      ]
+    },
+    "candidate_documents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate_document"
+      },
+      "minItems": 1
+    },
+    "context_documents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/document"
+      },
+      "minItems": 0
+    },
+    "prior_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "disposition": {
+            "enum": [
+              "open",
+              "claimed_fixed",
+              "accepted",
+              "rejected"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "finding_id",
+          "disposition",
+          "body"
+        ]
+      },
+      "minItems": 0
+    },
+    "required_check_ids": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "const": "reader_task_and_stage"
+        },
+        {
+          "const": "problem_scope_and_outcome"
+        },
+        {
+          "const": "business_meaning_and_evidence"
+        },
+        {
+          "const": "solution_reasoning_and_tradeoffs"
+        },
+        {
+          "const": "behavior_flow_and_handoff"
+        },
+        {
+          "const": "technical_and_cross_document_coherence"
+        },
+        {
+          "const": "project_adaptation_and_actual_state"
+        },
+        {
+          "const": "completion_failure_and_next_action"
+        },
+        {
+          "const": "prose_and_meaning_preservation"
+        }
+      ],
+      "items": false,
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "review_request",
+    "candidate_documents",
+    "context_documents",
+    "prior_findings",
+    "required_check_ids"
+  ]
+}

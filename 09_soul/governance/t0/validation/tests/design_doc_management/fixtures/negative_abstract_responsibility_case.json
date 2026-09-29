@@ -1,0 +1,10 @@
+{
+  "case_id": "negative_abstract_responsibility_case_v1",
+  "case_kind": "negative",
+  "module_id": "design_contract_reviewer",
+  "intended_result": "设计用户按报告引用下载PDF的有界能力，使下一层可以实现主要功能；不在本步实现或部署。",
+  "context": "报表服务负责让已登录用户下载其有权读取的既有报告。权限服务判断对该报告的读取权；报告库按报告引用提供准确正文；PDF渲染器接受正文并返回PDF字节。这些是本测试明确给定的既有依赖。导出能力不修改报告正文、权限或其他报告。内部缓存、PDF库和类组织由实现者选择。本测试仅评审设计，不要求当前具备可运行的服务。",
+  "candidate_markdown": "---\ntitle: 报告 PDF 导出\nlayer: T2\nowned_system_object: 报告导出请求与PDF结果\ncanonical_owner: designDoc/report_pdf_export.md\n---\n\n# 报告 PDF 导出\n\n## 0. Intent Capsule\n\n```yaml\nlayer: T2\n```\n\n本能力服务报表阅读者按报告引用下载 PDF 的请求，由报表服务负责人维护设计。\n\n## 1. Primary System Flow\n\n```mermaid\nflowchart LR\n    A[阅读者] --> B[导出管理]\n    B --> C[访问边界]\n    C --> D[报告维护]\n    D --> E[交付协调]\n```\n\n## 2. User Intent\n\n阅读者希望下载当前选定报告的PDF，便于离线阅读，且只取得有权读取的报告。\n\n## 3. Reader Gain\n\n实现者能够理解导出管理、访问治理、报告维护与交付协调的职责分工。\n\n## 4. Capability and Operation\n\n导出服务负责导出可用性，权限服务负责访问边界，报告库负责报告维护，PDF渲染器负责格式能力。各方按职责支持报表服务的目标。\n\n## 5. 功能取舍\n\n各模块保持独立，通过适用交接协同完成请求。具体处理与交付方式由后续工程决定，本层保持合理边界。\n\n## 6. Public Interface and Effects\n\n阅读者提供用户上下文和报告引用。导出服务协调依赖，为阅读者提供导出支持。其他部分保持各自职责，交付满足报表服务的要求。\n\n## 7. Completion, Failure, and Recovery\n\n职责范围内的工作完成即结束。权限拒绝、报告不存在或渲染失败时，各相关主体在各自范围内处理，并交回对应负责人。\n\n## 8. Dependencies and Verification\n\n依赖报表服务提供的权限服务、报告库和PDF渲染器。使用允许读取、拒绝读取、报告不存在及渲染失败的输入，分别核对返回结果和是否交付PDF。现阶段交付设计，实际实现与部署另行完成。\n\n## 9. References\n\n本次提供的报表服务父级约定是功能和依赖依据。\n",
+  "expected_verdict": "non_pass",
+  "expected_review_focus": "具体处理和交付仍可被解释为不同功能；应报告boundary_coherence或implementability_without_redesign，不以章节完整为通过。"
+}

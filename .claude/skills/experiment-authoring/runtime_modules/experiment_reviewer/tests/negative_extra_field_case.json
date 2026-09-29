@@ -1,0 +1,7 @@
+{
+  "case_id": "experiment_reviewer_negative_extra_field_case_v1",
+  "case_kind": "negative",
+  "module_id": "experiment_reviewer",
+  "mutation": "Add unexpected legacy_judgment to the valid output fixture.",
+  "expected_disposition": "schema_rejected"
+}

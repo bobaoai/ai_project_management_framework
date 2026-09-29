@@ -100,6 +100,31 @@ def test_each_design_layer_uses_one_code_owned_required_section_contract(
     assert "design_optional_review_completion_section" not in result.validator_ids
 
 
+@pytest.mark.parametrize("fence", ["```", "~~~", "````"])
+def test_example_headings_inside_code_fences_are_not_document_sections(fence: str):
+    payload = _candidate("t0").replace(
+        b"Complete meaning for Authority.",
+        ("Complete meaning for Authority.\n\n" + fence + "md\n## 99. Example\n" + fence).encode(),
+    )
+    result = contract.validate_artifact(payload, layer="t0")
+    assert "Example" not in result.headings
+
+
+def test_fenced_example_cannot_supply_all_required_headings():
+    payload = b"````md\n" + _candidate("t0") + b"````\n"
+    with pytest.raises(contract.DesignArtifactContractError, match="no numbered"):
+        contract.validate_artifact(payload, layer="t0")
+
+
+def test_optional_subsection_examples_do_not_change_required_subsection_sequence():
+    payload = _candidate_with_review_completion("t0").replace(
+        "Complete 确定性检查.".encode(),
+        "Complete 确定性检查.\n\n```md\n### 99.1 示例\n```".encode(),
+    )
+    result = contract.validate_artifact(payload, layer="t0")
+    assert "design_optional_review_completion_section" in result.validator_ids
+
+
 @pytest.mark.parametrize("layer", ["charter", "t0", "t1", "t2"])
 def test_missing_protected_heading_is_rejected(layer: str) -> None:
     payload = _candidate(layer)
@@ -117,6 +142,68 @@ def test_missing_protected_heading_is_rejected(layer: str) -> None:
         contract.validate_artifact(payload, layer=layer)
 
     assert caught.value.code == "DESIGN_REPRESENTATION_INCOMPLETE"
+
+
+@pytest.mark.parametrize("layer", ["charter", "t0", "t1", "t2"])
+def test_layer_in_frontmatter_allows_a_prose_capsule(layer: str) -> None:
+    value = contract.load_contract()["layers"][layer]["layer_value"]
+    payload = _replace_once(
+        _candidate(layer),
+        f"```yaml\nlayer: {value}\nstatus: candidate\n```",
+        "说明本设计的目标、范围与输入输出。",
+    )
+    result = contract.validate_artifact(payload, layer=layer)
+    assert result.layer == layer
+
+
+def test_capsule_layer_remains_sufficient_without_frontmatter() -> None:
+    payload = _candidate("t0").removeprefix(b"---\nlayer: T0\n---\n\n")
+    assert contract.validate_artifact(payload, layer="t0").layer == "t0"
+
+
+def test_empty_frontmatter_can_use_capsule_layer() -> None:
+    payload = _candidate("t0").replace(b"layer: T0\n", b"", 1)
+    assert contract.validate_artifact(payload, layer="t0").layer == "t0"
+
+
+@pytest.mark.parametrize("value", ['"T0"', "'T0'"])
+def test_quoted_layer_declarations_are_supported(value: str) -> None:
+    payload = _candidate("t0").replace(b"layer: T0", f"layer: {value}".encode())
+    assert contract.validate_artifact(payload, layer="t0").layer == "t0"
+
+
+@pytest.mark.parametrize("location", ["frontmatter", "capsule"])
+def test_conflicting_layer_declaration_is_rejected(location: str) -> None:
+    payload = _candidate("t0")
+    if location == "frontmatter":
+        payload = payload.replace(b"layer: T0", b"layer: T1", 1)
+    else:
+        payload = _replace_once(payload, "```yaml\nlayer: T0", "```yaml\nlayer: T1")
+    with pytest.raises(contract.DesignArtifactContractError, match="conflict"):
+        contract.validate_artifact(payload, layer="t0")
+
+
+@pytest.mark.parametrize("location", ["frontmatter", "capsule"])
+def test_repeated_layer_in_one_location_is_rejected(location: str) -> None:
+    payload = _candidate("t0")
+    if location == "frontmatter":
+        payload = payload.replace(b"layer: T0", b"layer: T0\nlayer: T0", 1)
+    else:
+        payload = _replace_once(payload, "```yaml\nlayer: T0", "```yaml\nlayer: T0\nlayer: T0")
+    with pytest.raises(contract.DesignArtifactContractError, match="repeated"):
+        contract.validate_artifact(payload, layer="t0")
+
+
+def test_missing_layer_is_rejected() -> None:
+    payload = _candidate("t0").replace(b"layer: T0\n", b"")
+    with pytest.raises(contract.DesignArtifactContractError, match="declaration is missing"):
+        contract.validate_artifact(payload, layer="t0")
+
+
+def test_unclosed_frontmatter_is_rejected() -> None:
+    payload = _candidate("t0").replace(b"---\n\n# Candidate", b"\n# Candidate", 1)
+    with pytest.raises(contract.DesignArtifactContractError, match="frontmatter is not closed"):
+        contract.validate_artifact(payload, layer="t0")
 
 
 def test_protected_heading_order_is_rejected() -> None:
@@ -240,6 +327,14 @@ def test_design_reviewer_prompt_contains_exact_projected_checklist() -> None:
     projected = prompt.split(start, 1)[1].split(end, 1)[0]
 
     assert projected == contract.render_reviewer_checklist()
+
+
+def test_code_checklist_matches_the_ddm_authority_table() -> None:
+    source = (REPO_ROOT / "09_soul/governance/t0/the_design_doc_management.md").read_bytes()
+    table = source.split(b"<!-- design-contract-review-checklist:start -->", 1)[1].split(
+        b"<!-- design-contract-review-checklist:end -->", 1
+    )[0]
+    assert contract.render_reviewer_checklist().strip() == table.strip()
 
 
 def test_design_authoring_skill_does_not_duplicate_reviewer_checklist() -> None:

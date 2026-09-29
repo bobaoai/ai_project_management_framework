@@ -1,0 +1,7 @@
+{
+  "case_id": "project_documentation_reviewer_schema_drift_case_v1",
+  "case_kind": "schema_drift",
+  "module_id": "project_documentation_reviewer",
+  "mutation": "Replace a registered check_id with an unknown identifier.",
+  "expected_disposition": "schema_rejected"
+}

@@ -10,6 +10,7 @@
     ".agents/skills/engineering-runtime-registration",
     ".agents/skills/engineering-skill-authoring",
     ".agents/skills/governance-contract-audit",
+    ".agents/skills/paseo-orchestrator",
     ".agents/skills/the-skill-management",
     ".claude/skills/agent-runtime-release-registration",
     ".claude/skills/agent-the-contract-audit",
@@ -20,6 +21,7 @@
     ".claude/skills/engineering-runtime-registration",
     ".claude/skills/engineering-skill-authoring",
     ".claude/skills/governance-contract-audit",
+    ".claude/skills/paseo-orchestrator",
     ".claude/skills/the-skill-management"
   ],
   "instruction_resources": [
@@ -65,7 +67,7 @@
         "start": "<!-- universal-review-style:start -->",
         "end_exclusive": "<!-- universal-review-style:end -->"
       },
-      "sha256": "a78902c547af5e36a7392cfbf0736768d25fb2863ac8e94efd89a27c55620720"
+      "sha256": "f286ef6a3f2a01455a06ffd7a82c1628d1d308b6aee4c4315b443ef67bfbe625"
     },
     {
       "resource_id": "t0:reviewer_prompt_review_checklist",
@@ -76,7 +78,18 @@
         "start": "<!-- reviewer-prompt-review-checklist:start -->",
         "end_exclusive": "<!-- reviewer-prompt-review-checklist:end -->"
       },
-      "sha256": "fbb77d89b51495445a7882563979bb91806bbbd34e6ef33da77b9b05a61cfe1b"
+      "sha256": "c23613f9dfb7e7942cf6c5542607428d9e364e0903870fe2180c30f534a9a8e0"
+    },
+    {
+      "resource_id": "t0:design_layer_semantics",
+      "parent_dependency_id": "the_design_doc_management",
+      "source": "09_soul/governance/t0/the_design_doc_management.md",
+      "selector": {
+        "kind": "marker_range",
+        "start": "<!-- design-layer-semantics:start -->",
+        "end_exclusive": "<!-- design-layer-semantics:end -->"
+      },
+      "sha256": "01719d22805b88401529a52f867e15e7a19282821d4f0512adebfc9817c61ecf"
     },
     {
       "resource_id": "t0:design_contract_review_checklist",
@@ -87,7 +100,18 @@
         "start": null,
         "end_exclusive": null
       },
-      "sha256": "64f721622cc3715516d94f8d740a13561704397557d9756ca88230a186ee56ca"
+      "sha256": "1ae3b53ff4a6767b88c2fed56f7eb3846cf1f21f33b4817fe95cc593d202809d"
+    },
+    {
+      "resource_id": "t0:skill_authority_input_guard",
+      "parent_dependency_id": "the_skill_management",
+      "source": "09_soul/governance/t0/the_skill_management.md",
+      "selector": {
+        "kind": "marker_range",
+        "start": "<!-- skill-authority-input-guard:start -->",
+        "end_exclusive": "<!-- skill-authority-input-guard:end -->"
+      },
+      "sha256": "6fc33461de57721fa19a2dac237a5336b2118267291bdde412aadfd5a14e0494"
     },
     {
       "resource_id": "t0:skill_candidate_review_checklist",
@@ -98,7 +122,18 @@
         "start": null,
         "end_exclusive": null
       },
-      "sha256": "420052eb1b03c20409a115e3f0429c037306600e517b4acf41a656ad2d91c336"
+      "sha256": "686f48f083c658e83e526e7e36bd3aaf40a22883ce54f6b2a16c08c025268e42"
+    },
+    {
+      "resource_id": "t0:skill_author_self_check",
+      "parent_dependency_id": "the_skill_management",
+      "source": "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.json",
+      "selector": {
+        "kind": "artifact_contract_author_self_check",
+        "start": null,
+        "end_exclusive": null
+      },
+      "sha256": "764a33139c1a9bf6dd3bfa2d96eb526b8489b49bddee990655d21dc546df6942"
     },
     {
       "resource_id": "t0:system_change_plan_review_checklist",
@@ -109,7 +144,18 @@
         "start": "<!-- system-change-plan-review-checklist:start -->",
         "end_exclusive": "<!-- system-change-plan-review-checklist:end -->"
       },
-      "sha256": "42c269d119a8658905194132e9716264634deb8adaffc1073b3edfcad7714e56"
+      "sha256": "1923e4621ced3c9a17e649f2aac9613d212ae89fab2bf05c7cd7f3dab9f899b5"
+    },
+    {
+      "resource_id": "t0:engineering_authority_input_guard",
+      "parent_dependency_id": "the_software_delivery",
+      "source": "09_soul/governance/t0/the_software_delivery.md",
+      "selector": {
+        "kind": "marker_range",
+        "start": "<!-- engineering-authority-input-guard:start -->",
+        "end_exclusive": "<!-- engineering-authority-input-guard:end -->"
+      },
+      "sha256": "3cbe57506b6b4a728ebf826e101b793de29238ffbe337da1477d11bffb637dce"
     },
     {
       "resource_id": "t0:engineering_change_review_checklist",
@@ -120,13 +166,38 @@
         "start": "<!-- engineering-change-review-checklist:start -->",
         "end_exclusive": "<!-- engineering-change-review-checklist:end -->"
       },
-      "sha256": "c92543fc20ee012ba1865ede9833f77ed05df803d330e7d870cb32de009ffcc2"
+      "sha256": "8d3dc5d56cf1f161b11aadbbd2994c90a18a974b308923bfa86b7e522d49fd70"
+    },
+    {
+      "resource_id": "t0:experiment_review_checklist",
+      "parent_dependency_id": "the_agent_experiment_design",
+      "source": "09_soul/governance/t0/the_agent_experiment_design.md",
+      "selector": {
+        "kind": "marker_range",
+        "start": "<!-- experiment-review-checklist:start -->",
+        "end_exclusive": "<!-- experiment-review-checklist:end -->"
+      },
+      "sha256": "b1f57d0362fae54d0d2e75227fa52592ee5e126d2d65c5f2836effe9258bc322"
+    },
+    {
+      "resource_id": "t0:project_documentation_review_checklist",
+      "parent_dependency_id": "the_project_documentation",
+      "source": "09_soul/governance/t0/the_project_documentation.md",
+      "selector": {
+        "kind": "marker_range",
+        "start": "<!-- project-documentation-review-checklist:start -->",
+        "end_exclusive": "<!-- project-documentation-review-checklist:end -->"
+      },
+      "sha256": "2082241844edfa2aca5676e5d90b2a8ae23cbc4a2c22cdfbc2e239cbf9213c98"
     }
   ],
   "portable_governance_skills": [
     {
       "skill_id": "the-task-routing",
-      "required_t0_layer_ids": ["the_task_routing", "the_system_change_governance"],
+      "required_t0_layer_ids": [
+        "the_task_routing",
+        "the_system_change_governance"
+      ],
       "required_soul_resource_ids": [],
       "primary_agent_entry_role": "routing",
       "primary_agent_entry_subject": "task_request",
@@ -139,19 +210,33 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-task-routing/SKILL.md",
-          "sha256": "8fa67f8391cc3a9a6052b6b85a645daa6e81b5d35855ea5040039bd826e72528",
+          "sha256": "22a162f38d7cc5b99f2859e9a74fd3ff7ae503059186747cecbdb3664afff81a",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-task-routing/SKILL.md"},
-            {"host_id": "codex", "target": ".agents/skills/the-task-routing/SKILL.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-task-routing/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/the-task-routing/SKILL.md"
+            }
           ]
         }
       ]
     },
     {
       "skill_id": "the-system-change",
-      "required_t0_layer_ids": ["the_review_contract", "the_system_change_governance", "the_task_routing"],
-      "required_soul_resource_ids": ["soul:communication", "soul:bestpractice_skill_writing"],
+      "required_t0_layer_ids": [
+        "the_review_contract",
+        "the_skill_management",
+        "the_system_change_governance",
+        "the_task_routing"
+      ],
+      "required_soul_resource_ids": [
+        "soul:communication",
+        "soul:bestpractice_skill_writing"
+      ],
       "primary_agent_entry_role": "authoring",
       "primary_agent_entry_subject": "system_change_request",
       "accountable_owner_ref": "designDoc/the_system_change_governance.md",
@@ -163,27 +248,47 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-system-change/SKILL.md",
-          "sha256": "cfc348f06ac1f2d06b35df5ac4f211d2da1e67d89ce33ca4ae6887534d57dd93",
-          "embedded_resource_ids": ["soul:communication_authoring_prose","soul:bestpractice_ai_facing_writing"],
+          "sha256": "a98973930a2d6f11d41c399d98904734b0fd04b273b890eb368f8fd8dabbe754",
+          "embedded_resource_ids": [
+            "soul:communication_authoring_prose",
+            "soul:bestpractice_ai_facing_writing",
+            "t0:skill_author_self_check",
+            "t0:system_change_plan_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/SKILL.md"},
-            {"host_id": "codex", "target": ".agents/skills/the-system-change/SKILL.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/the-system-change/SKILL.md"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-system-change/runtime_modules/system_change_plan_reviewer/module_registration.json",
-          "sha256": "f04feadeca3d0ebc46bca3e7046b46c0c483dee1fcfc53f04b4110b4bf180f50",
+          "sha256": "8247156e96724f9a7e93e96fbc065bfe077575e11965b0b0d1f123c51b54d6f1",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/module_registration.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/module_registration.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-system-change/runtime_modules/system_change_plan_reviewer/prompt.md",
-          "sha256": "fb4026b0f9b01a968c834b35c2fbf6b4738ece97ea45a404c101e6d07d6bc0d7",
-          "embedded_resource_ids": ["t0:review_contract_universal_review_style", "t0:system_change_plan_review_checklist"],
+          "sha256": "d44d6fc6e8bb221f597f0ab45680774b360795a9036d6ee34d728a62ad0a45c4",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style",
+            "t0:system_change_plan_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/prompt.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/prompt.md"
+            }
           ]
         },
         {
@@ -191,15 +296,21 @@
           "sha256": "5b9dbf3a0e40b32de0f6c720f3111ad696cda5e7e019e699a58de7c1750c15bc",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/schemas/input.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/schemas/input.schema.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-system-change/runtime_modules/system_change_plan_reviewer/schemas/output.schema.json",
-          "sha256": "82a4eb683e9a2ff0a6cf22f4968f3053bcfb75eaaebfb422655509bc99bbadba",
+          "sha256": "cabd1c90dfba5ff9a8ee71f6d90ef5f7656cbdafb65b7a7985c69be5df78d412",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/schemas/output.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/schemas/output.schema.json"
+            }
           ]
         },
         {
@@ -207,7 +318,10 @@
           "sha256": "b95f32fdc87ec79782310da14d0af4ee3721ea73e0e75d269647c15223fadf54",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/tests/positive_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/tests/positive_case.json"
+            }
           ]
         },
         {
@@ -215,7 +329,10 @@
           "sha256": "7436916ed93616c41d8b3f5d07a077c18f0417dfd7d0e79b6766caf20d938d2b",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/tests/negative_extra_field_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/tests/negative_extra_field_case.json"
+            }
           ]
         },
         {
@@ -223,17 +340,31 @@
           "sha256": "4d2d4492768bbbd18ad0157a6af18d127c70e6fcda628f318dd235634c740ed0",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/tests/schema_drift_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-system-change/runtime_modules/system_change_plan_reviewer/tests/schema_drift_case.json"
+            }
           ]
         }
       ]
     },
     {
       "skill_id": "the-design-authoring",
-      "required_t0_layer_ids": ["the_design_doc_management", "the_review_contract", "the_system_change_governance"],
-      "required_soul_resource_ids": ["soul:communication", "soul:bestpractice_skill_writing"],
+      "required_t0_layer_ids": [
+        "the_design_doc_management",
+        "the_identifier_and_reference_semantics",
+        "the_project_documentation",
+        "the_review_contract",
+        "the_skill_management",
+        "the_system_change_governance",
+        "the_timestamp_semantic"
+      ],
+      "required_soul_resource_ids": [
+        "soul:communication",
+        "soul:bestpractice_skill_writing"
+      ],
       "primary_agent_entry_role": "authoring",
-      "primary_agent_entry_subject": "system_change_plan_step",
+      "primary_agent_entry_subject": "design_intent",
       "accountable_owner_ref": "designDoc/the_design_doc_management.md",
       "lifecycle_state": "developing",
       "managed_target_ref": null,
@@ -243,27 +374,47 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-design-authoring/SKILL.md",
-          "sha256": "57f0268d900139cd37e42c89a4afcdfb00175f715cf4a9c9eb432460d7d4cb95",
-          "embedded_resource_ids": ["soul:bestpractice_ai_facing_writing"],
+          "sha256": "70c5e95886a93a64e080591714d0b05182bf9126393bea250c8f3af44cd7eb31",
+          "embedded_resource_ids": [
+            "soul:bestpractice_ai_facing_writing",
+            "t0:design_layer_semantics",
+            "t0:skill_author_self_check",
+            "t0:design_contract_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/SKILL.md"},
-            {"host_id": "codex", "target": ".agents/skills/the-design-authoring/SKILL.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/the-design-authoring/SKILL.md"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-design-authoring/runtime_modules/design_contract_reviewer/module_registration.json",
-          "sha256": "21256a9376567243e95e77a905eda3618411e99e3aeeb99ce14b476c00890af2",
+          "sha256": "9dc95a56ec58fa998f701c6e0a7f48af2a6b5728574f1590248ac50e73d456fa",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/module_registration.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/module_registration.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-design-authoring/runtime_modules/design_contract_reviewer/prompt.md",
-          "sha256": "465a879cf02f9e57dfa606adb279119392bd820e3e406e07403b10a68d96a4ff",
-          "embedded_resource_ids": ["t0:review_contract_universal_review_style", "t0:design_contract_review_checklist"],
+          "sha256": "9adf43a8330e3a615e772b5c55e0d8b37759053d93b0e7ae6a05b24e82200012",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style",
+            "t0:design_contract_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/prompt.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/prompt.md"
+            }
           ]
         },
         {
@@ -271,15 +422,21 @@
           "sha256": "3ad43e648e616afb04d10fd7abbc5c7c851c975ff9413a75ddcbc42baed444f4",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/schemas/input.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/schemas/input.schema.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-design-authoring/runtime_modules/design_contract_reviewer/schemas/output.schema.json",
-          "sha256": "90272a1017a092629935a5e9b2adbb1acf6e5b325a41d8048246d769e6f0db63",
+          "sha256": "8a5c9efe086144eb0de98b36466184efa0662e63c2b0fb78b690f1bbd9504323",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/schemas/output.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/schemas/output.schema.json"
+            }
           ]
         },
         {
@@ -287,7 +444,10 @@
           "sha256": "8fd62cae01431dedc3159ec826eb180a1850fd05ccf1e039ef0e00297e916d74",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/positive_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/positive_case.json"
+            }
           ]
         },
         {
@@ -295,7 +455,10 @@
           "sha256": "393f8ff8b573968f253c9ab0e99c96049f3b304092363e5dec0fc2394803b70a",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/negative_extra_field_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/negative_extra_field_case.json"
+            }
           ]
         },
         {
@@ -303,7 +466,10 @@
           "sha256": "1f5278f854341ca429e4deb39a8ebffcc309aafafd1956913631216e4230ee3b",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/positive_charter_correction_role_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/positive_charter_correction_role_case.json"
+            }
           ]
         },
         {
@@ -311,7 +477,10 @@
           "sha256": "fd1e3ff306dcdce69bebb955c3a94ef4dfe44a5f56c074ca4fddc0bee61e2995",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/negative_evidentiary_correction_role_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/negative_evidentiary_correction_role_case.json"
+            }
           ]
         },
         {
@@ -319,7 +488,10 @@
           "sha256": "8ec1d3cac314f5ac7074359cb8e00791f7281be7259a24aa8c09c302839ce7bc",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/negative_missing_prior_decision_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/negative_missing_prior_decision_case.json"
+            }
           ]
         },
         {
@@ -327,17 +499,31 @@
           "sha256": "ca0ee2434dcae21eaef142e2f49030188769e9b7af492661fcab337ddd7068cd",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/schema_drift_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-design-authoring/runtime_modules/design_contract_reviewer/tests/schema_drift_case.json"
+            }
           ]
         }
       ]
     },
     {
       "skill_id": "the-skill-authoring",
-      "required_t0_layer_ids": ["the_review_contract", "the_skill_management", "the_system_change_governance"],
-      "required_soul_resource_ids": ["soul:axiom_a14_prompt_boundary_hygiene_2026", "soul:axiom_a21_skill_agent_boundary_2026", "soul:communication", "soul:bestpractice_skill_writing"],
+      "required_t0_layer_ids": [
+        "the_identifier_and_reference_semantics",
+        "the_review_contract",
+        "the_skill_management",
+        "the_system_change_governance",
+        "the_timestamp_semantic"
+      ],
+      "required_soul_resource_ids": [
+        "soul:axiom_a14_prompt_boundary_hygiene_2026",
+        "soul:axiom_a21_skill_agent_boundary_2026",
+        "soul:communication",
+        "soul:bestpractice_skill_writing"
+      ],
       "primary_agent_entry_role": "authoring",
-      "primary_agent_entry_subject": "system_change_plan_step",
+      "primary_agent_entry_subject": "skill_definition",
       "accountable_owner_ref": "designDoc/the_skill_management.md",
       "lifecycle_state": "developing",
       "managed_target_ref": null,
@@ -347,27 +533,47 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-skill-authoring/SKILL.md",
-          "sha256": "496b7b61d464552182feca7b956a298a0cda1f77412fc848cea3a52d175e3650",
-          "embedded_resource_ids": ["soul:bestpractice_ai_facing_writing"],
+          "sha256": "38503acf7e392c949f7127e5f0022efe81fe43556fa91677cb643ddf6ab3d4b3",
+          "embedded_resource_ids": [
+            "soul:bestpractice_ai_facing_writing",
+            "t0:skill_authority_input_guard",
+            "t0:skill_author_self_check",
+            "t0:skill_candidate_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/SKILL.md"},
-            {"host_id": "codex", "target": ".agents/skills/the-skill-authoring/SKILL.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/the-skill-authoring/SKILL.md"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/module_registration.json",
-          "sha256": "73059f9c7c6cdc49b03883409bd9d529d362d3982d519a575d65c71a7e0ce7c8",
+          "sha256": "e2d063b6117bf50d62fc3ffb41dbfb95572ee011b6928d60f406c545ff2322b8",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/module_registration.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/module_registration.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/prompt.md",
-          "sha256": "3bde78388beb4254cbfe7fc5df3f169436ce568d8734581ebcf1da49370261af",
-          "embedded_resource_ids": ["t0:review_contract_universal_review_style", "t0:skill_candidate_review_checklist"],
+          "sha256": "d827df2873a2a3330d607e43e81384a87d92d8c6a8ec081c5cdb2483a3f693b8",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style",
+            "t0:skill_candidate_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/prompt.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/prompt.md"
+            }
           ]
         },
         {
@@ -375,15 +581,21 @@
           "sha256": "a6f7517c29b7fea3dad881ee97c80ca265c2f3705982ee52766450729f66a6f7",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/schemas/input.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/schemas/input.schema.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/schemas/output.schema.json",
-          "sha256": "bd9921db040765ebc5c2067c4832b5a356a7ed5234b897358ec86c334bb6da5f",
+          "sha256": "3aab21a14e5d6437526eabb9224547f9111af17d323b13a329b5618bfd88b550",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/schemas/output.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/schemas/output.schema.json"
+            }
           ]
         },
         {
@@ -391,7 +603,10 @@
           "sha256": "cfe3d197980ea3fdcbb069843877889fbdcd40a1b065133f2e7b5aaba0d81d0c",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/tests/positive_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/tests/positive_case.json"
+            }
           ]
         },
         {
@@ -399,7 +614,10 @@
           "sha256": "a8be5103c93b4f9271cc278177cb6c5729224a2e4fcfa8e08bace74c3a78a176",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/tests/negative_extra_field_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/tests/negative_extra_field_case.json"
+            }
           ]
         },
         {
@@ -407,17 +625,26 @@
           "sha256": "1b9408dd524ebeff076170e4682f1406e50cce1b38c57005334dbfda75105b30",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/tests/schema_drift_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/tests/schema_drift_case.json"
+            }
           ]
         }
       ]
     },
     {
       "skill_id": "the-review-authoring",
-      "required_t0_layer_ids": ["the_review_contract", "the_skill_management", "the_system_change_governance"],
-      "required_soul_resource_ids": ["soul:bestpractice_skill_writing"],
+      "required_t0_layer_ids": [
+        "the_review_contract",
+        "the_skill_management",
+        "the_system_change_governance"
+      ],
+      "required_soul_resource_ids": [
+        "soul:bestpractice_skill_writing"
+      ],
       "primary_agent_entry_role": "authoring",
-      "primary_agent_entry_subject": "system_change_plan_step",
+      "primary_agent_entry_subject": "reviewer_prompt_source",
       "accountable_owner_ref": "designDoc/the_review_contract.md",
       "lifecycle_state": "developing",
       "managed_target_ref": null,
@@ -427,27 +654,46 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-review-authoring/SKILL.md",
-          "sha256": "9e2936d4e2cf4b5fb433b1696ebb13540c3d00dc6c305c986baac14199586d36",
-          "embedded_resource_ids": ["soul:bestpractice_ai_facing_writing"],
+          "sha256": "cc5f082a421654746dbfd499f4f4ef3f6e5f37a0ba22effb47a5c57dbecc4947",
+          "embedded_resource_ids": [
+            "soul:bestpractice_ai_facing_writing",
+            "t0:skill_author_self_check",
+            "t0:reviewer_prompt_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/SKILL.md"},
-            {"host_id": "codex", "target": ".agents/skills/the-review-authoring/SKILL.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/the-review-authoring/SKILL.md"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-review-authoring/runtime_modules/reviewer_reviewer/module_registration.json",
-          "sha256": "1e4c3a277f6e61abb2010761cf817e85fdf5903d3fdee46700a5b502f287ca18",
+          "sha256": "b3071fa1cc0dc79039cdb30e3839197e11117c7817fa34ad9046b264e788a5ce",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/module_registration.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/module_registration.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-review-authoring/runtime_modules/reviewer_reviewer/prompt.md",
-          "sha256": "f91f21d8f6478c016f2f28371fbfdaa9ba1fb9df7b3e723446811fa06526db9a",
-          "embedded_resource_ids": ["t0:review_contract_universal_review_style", "t0:reviewer_prompt_review_checklist"],
+          "sha256": "aff5f041d7d203012b6383d33f489f129272b93c79e653caac83b5306ed1f001",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style",
+            "t0:reviewer_prompt_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/prompt.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/prompt.md"
+            }
           ]
         },
         {
@@ -455,15 +701,21 @@
           "sha256": "8db62caf9341dae7e3b0161a7652c58b1c0e38d35a277b4b26037766677c19b4",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/schemas/input.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/schemas/input.schema.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/the-review-authoring/runtime_modules/reviewer_reviewer/schemas/output.schema.json",
-          "sha256": "6fd7ad7857d25937c3cdb1ac2e4d21d48ee9526e8b35c6f7d7fbaae0566b2ab3",
+          "sha256": "ba936651a7fa2360fcc02a7d44950622cecade8367ece02ec3661fa5d49fed5b",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/schemas/output.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/schemas/output.schema.json"
+            }
           ]
         },
         {
@@ -471,7 +723,10 @@
           "sha256": "18547b8d779ddeaef2c571dedc964c8131e1f5a57767c6bf9d1cf20efbaed609",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/tests/positive_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/tests/positive_case.json"
+            }
           ]
         },
         {
@@ -479,7 +734,10 @@
           "sha256": "5296e6cb9b987c70351469ad13c65ecaf19593e14fe24b6213ad54ace26a7868",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/tests/negative_extra_field_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/tests/negative_extra_field_case.json"
+            }
           ]
         },
         {
@@ -487,17 +745,29 @@
           "sha256": "1c32c3c5f907e95bf08483e67804323640218ac397b93a64debb13cfbbb9a9fa",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/tests/schema_drift_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/the-review-authoring/runtime_modules/reviewer_reviewer/tests/schema_drift_case.json"
+            }
           ]
         }
       ]
     },
     {
       "skill_id": "engineering-code-design",
-      "required_t0_layer_ids": ["the_design_doc_management", "the_software_delivery", "the_system_change_governance"],
-      "required_soul_resource_ids": ["soul:communication", "soul:bestpractice_skill_writing"],
+      "required_t0_layer_ids": [
+        "the_design_doc_management",
+        "the_identifier_and_reference_semantics",
+        "the_skill_management",
+        "the_software_delivery",
+        "the_system_change_governance",
+        "the_timestamp_semantic"
+      ],
+      "required_soul_resource_ids": [
+        "soul:bestpractice_skill_writing"
+      ],
       "primary_agent_entry_role": "authoring",
-      "primary_agent_entry_subject": "system_change_plan_step",
+      "primary_agent_entry_subject": "engineering_change_request",
       "accountable_owner_ref": "designDoc/the_software_delivery.md",
       "lifecycle_state": "developing",
       "managed_target_ref": null,
@@ -507,19 +777,42 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/engineering-code-design/SKILL.md",
-          "sha256": "9bd9a3908e80bd436a05fca7b9a9c39fdf243fa31ddf8d51a8eef7edb4f0069d",
-          "embedded_resource_ids": ["soul:communication_authoring_prose","soul:bestpractice_ai_facing_writing"],
+          "sha256": "cfa0b8d893e5971fa90ba9f4834dfb3991f73ca4671ac3d55b9f3f3620d54a49",
+          "embedded_resource_ids": [
+            "soul:bestpractice_ai_facing_writing",
+            "t0:engineering_authority_input_guard",
+            "t0:skill_author_self_check",
+            "t0:engineering_change_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-code-design/SKILL.md"},
-            {"host_id": "codex", "target": ".agents/skills/engineering-code-design/SKILL.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-code-design/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/engineering-code-design/SKILL.md"
+            }
           ]
         }
       ]
     },
     {
       "skill_id": "engineering-change-review",
-      "required_t0_layer_ids": ["the_agent_runtime", "the_design_doc_management", "the_review_contract", "the_skill_management", "the_software_delivery", "the_system_change_governance", "the_timestamp_semantic"],
-      "required_soul_resource_ids": ["soul:communication"],
+      "required_t0_layer_ids": [
+        "the_agent_runtime",
+        "the_agency_platform",
+        "the_design_doc_management",
+        "the_identifier_and_reference_semantics",
+        "the_review_contract",
+        "the_skill_management",
+        "the_software_delivery",
+        "the_system_change_governance",
+        "the_timestamp_semantic"
+      ],
+      "required_soul_resource_ids": [
+        "soul:communication"
+      ],
       "primary_agent_entry_role": "review",
       "primary_agent_entry_subject": "engineering_change_candidate",
       "accountable_owner_ref": "designDoc/the_software_delivery.md",
@@ -531,43 +824,66 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/engineering-change-review/SKILL.md",
-          "sha256": "2412bc9f7442d997c6b25b70c68fe29ceeda618673e12a6e3e7a28f2cb23ade3",
-          "embedded_resource_ids": ["t0:review_contract_universal_review_style"],
+          "sha256": "aba7b595d890390975a1b626cd383d9d6de438e98f9daade9a91954f5a36d835",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/SKILL.md"},
-            {"host_id": "codex", "target": ".agents/skills/engineering-change-review/SKILL.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/engineering-change-review/SKILL.md"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/module_registration.json",
-          "sha256": "40067f2db4b31dd3b2ba8d7c7c419d9284ed7ee48ac1823c6b7891fda5ec0621",
+          "sha256": "dccca2173dd57cf2f3d49c2a27d96154a56425c24f4d02372d4fba96b1084700",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/module_registration.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/module_registration.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/prompt.md",
-          "sha256": "04eac915c795999bf0ea412711f132683791f7404e5db1167925071d9d91cd9a",
-          "embedded_resource_ids": ["t0:review_contract_universal_review_style", "t0:engineering_change_review_checklist"],
+          "sha256": "28850f7bf40324b32df7b8ebec5b1dd08640aed348cf0edde3d35875f73d4b46",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style",
+            "t0:engineering_change_review_checklist"
+          ],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/prompt.md"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/prompt.md"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/schemas/input.schema.json",
-          "sha256": "aa86be7b47f4354e9ee972190ca061061252ad9a9f63c3243a299830209bd32c",
+          "sha256": "7c9c8abf3104987dcc0c63c3bf6d541e46f2c088ec74763f68d3821df1210fe8",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/schemas/input.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/schemas/input.schema.json"
+            }
           ]
         },
         {
           "source": "09_soul/governance/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/schemas/output.schema.json",
-          "sha256": "9898fa58da5edbc25b46284e6c905995bdb3a88d839bb53b0fb3b2914fb9ebe2",
+          "sha256": "b470f406c51b63caa4fc93503a69b44e0d3916ad9049e58edf72469aeb1103ce",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/schemas/output.schema.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/schemas/output.schema.json"
+            }
           ]
         },
         {
@@ -575,7 +891,10 @@
           "sha256": "cd970e403dfc7c0b95cec65bc39592d93c759ab4d875e56100862e5539ef15e6",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/tests/positive_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/tests/positive_case.json"
+            }
           ]
         },
         {
@@ -583,7 +902,10 @@
           "sha256": "f0e4142a83171565c5eeed4e87177acff1e5675cdc1b40c54e4c27d9d0476f41",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/tests/negative_extra_field_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/tests/negative_extra_field_case.json"
+            }
           ]
         },
         {
@@ -591,7 +913,398 @@
           "sha256": "beff0dce26f38532806b641991c6ab7d9bc577f142fd09558678fdfc2bd4c353",
           "embedded_resource_ids": [],
           "projections": [
-            {"host_id": "claude", "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/tests/schema_drift_case.json"}
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/engineering-change-review/runtime_modules/engineering_change_reviewer/tests/schema_drift_case.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill_id": "experiment-authoring",
+      "required_t0_layer_ids": [
+        "the_agent_experiment_design",
+        "the_identifier_and_reference_semantics",
+        "the_review_contract",
+        "the_skill_management",
+        "the_timestamp_semantic"
+      ],
+      "required_soul_resource_ids": [
+        "soul:bestpractice_skill_writing"
+      ],
+      "primary_agent_entry_role": "authoring",
+      "primary_agent_entry_subject": "agent_experiment_design",
+      "accountable_owner_ref": "designDoc/the_agent_experiment_design.md",
+      "lifecycle_state": "developing",
+      "managed_target_ref": null,
+      "direct_entry_disposition": "active",
+      "predecessor_skill_id": null,
+      "retirement_tombstone": null,
+      "package_files": [
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/SKILL.md",
+          "sha256": "a7327a68b38d6c720d912ac5b963b74110c27303fa482fa05e4104cd14fba964",
+          "embedded_resource_ids": [
+            "soul:bestpractice_ai_facing_writing",
+            "t0:skill_author_self_check",
+            "t0:experiment_review_checklist"
+          ],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/experiment-authoring/SKILL.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/module_registration.json",
+          "sha256": "e40c6771d1014c057db7ee9d9b82c78c720bb003c7af84e1f34ef67eb2ee6ba2",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/runtime_modules/experiment_reviewer/module_registration.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/prompt.md",
+          "sha256": "fde16e2705c10f54d342c9eceb12b0dc1c43c9d5120ad881e1d63ea12fc2879c",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style",
+            "t0:experiment_review_checklist"
+          ],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/runtime_modules/experiment_reviewer/prompt.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/schemas/input.schema.json",
+          "sha256": "53294d0d190b095d14f3453139d78519f8da2218d46e8e3a90b9df378a10db56",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/runtime_modules/experiment_reviewer/schemas/input.schema.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/schemas/output.schema.json",
+          "sha256": "d0fdc54db572abe056c7e650593728395edfb8fa5591e22195b1acc1b464c229",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/runtime_modules/experiment_reviewer/schemas/output.schema.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/tests/negative_extra_field_case.json",
+          "sha256": "9c1e98c49188d7831d2ddd0e7d18825dc4de612f31dd19cadc67a74ead4285cf",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/runtime_modules/experiment_reviewer/tests/negative_extra_field_case.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/tests/positive_case.json",
+          "sha256": "8e425f0119600da67b11a758566a1a78da2bd5f65aef78053f3a6ac3b0ecb3a9",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/runtime_modules/experiment_reviewer/tests/positive_case.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/tests/schema_drift_case.json",
+          "sha256": "40f13a7bab1bc2aab3c1f46dddcb73d69988cdb093fdd7bc52748a8f161ec822",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/experiment-authoring/runtime_modules/experiment_reviewer/tests/schema_drift_case.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill_id": "project-documentation-authoring",
+      "required_t0_layer_ids": [
+        "the_design_doc_management",
+        "the_project_documentation",
+        "the_review_contract",
+        "the_skill_management"
+      ],
+      "required_soul_resource_ids": [
+        "soul:bestpractice_skill_writing"
+      ],
+      "primary_agent_entry_role": "authoring",
+      "primary_agent_entry_subject": "project_document",
+      "accountable_owner_ref": "designDoc/the_project_documentation.md",
+      "lifecycle_state": "developing",
+      "managed_target_ref": null,
+      "direct_entry_disposition": "active",
+      "predecessor_skill_id": null,
+      "retirement_tombstone": null,
+      "package_files": [
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/SKILL.md",
+          "sha256": "96a3bc6245680b3792ae5e30aedf6ddfe1959bf53bd1fe7494f41504e8e7c75b",
+          "embedded_resource_ids": [
+            "soul:bestpractice_ai_facing_writing",
+            "t0:skill_author_self_check",
+            "t0:project_documentation_review_checklist"
+          ],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/project-documentation-authoring/SKILL.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/examples/README.md",
+          "sha256": "4d9767ba1a4d3c2b0ce27a250cd8029c829d26003ef6206c4bf0fe17f0fb45f6",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/examples/README.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/examples/meta_de_project.md",
+          "sha256": "9b597cb7e7f0d2d6d6b4d5d29871b9dc3fdc2f820a5c811da7e4c1cf7b524b06",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/examples/meta_de_project.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/examples/meta_de_technical.md",
+          "sha256": "6a0a7a4e6d38e02a904b1e8aadc5ce03f66ea674c96f5416e65795aecf5681d2",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/examples/meta_de_technical.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/examples/service_handoff.md",
+          "sha256": "e11fa3ecd8d175f5d43c8e4acea54cf3d2ad1720a34df392b98ff604c61eb57d",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/examples/service_handoff.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/fixtures/project_documentation_reviewer/negative_extra_field_case.json",
+          "sha256": "2d93aa70336cdd40c59f1a1d6193d4949f14d2376bc12b228c55e8754ea8b006",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/fixtures/project_documentation_reviewer/negative_extra_field_case.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/fixtures/project_documentation_reviewer/positive_case.json",
+          "sha256": "35049b46c0743c3a8f24bf87b2897113141f2158d57426b6916c45d5567fa10c",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/fixtures/project_documentation_reviewer/positive_case.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/fixtures/project_documentation_reviewer/schema_drift_case.json",
+          "sha256": "68cdb4613cfea3240462cc8d039bed7ed48c38e8f6bbe1a3aa17aa7ad3446c48",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/fixtures/project_documentation_reviewer/schema_drift_case.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/references/reviewer_usage.md",
+          "sha256": "f1544e4ead6256a5f17c408a60cbdf71ecf2f5edd33369b60938e24655577663",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/references/reviewer_usage.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/references/source_basis.md",
+          "sha256": "9bc4bad770103b89760da2b40e034accd811e072a60539e8a869f09bb979953c",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/references/source_basis.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/review_cases.md",
+          "sha256": "05f3f099bbdddb1b97dd0bf0dc4ff81e6d62c12901628343b85a0904412181e2",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/review_cases.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/module_registration.json",
+          "sha256": "3bc6959a9f96cd7ac844481cdbb9b3fcea63901756e1fee003100a1c8b194d15",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/module_registration.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/prompt.md",
+          "sha256": "be7879d31bd102400d5eb54d8967d85eac5e336b728d14d1190aac6b6649cc6c",
+          "embedded_resource_ids": [
+            "t0:review_contract_universal_review_style",
+            "t0:project_documentation_review_checklist"
+          ],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/prompt.md"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/schemas/input.schema.json",
+          "sha256": "dfedcce9a00f2bcadfaf2ea6fbf9fb3378f5ec6bd6aeb97825163c54c3e291a9",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/schemas/input.schema.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/schemas/output.schema.json",
+          "sha256": "413a70de17f1ce646abdade198c40eda10b26deb8cd79318c1882c5563b8999f",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/schemas/output.schema.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/tests/negative_extra_field_case.json",
+          "sha256": "bf858736261fd854b29bb28b84443976f40ec1ca80c611b4af44c543af547a2c",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/tests/negative_extra_field_case.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/tests/positive_case.json",
+          "sha256": "ba5240aead98ad638c76450e435ed74d20abbddb20f8cba7356325461bc527f9",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/tests/positive_case.json"
+            }
+          ]
+        },
+        {
+          "source": "09_soul/governance/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/tests/schema_drift_case.json",
+          "sha256": "e112176758bc495b6443a59f507e31b765b33fb60ee355fefe1dc0604bcb3550",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/project-documentation-authoring/runtime_modules/project_documentation_reviewer/tests/schema_drift_case.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill_id": "agent-work-coordination",
+      "required_t0_layer_ids": [
+        "the_task_routing",
+        "the_skill_management",
+        "the_software_delivery",
+        "the_agent_runtime"
+      ],
+      "required_soul_resource_ids": [],
+      "primary_agent_entry_role": "operator",
+      "primary_agent_entry_subject": "delegated_task",
+      "accountable_owner_ref": "designDoc/the_task_routing.md",
+      "lifecycle_state": "developing",
+      "managed_target_ref": null,
+      "direct_entry_disposition": "active",
+      "predecessor_skill_id": null,
+      "retirement_tombstone": null,
+      "package_files": [
+        {
+          "source": "09_soul/governance/skills/agent-work-coordination/SKILL.md",
+          "sha256": "0280c53ffc7fd43b852b704bf223647d087268e7f5b8d4e8e273ab676b2ec9c0",
+          "embedded_resource_ids": [],
+          "projections": [
+            {
+              "host_id": "claude",
+              "target": ".claude/skills/agent-work-coordination/SKILL.md"
+            },
+            {
+              "host_id": "codex",
+              "target": ".agents/skills/agent-work-coordination/SKILL.md"
+            }
           ]
         }
       ]

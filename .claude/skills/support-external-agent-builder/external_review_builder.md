@@ -30,7 +30,7 @@ Read before building:
 - the target artifact
 - the local references that define the review contract
 
-Use domain reviewers instead of this subskill when the artifact type already has a canonical independent review gate, such as `engineering-project-review`, `research-theme-report-reviewer`, or `research-evidence-reviewer`.
+Use domain reviewers instead of this subskill when the artifact type already has a canonical independent review gate, such as `engineering-change-review`, `research-theme-report-reviewer`, or `research-evidence-reviewer`.
 
 ## Build Pattern
 

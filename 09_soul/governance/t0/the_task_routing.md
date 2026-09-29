@@ -1,6 +1,5 @@
 ---
 title: Task Routing
-status: candidate
 layer: T0
 t0_layer_id: the_task_routing
 canonical_owner: designDoc/the_task_routing.md
@@ -15,230 +14,169 @@ reader_persona:
 
 # 任务路由（Task Routing）
 
-Task Routing 只负责在已准入的逻辑主线中，判断一个请求所需的结果或决定归哪个稳定逻辑负责人，
-并形成一个 `RoutingDecision`。它不选择编写方法、Reviewer Module、模型、provider、Execution
-Profile、Runtime binding、数据库、进程或用户界面，也不授予任何产品或数据权限。
+Task Routing 帮助 Primary Agent 从用户要取得的结果找到下一步：该读哪份依据、使用哪个现有方法，
+或者先问清哪个问题。它提供 Portable T0 的意图导航；具体项目工作流和本地入口由项目自己的工作导航
+提供，项目 Charter 指明它的位置。路由本身不执行任务，也不要求先建立 Registry 或运行记录。
 
 ## 0. Intent Capsule
 
 ```yaml
 layer: T0
-t0_layer_id: the_task_routing
-status: candidate
-canonical_owner: designDoc/the_task_routing.md
-owned_system_object: RoutingDecision
-scope:
-  - 在已准入的逻辑主线中识别请求所需的结果或决定
-  - 选择一个已注册的逻辑主线和一个稳定逻辑负责人
-  - 定义 routed、clarification_required、no_matching_route、request_contract_invalid 和 routing_registry_unavailable 的边界
-  - 把每项受治理的系统修改统一路由到 system_change_intake
-non_goals:
-  - 授予产品、数据、工具、网络、文件系统或执行权限
-  - 判断系统修改会影响哪些层、文件、Skill、代码、Runtime 或 Release
-  - 编写、审核或执行 SystemChangePlan
-  - 选择 Design、Skill、Code、Runtime 或 Release 的编写与审核方法
-  - 选择 Workflow、Module、模型、provider、Execution Profile、adapter、进程或界面
-  - 拥有领域工作流、执行、审核、准入、发布、恢复或产物生命周期
-inputs:
-  - exact request envelope
-  - exact admitted Task Routing Registry release
-outputs:
-  - one immutable RoutingDecision or one bounded routing outcome
-truth_surfaces:
-  - designDoc/the_task_routing.md
-  - logical:task_routing_registry
-runtime_triggers:
-  - 需要解析 logical owner 的新请求
-  - 绑定新请求或新 Registry release 的显式重新路由请求
-downstream_consumers:
-  - System Change Governance
-  - 已选中的产品、领域、Design、Skill 或工程负责人
-  - downstream workflow and execution control surfaces
-open_decisions:
-  - T1/T2 的 Registry schema、分类器、持久化、回放和运行检查设计
-review_gate: Design Doc Management 所属 design_contract_reviewer 对本 T0 exact candidate 的独立 Design review；Task Routing owner 单独作出 owner decision
-runtime_surface_ledger: code-owned generated routing inspection；本 T0 不拥有运行账本
-verification_hooks:
-  - admitted-registry-only classification
-  - one-mainline and one-owner routing
-  - governed-mutation-to-system_change_intake
-  - ambiguity and denial-safe behavior
-  - no review-method or execution selection
 ```
+
+输入是当前请求、已有授权和判断所需的相关依据。输出是一段明确说明：所需结果、负责的 authority、
+下一步入口及理由；不能确定时说明缺少什么。`RoutingDecision` 是这一判断的名称，不要求创建持久对象、
+固定 schema、request ID、hash 或审批状态。
 
 ## 1. Primary System Flow
 
 ```mermaid
 flowchart TD
-    R["Exact request envelope"] --> T["task_route_resolve<br/>识别请求所需结果或决定"]
-    G["已准入的 Task Routing Registry release"] --> T
-    T --> M{"是否修改受治理面"}
-    M -->|是| S["选择 system_change_intake<br/>owner = System Change Governance"]
-    M -->|否| L["在 active registered mainline 中<br/>选择一个逻辑主线和 owner"]
-    S --> D["RoutingDecision"]
-    L --> D
-    D --> O["已选择的 logical_owner_ref"]
-    O -->|system_change_intake| P["System Change Governance<br/>生成并审核 SystemChangePlan"]
-    O -->|其他主线| H["对应 authority<br/>按自己的合同处理"]
-    T -->|ROUTING_CLARIFICATION_REQUIRED| C["一个有边界的结果级澄清问题"]
-    T -->|ROUTING_NO_MATCHING_ROUTE| N["没有已注册主线匹配"]
-    T -->|ROUTING_REQUEST_CONTRACT_INVALID| I["请求合同无效"]
-    T -->|ROUTING_REGISTRY_UNAVAILABLE| U["Registry 不可用，fail closed"]
+    R["当前请求"] --> C{"是否继续已确定的工作"}
+    C -->|是，目标与范围未变| W["Primary Agent 从原工作继续"]
+    C -->|新请求或目标改变| I["判断所需结果<br/>找到所属 authority 与入口条件"]
+    I -->|目标或职责不能确定| Q["提出具体问题或交给相应负责人决定"]
+    I -->|项目业务任务| G["读取项目 Charter 指明的工作导航<br/>定位本地工作入口"]
+    I -->|治理工作| B{"用户是否明确指定起点？"}
+    B -->|指定文档、Skill 或代码| A["直接进入所属方法"]
+    B -->|要求统一规划，或未指定起点| P{"明确要求规划<br/>或需要跨层统筹？"}
+    P -->|需要| S["目标 · 授权 · 现有依据<br/>System Change Governance · the-system-change"]
+    S --> E["Primary Agent 按已审核计划<br/>进入各步骤所属方法"]
+    P -->|不需要| A
+    A -->|Design 编写| D["DDM · the-design-authoring"]
+    A -->|其他工作| O["按该 authority 的方法处理"]
 ```
 
-Task Routing 只在 exact admitted Registry release 的 active mainline 中分类。一个逻辑主线和逻辑
-负责人只有同时出现在该 release 的同一条有效 row 中，才可能进入 `RoutingDecision`。该结果只说明
-谁拥有所需结果，不授予访问、database operation、execution 或 release 权限。
+路由判断从当前请求和依据出发，不依赖前一轮对话才能成立。“继续”且任务没有改变时沿用已经明确的
+工作；新证据改变目标、范围或负责人时再判断入口，不凭一个相同文件名强行沿用原路径。进入入口之后，
+执行可以由 Primary Agent 自己完成，也可以交给受委派的执行会话，双方的分工见第 6.4 节。
 
-| `interface_id` | 所有者 | 输入 | 成功输出 | 产生的影响 | 错误码 |
-| --- | --- | --- | --- | --- | --- |
-| `task_route_resolve` | Task Routing | exact request envelope、exact Task Routing Registry release | 一个不可变的 `RoutingDecision` | 只决定逻辑主线和逻辑负责人；不选择下游编写、审核或执行方法，也不授权该负责人执行 | `ROUTING_CLARIFICATION_REQUIRED`、`ROUTING_NO_MATCHING_ROUTE`、`ROUTING_REQUEST_CONTRACT_INVALID`、`ROUTING_REGISTRY_UNAVAILABLE` |
+### 1.1 从 Portable T0 找到工作方法
 
-| `error_code` | 所有者 | 触发条件 | 含义 | 调用方动作 |
-| --- | --- | --- | --- | --- |
-| `ROUTING_CLARIFICATION_REQUIRED` | Task Routing | 两个或以上 active 候选会产生实质不同的结果，请求无法区分 | 当前不能确定唯一逻辑负责人 | 只询问一个结果级问题，并且只展示足以区分这些候选的结果差异 |
-| `ROUTING_NO_MATCHING_ROUTE` | Task Routing | 没有 active registered mainline 匹配 requested result | 当前没有可返回的逻辑路由 | 返回无匹配结果；不得选择相近主线或执行入口 |
-| `ROUTING_REQUEST_CONTRACT_INVALID` | Task Routing | request envelope 的必要结构缺失或无效 | 分类输入不成立 | 在分类前拒绝，并把输入缺口返回 request owner |
-| `ROUTING_REGISTRY_UNAVAILABLE` | Task Routing | 固定 Registry release 缺失、无效、冲突、owner 不可解析或无法验证 | 当前没有可依赖的路由事实 | fail closed，并把缺口返回 Task Routing Registry T1/T2 owner；不得使用文档表格、对话或附近 Skill 替代 |
+下面是各 authority 已声明的入口导航。先读取对应 Design，再使用其中的方法；表格不替代该方法的
+进入条件、检查要求或独立审核。
+
+| 用户要取得的结果 | 先读的 authority | 从哪里开始 |
+| --- | --- | --- |
+| 确定一次修改涉及什么、由谁处理、按什么顺序完成 | [System Change Governance](the_system_change_governance.md) | `the-system-change` 形成计划；计划使用 `system_change_plan_reviewer` 审核后，由 Primary Agent 按步骤推进 |
+| 编写或修改 Design Doc | [Design Doc Management](the_design_doc_management.md) | `the-design-authoring`；目标、范围、负责人已明确的授权请求可直接开始，重要含义变更仍须 `design_contract_reviewer` |
+| 编写或修改可重复使用的 Skill | [Skill Management](the_skill_management.md) | `the-skill-authoring`；按该 authority 的现行进入条件准备输入，独立审核使用 `skill_candidate_reviewer` |
+| 编写或修改 Reviewer prompt | [Review Contract](the_review_contract.md) | `the-review-authoring`；通用规则、目标指令与 checklist 按其要求组成候选，独立审核使用 `reviewer_reviewer` |
+| 设计或实现代码、schema、migration，或处理发布部署 | [Software Delivery](the_software_delivery.md) | 从其规定的 Code Design、实现或操作方法进入；工程审核使用 `engineering_change_reviewer` |
+| 注册或执行已有 Module、Workflow | [Agent Runtime](the_agent_runtime.md) | 读取当前 Runtime 的随包 client 文档和 runbook，按已有授权使用公开入口 |
+| 审查一份已有候选 | 被审对象所属 authority | 使用该对象的指定 Reviewer；Review Contract 只提供共同规则，不是通用审核入口 |
+| 执行项目业务、查询或项目工作流 | 项目 Charter 指明的工作导航及其指向的领域依据 | 使用项目已有入口，不在 Portable T0 维护业务路由表 |
+
+`system_change_intake` 表示把目标、授权和现有依据交给 System Change，不要求先有计划或调用机器路由器。
+计划通过后，Primary Agent 从每一步取得负责人、方法、输入依赖、审核要求和完成条件；不为每一步
+重新做顶层路由。目标方法缺少的实际输入或执行配置由其负责人提供，不靠换一个相似方法绕过。
 
 ## 2. User Intent
 
-Primary Agent 收到的请求经常同时提到公司、Theme、Source、文件、Skill、Reviewer、模型或界面，
-但这些名词不一定是用户要取得的结果。Task Routing 必须先识别请求希望取得的结果或决定，再从
-active registered mainline 中选择真正拥有该结果的逻辑主线。
-
-凡是会修改受治理的 Design、Skill、Module source、代码、结构定义、迁移规则、数据写入规则、
-Runtime 注册、Release、部署、回滚或退役面的请求，都先路由到 `system_change_intake`。后续具体改
-哪些层、采用什么 authoring method 和 reviewer，由已审核的 `SystemChangePlan` 决定；Task Routing
-不提前拆分计划。
+让 Primary Agent 收到任务就知道下一步从哪里开始。用户说清楚的 Design 修改不应因为缺少项目 Registry
+而无法动笔；确需规划或尚未作出的责任决定，也不能被“直接写作”掩盖。执行交给其他会话时，用户仍能
+确定由谁对目标、沟通和最终结果负责。
 
 ## 3. Reader Gain
 
-- Principal Manager 能确认逻辑 owner 的选择没有同时夹带 permission、review method 或 execution binding。
-- Primary Agent 能判断什么时候进入 `system_change_intake`，什么时候直接交给某个产品、领域、
-  Design、Skill 或工程主线。
-- Product Architect 能区分资格过滤、语义路由、系统变更计划和执行选择。
-- Routing Maintainer 能判断候选实现是否只返回逻辑负责人，而没有偷偷选择 Reviewer、模型、
-  Runtime、Skill projection 或物理入口。
-- 下游负责人能从 `RoutingDecision` 取得精确请求、requested-result meaning、logical owner 和
-  Registry release 的绑定，无需重建对话历史或猜测文件名。
+- Primary Agent 能分清是继续现有工作、直接使用所属方法、先形成计划，还是先提出问题。
+- Primary Agent 能从第 1.1 节找到 Design、Skill、Reviewer、工程和 Runtime 的依据及入口，不从附近文件猜。
+- Primary Agent 能分清把执行交给其他会话后自己仍要完成的工作，受委派的执行会话能知道自己直接执行、不再委派。
+- Principal Manager 和 Product Architect 能确认路由没有增加授权、改写审核标准或接管项目流程。
+- Routing Maintainer 能区分 Portable 意图导航与项目工作导航中的本地工作流、路径和依赖清单。
 
 ## 4. Owned System Object
 
-Task Routing 只拥有 `RoutingDecision`。它表达：对一个精确请求，在一个精确的 Task Routing
-Registry release 下，哪一个已注册逻辑主线和逻辑负责人拥有所需结果，以及该判断使用的有边界理由。
-
-成功的 `RoutingDecision` 至少绑定：
-
-- exact request ref 与 hash；
-- exact Registry release ref 与 hash；
-- 一个 `matched_mainline_id`；
-- 一个 `logical_owner_ref`；
-- 已注册的 requested-result meaning；
-- 有边界的 `reason_code` 与解释；
-- Registry row 允许的可选 context refs。
-
-当请求修改受治理面时，`matched_mainline_id` 必须是 `system_change_intake`，`logical_owner_ref` 必须
-是同一条已准入 Registry row 所声明的 System Change Governance owner。字段名称、序列化、标识符、
-时间、存储和索引由下层机器合同拥有。本 T0 只规定这些语义可重建，并且 `RoutingDecision` 不得包含
-Reviewer Module、模型、provider、Execution Profile、Runtime release、adapter、worker、CLI、SDK、
-Skill projection path 或物理地址。
+Task Routing 拥有任务入口判断，即 `RoutingDecision`。它只回答当前要取得什么结果、由谁负责，以及
+下一步读哪里或进入什么方法。判断可以直接写在当前工作说明里，不要求单独存储、编号或版本管理。
 
 ## 5. Authority
 
-只有 Task Routing 可以定义：
+Task Routing 按所需结果与用户指定起点识别入口，并引用各 authority 的实际输入、检查和审核要求。
+用户指定从文档、Skill 或代码开始时，不追加 SystemChangePlan 前置；这不取消所属方法自己的
+设计依据、授权或独立审核，也不自动授权后续其他层的修改。
 
-1. 什么是语义任务主线和稳定逻辑负责人；
-2. 如何以请求所需的结果或决定，而不是附近名词，作为分类依据；
-3. 路由只能在 exact admitted Registry release 的 active mainline 中发生；
-4. 何时返回 routed、clarification、no-matching-route、invalid-request 或 unavailable-registry；
-5. 所有受治理的系统修改都先进入 `system_change_intake`；
-6. `RoutingDecision` 可以表达什么，以及不得夹带什么 authoring、review 或 execution 选择。
+System Change 决定需要规划的修改如何拆分和排序；DDM 等 subject authority 决定自己的写作、检查、
+独立 Reviewer 和完成要求。具体产品取舍留给用户或其明确委派的负责人。导航到一个入口不授予执行权限。
 
-System Change Governance 决定一次系统修改涉及哪些层、文件、负责人、authoring method、review gate
-和依赖顺序。各 subject authority 决定自己的结果语义与 Reviewer；Product Authorization 决定
-`user_key` 的 database permission；Workflow 和 Runtime owner 决定如何执行。Task Routing 不取得这些权力。
+## 6. 入口判断与交接
 
-## 6. 路由语义与 T1 委派
+### 6.1 按指定起点或实际统筹需求进入
 
-### 6.1 分类依据
+用户指定“先改文档”“先改 Skill”或“先改代码”时，直接进入对应方法，先处理该项已授权工作。
+请求整体涉及其他层，不会撤销已经指定的起点；说明后续依赖，在需要扩大范围、改变顺序或补足
+实际产品决定时提出具体问题，不自动退回“必须先有 SystemChangePlan”。
 
-路由从 requested result 开始，不从请求中出现的名词开始。Ticker、Theme、account、Source、文件、
-Design 标题、Skill ID、Reviewer 名称、模型、framework 或 UI surface 可以是 context，但不能靠字面
-相似决定 owner。一个 writer 只有在 writing 本身就是已注册 requested result 时才是主线；workflow
-engine 永远不是业务或治理主线。
+用户明确要求统一规划，或没有指定起点且修改需要跨层统筹范围、职责与依赖时，使用
+`the-system-change`。输入是目标、授权和现有依据；计划由该方法产生，不是进入它的条件。
+未指定起点且无需这种统筹时，直接使用负责所需结果的方法。
 
-只读的 review 请求按被审 subject 与所需 review result 路由到该 subject authority 所拥有的已注册
-review mainline。Review Contract 只提供 Reviewer 共用规则，不是通用 review service，也不选择
-subject route。任何需要修改 Design、Skill、Reviewer source 或 code 的请求仍先进入
-`system_change_intake`，由 `SystemChangePlan` 决定后续 authoring 与 review 路径。
+直接进入仍须满足实际工作条件。例如文档需要明确的修订目标，Skill 需要明确的重复任务，代码
+实现保留 Software Delivery 的 Code Design 与工程审核。缺少这些材料时说明具体缺件；不能把
+该方法的工程方案要求解释为必须另有一份 System Change 计划。
 
-### 6.2 Code-owned Registry
+### 6.2 找不到或出现冲突时
 
-具体 mainline 属于 code-owned Task Routing Registry，不写入本 Design Doc。每个 active row 至少声明
-稳定 `mainline_id`、一个 logical owner、requested-result meaning、positive match、explicit non-match、
-conflict/clarification boundary、allowed context class、lifecycle 与 supersession meaning。Registry row
-不得包含 provider、model、Runtime target、Execution Profile、host projection 或 UI location。
+请求不足以区分不同结果时，问清会改变选择的具体问题。没有可用入口、引用缺失或 authority 相互冲突时，
+指出所缺内容及负责方；不能擅自建立 Registry、创造新角色或用名字相近的 Skill 顶替。
 
-项目 T1/T2 Design 和代码拥有 Registry schema、分类器、冲突与澄清规则、immutable release、decision
-store、持久化、回放、privacy protection、Routing Gap、评测和 generated inspection。它们必须证明：
+已选方法中的候选缺陷返回作者；已有计划漏项或依赖变化返回 System Change；Reviewer、工具或执行配置
+不可用则返回对应负责人。执行失败本身不改变任务的逻辑归属，也不意味着设计内容需要改写。
 
-- 只在 exact admitted Registry release 的 active row 中分类；
-- 每个成功结果只有一个 active mainline 和一个可解析 logical owner；
-- 每个受治理修改都由 `system_change_intake` 覆盖；
-- positive、negative、ambiguity、wrong-owner 与 downstream-rejection 用例可重复验证；
-- 决策绑定 exact request 和 Registry release，可重放且不会被静默改写。
+### 6.3 项目自己的路由
 
-具体 schema field、数据库、缓存、重试、监控、指标和界面都属于下层实现。下游 authority 拒绝一个
-不适用的 routed request 时，调用方把 wrong-owner evidence 返回 Task Routing Registry T1/T2 owner；
-它不能继续执行同一方法，也不能静默尝试附近主线。既有 `RoutingDecision` 不被改写；需要重新路由时
-必须绑定新请求或新 Registry release。
+项目自己的工作导航提供具体工作流、文件、产物和本地入口，项目 Charter 指明它在哪里、由谁负责。它可以是
+文档、索引或 Registry；项目若使用 Registry 或 resolver，其 schema、存储、当前版本和调用方式由项目自己的
+设计与代码负责。Charter 未指明工作导航时，按 6.2 说明缺少的入口，交项目 Charter 负责人补齐。本 T0 不要求所有项目采用相同机器路由实现，
+也不把项目 Registry 的可用性作为读取 Portable T0 或使用其写作方法的前提。
+
+### 6.4 路由之后的执行分工
+
+入口确定后，直接承接用户请求的 Primary Agent 继续对这项请求负责：确认目标与完成标准，与用户沟通并
+取得需要用户作出的决定，协调各步骤，并按所属 authority 的要求核对实际结果和独立审核后向用户交付。
+具体执行可以由它自己完成，也可以按项目入口文件（会话启动时读取的项目说明）或宿主提供的委派方法
+交给受委派的执行会话。委派不转移上述责任，不改变任务的逻辑归属，也不减免所属方法的进入条件、检查和
+独立审核。
+
+受委派的执行会话接到的是入口已经确定的具体工作。它在交给它的授权范围内直接使用所属方法完成，遇到
+缺件、冲突或授权不足时回报委派它的 Primary Agent；它不对同一工作重新做顶层路由，也不把这项工作再
+委派给其他会话。按所属方法调用独立 Reviewer 是该方法的审核要求，不属于再委派。
+
+是否委派、采用哪个委派方法，以及执行会话使用的 provider、模型和观察方式，由项目入口文件或宿主指定的
+委派方法、该方法的参数和用户当次指示决定。Routing 不作这些选择，也不因为委派而维护下游执行状态。
 
 ## 7. System-wide Invariants
 
-1. Task Routing 只在 exact admitted Registry release 的 active mainline 中分类；手工表格、对话、
-   current directory 或 execution availability 不能扩展候选集合。
-2. 路由先判断 requested result。公司、Ticker、Theme、Source、文件、Design、T0、Skill、Reviewer、
-   目录、模型、framework 或界面名称只能作为定位证据，不能靠字面相似决定主线。
-3. 成功结果恰好包含一个已注册逻辑主线和一个 logical owner。存在实质不同的 active 候选且无法区分
-   时必须澄清，不能猜测。
-4. 受治理修改先路由到 `system_change_intake`；Task Routing 不选择 `SystemChangePlan` 内的 Design、
-   Skill、Code、Runtime 或 Release 步骤。
-5. 只读 review 路由到 subject authority 所拥有的 review mainline；Review Contract 不成为通用审核路由。
-6. 执行 binding 是否存在或可用，不改变 logical owner。Workflow、authorization、Runtime、model 或
-   provider failure 保留其真实 owner，不能促使 router 改选相近主线。
-7. 具体 mainline 只来自 exact admitted Registry release。Design Doc、对话、手工表格、Agent
-   instruction、Skill projection 和 UI 都不能形成第二份路由事实。
-8. Task Routing 完成后不拥有下游 candidate、review、execution、release、recovery 或 lifecycle。
-9. 重新路由必须绑定新请求或新 Registry release；不得静默改写既有 `RoutingDecision`。
+1. 以用户要取得的结果判断入口；文件名、模型名和现成工具不能替代对任务的理解。
+2. 尊重用户指定起点，不强制前置 SystemChangePlan；所属方法的实际输入、授权、检查和独立审核仍须满足。
+3. 不确定时说明具体缺口，不猜测负责人、不增加未授权的机制。
+4. 路由不授予权限，不选择模型、provider 或 Runtime 配置。
+5. 独立审查由被审对象所属 authority 指定的 Reviewer 完成，不能用路由判断替代。
+6. 完成入口交接后，由 Primary Agent 和目标负责人继续工作；执行交给受委派会话时，直接承接请求的
+   Primary Agent 保留目标、用户沟通、协调与验收责任，受委派会话不再委派同一工作；Routing 不维护下游状态。
+7. Portable 导航与项目本地路由分开；文档更新与安装部署分开。
 
 ## 8. Peer Boundaries
 
-Project Charter 是 constitutional parent，不是 peer T0。它只提供项目范围和 constitutional constraint；
-当前 Task Routing identity、owner binding、dependency 与 Registry fact 不由 Charter 维护。
+| 交接方 | Task Routing 提供 | 对方保留 |
+| --- | --- | --- |
+| System Change Governance | 需要规划的请求及已知目标 | 修改范围、步骤、依赖顺序和计划审核 |
+| Design Doc Management | Design 请求及已有依据 | 进入写作的条件、Design 结构、检查、独立审核和源文件更新 |
+| Skill Management | 稳定 Agent 方法的编写或修改请求 | Skill 进入条件、完整性、边界及 Skill Reviewer |
+| Review Contract | Reviewer prompt 编写或修改请求 | 通用审核规则、prompt 布局与 prompt Reviewer；不接管其他对象的审核 |
+| Software Delivery | 工程或发布操作所需结果 | Code Design、实现、测试、工程审核和发布部署 |
+| Agent Runtime | 已明确的 Module 或 Workflow 使用需求 | 注册、执行配置、独立执行与证据 |
+| Product Authorization | 下游确需数据库访问时找到其规则入口 | `user_key` 的数据库访问权限；不决定意图路由 |
 
-| Peer authority | 向 Task Routing 提供 | Task Routing 返回 | Peer authority 继续拥有 |
-| --- | --- | --- | --- |
-| Product Authorization | 不提供 routing candidate 或 route identity | 已选 logical owner 后，只有确需 database access 的 caller 才提交独立 authorization request | `user_key` 的 database visibility 与 read/write permission；不推断 request intent |
-| System Change Governance | `system_change_intake` 的稳定 requested-result meaning 和 logical owner | 受治理修改的 `RoutingDecision` | `SystemChangePlan` 的 scope、layer、owner、order、authoring method 与 reviewer |
-| Design Doc Management | Design-owned result 与 Design review result 的 meaning | 只读 Design 请求可指向已注册 Design mainline；Design 修改只返回 `system_change_intake` | Design Intent、layer law、Design Reviewer 与 owner decision |
-| Skill Management | Skill-owned result 与 Skill review result 的 meaning | 只读 Skill 请求可指向已注册 Skill mainline；Skill/Module source 修改与 retirement 请求只返回 `system_change_intake` | Skill definition、candidate、Reviewer source 与 Skill Reviewer；System Change Governance 拥有 retirement/整体删除 disposition 与 owner routing |
-| Software Delivery | Code/Schema/Release-owned result 与 Engineering review result 的 meaning | 只读 engineering 请求可指向已注册 owner；production change 只返回 `system_change_intake` | Code Design、implementation、deterministic gate、Engineering Reviewer 与 release lifecycle |
-| Review Contract | 不提供 subject route；只约束各 authority 的 Reviewer 共用规则 | none | universal review instruction 与 Reviewer prompt layout |
-| Agent Runtime | 不参与 semantic route selection | 已路由请求后续所需的 logical entry | Module、Workflow、Execution Profile、Attempt、execution 与 Ledger evidence |
-| Agency Platform | 不参与 semantic route selection | 已路由请求所需的 logical service entry | service hosting、composition 与 project-specific implementation |
-
-Task Routing 只消费或返回上表声明的 owner-qualified meaning，不复制 peer 的 Flowmap、interface、error、
-Reviewer prompt、schema、state 或 execution path。
+项目 Charter 提供项目范围和人类决策权，并指明项目工作导航；项目工作导航提供本地入口。两者都不是本 T0
+生成的 Portable 业务清单。本文不复制 peer 内部流程、接口、错误码或运行记录。
 
 ## 9. References
 
-- [Project Charter](the_charter.md)
-- [Product Authorization](the_product_authorization.md)
 - [System Change Governance](the_system_change_governance.md)
 - [Design Doc Management](the_design_doc_management.md)
 - [Skill Management](the_skill_management.md)
-- [Software Delivery](the_software_delivery.md)
 - [Review Contract](the_review_contract.md)
+- [Software Delivery](the_software_delivery.md)
 - [Agent Runtime](the_agent_runtime.md)
-- [Agency Platform](the_agency_platform.md)
+- [Product Authorization](the_product_authorization.md)

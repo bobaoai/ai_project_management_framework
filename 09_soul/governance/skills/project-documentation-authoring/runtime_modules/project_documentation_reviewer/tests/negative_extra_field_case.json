@@ -1,0 +1,7 @@
+{
+  "case_id": "project_documentation_reviewer_negative_extra_field_case_v1",
+  "case_kind": "negative",
+  "module_id": "project_documentation_reviewer",
+  "mutation": "Add an undeclared top-level output field.",
+  "expected_disposition": "schema_rejected"
+}

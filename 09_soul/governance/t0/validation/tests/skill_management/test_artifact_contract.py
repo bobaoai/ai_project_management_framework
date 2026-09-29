@@ -24,8 +24,10 @@ SPEC.loader.exec_module(contract)
 
 def _candidate(
     *,
+    name: str = "example-skill",
     skill_class: str = "primary_agent_development",
     authoring_section: bool = False,
+    author_self_check: bool = False,
 ) -> bytes:
     metadata = [f"  skill_class: {skill_class}"]
     if skill_class == "primary_agent_development":
@@ -38,7 +40,7 @@ def _candidate(
         )
     body = (
         "---\n"
-        "name: example-skill\n"
+        f"name: {name}\n"
         "description: Complete one stable example task.\n"
         "metadata:\n"
         + "\n".join(metadata)
@@ -50,7 +52,7 @@ def _candidate(
             "## 0. AI-facing Authoring Rules\n\n"
             "Use the registered common authoring instruction.\n\n"
         )
-    return (
+    candidate = (
         body
         + "## 1. Task\n\nComplete the stable task.\n\n"
         "## 2. Reader Gain\n\nThe Agent can decide whether the task is complete.\n\n"
@@ -60,7 +62,13 @@ def _candidate(
         "### 4.2 Output and Completion\n\nReturn one complete candidate.\n\n"
         "## 5. Boundaries\n\nDo not claim Runtime or release authority.\n\n"
         "## 6. Method\n\nChoose the shortest path that satisfies the result.\n"
-    ).encode("utf-8")
+    )
+    if author_self_check:
+        candidate += (
+            "\n### 6.1 Author Self-Check\n\n"
+            "Use the registered Author Self-Check and canonical checklist.\n"
+        )
+    return candidate.encode("utf-8")
 
 
 @pytest.mark.parametrize(
@@ -117,6 +125,98 @@ def test_skill_section_number_gap_is_rejected() -> None:
         match="numbering must be continuous",
     ):
         contract.validate_artifact(payload)
+
+
+def test_continuous_extension_sections_are_allowed() -> None:
+    payload = _candidate() + b"\n## 7. Examples\n\nOne useful example.\n\n## 8. Resources\n\nAvailable tools.\n"
+
+    result = contract.validate_artifact(payload)
+
+    assert result.headings[-2:] == ("Examples", "Resources")
+    assert result.subject_sha256 == hashlib.sha256(payload).hexdigest()
+
+
+@pytest.mark.parametrize("fence", [b"```markdown", b"~~~~markdown", b"   ```markdown"])
+def test_fenced_headings_are_examples_not_skill_sections(fence: bytes) -> None:
+    closer = fence.replace(b"markdown", b"")
+    payload = _candidate() + b"\n" + fence + b"\n## 1. Task\n### 9.8 Inputs and Authority\nExample.\n" + closer + b"\n"
+
+    result = contract.validate_artifact(payload)
+
+    assert len(result.headings) == 6
+    assert result.subject_sha256 == hashlib.sha256(payload).hexdigest()
+
+
+def test_sections_only_inside_a_fence_do_not_form_a_skill() -> None:
+    payload = _candidate().replace(b"## 1. Task", b"```markdown\n## 1. Task", 1) + b"\n```\n"
+
+    with pytest.raises(contract.SkillArtifactContractError, match="no numbered"):
+        contract.validate_artifact(payload)
+
+
+@pytest.mark.parametrize("replacement", [b"### 4.3 Output and Completion", b"### 3.2 Output and Completion"])
+def test_required_subsection_number_is_not_inferred(replacement: bytes) -> None:
+    payload = _candidate().replace(b"### 4.2 Output and Completion", replacement)
+
+    with pytest.raises(contract.SkillArtifactContractError, match="exactly once"):
+        contract.validate_artifact(payload)
+
+
+def test_execution_contract_subsections_must_have_the_correct_parent() -> None:
+    payload = _candidate().replace(
+        b"### 4.1 Inputs and Authority", b"## 5. Boundaries\n\n### 4.1 Inputs and Authority"
+    ).replace(b"## 5. Boundaries\n\nDo not claim Runtime or release authority.", b"Do not claim Runtime or release authority.")
+
+    with pytest.raises(contract.SkillArtifactContractError, match="match its parent"):
+        contract.validate_artifact(payload)
+
+
+def test_duplicate_optional_subsection_number_is_rejected() -> None:
+    payload = _candidate() + b"\n### 6.1 Read\n\nRead inputs.\n\n### 6.1 Write\n\nWrite output.\n"
+
+    with pytest.raises(contract.SkillArtifactContractError, match="continuous"):
+        contract.validate_artifact(payload)
+
+
+def test_new_skill_can_use_an_explicit_checklist_binding() -> None:
+    payload = _candidate(name="example-authoring", author_self_check=True)
+    resource = "skill:example_review_checklist"
+
+    result = contract.validate_artifact(
+        payload,
+        embedded_resource_ids=("t0:skill_author_self_check", resource),
+        checklist_resource_by_skill_id={"example-authoring": resource},
+    )
+
+    assert result.skill_id == "example-authoring"
+
+
+def test_new_skill_cannot_guess_a_checklist_from_an_embedded_resource() -> None:
+    with pytest.raises(contract.SkillArtifactContractError, match="does not match"):
+        contract.validate_artifact(
+            _candidate(name="example-authoring", author_self_check=True),
+            embedded_resource_ids=("t0:skill_author_self_check", "t0:skill_candidate_review_checklist"),
+        )
+
+
+def test_invocation_cannot_rebind_an_existing_skill_checklist() -> None:
+    with pytest.raises(contract.SkillArtifactContractError, match="cannot replace"):
+        contract.validate_artifact(
+            _candidate(name="the-skill-authoring", author_self_check=True),
+            embedded_resource_ids=("t0:skill_author_self_check", "t0:design_contract_review_checklist"),
+            checklist_resource_by_skill_id={"the-skill-authoring": "t0:design_contract_review_checklist"},
+        )
+
+
+def test_code_owned_checklist_map_can_add_skills_without_a_fixed_count(tmp_path: Path) -> None:
+    import json
+
+    value = contract.load_contract()
+    value["author_self_check"]["checklist_resource_by_skill_id"]["another-authoring"] = "t0:skill_candidate_review_checklist"
+    path = tmp_path / "skill_contract.json"
+    path.write_text(json.dumps(value), encoding="utf-8")
+
+    assert "another-authoring" in contract.load_contract(path)["author_self_check"]["checklist_resource_by_skill_id"]
 
 
 def test_declared_authoring_common_resource_requires_and_accepts_section_zero() -> None:
@@ -223,10 +323,216 @@ def test_skill_reviewer_prompt_contains_exact_projected_checklist() -> None:
     assert projected == contract.render_reviewer_checklist()
 
 
-def test_skill_authoring_keeps_method_without_a_reviewer_checklist_copy() -> None:
+def test_skill_authoring_contains_exact_projected_author_self_check_resources() -> None:
     authoring = (
         REPO_ROOT / "09_soul/governance/skills/the-skill-authoring/SKILL.md"
-    ).read_text(encoding="utf-8")
+    ).read_bytes()
 
-    assert "t0:skill_candidate_review_checklist" not in authoring
-    assert "identity_discovery_class_and_source" not in authoring
+    def projected(resource_id: str) -> bytes:
+        start = f"<!-- embedded-resource:{resource_id}:start -->\n".encode()
+        end = f"<!-- embedded-resource:{resource_id}:end -->".encode()
+        return authoring.split(start, 1)[1].split(end, 1)[0]
+
+    assert projected("t0:skill_author_self_check") == (
+        contract.render_author_self_check_instruction()
+    )
+    assert projected("t0:skill_candidate_review_checklist") == (
+        contract.render_reviewer_checklist()
+    )
+
+
+def test_declared_author_self_check_requires_one_method_section_and_checklist() -> None:
+    payload = _candidate(name="the-skill-authoring", author_self_check=True)
+
+    result = contract.validate_artifact(
+        payload,
+        embedded_resource_ids=(
+            "t0:skill_author_self_check",
+            "t0:skill_candidate_review_checklist",
+        ),
+    )
+
+    assert "skill_author_self_check_contract" in result.validator_ids
+
+
+@pytest.mark.parametrize(
+    ("payload", "resource_ids", "message"),
+    [
+        (
+            _candidate(name="the-skill-authoring"),
+            (
+                "t0:skill_author_self_check",
+                "t0:skill_candidate_review_checklist",
+            ),
+            "must occur exactly once",
+        ),
+        (
+            _candidate(name="the-skill-authoring", author_self_check=True),
+            ("t0:skill_author_self_check",),
+            "does not match the registered Skill binding",
+        ),
+        (
+            _candidate(name="the-skill-authoring", author_self_check=True),
+            ("t0:skill_candidate_review_checklist",),
+            "declarations must be complete",
+        ),
+        (
+            _candidate(name="the-skill-authoring", author_self_check=True),
+            (
+                "t0:skill_author_self_check",
+                "t0:skill_candidate_review_checklist",
+                "t0:design_contract_review_checklist",
+            ),
+            "does not match the registered Skill binding",
+        ),
+    ],
+)
+def test_author_self_check_contract_rejects_incomplete_declarations(
+    payload: bytes,
+    resource_ids: tuple[str, ...],
+    message: str,
+) -> None:
+    with pytest.raises(contract.SkillArtifactContractError, match=message):
+        contract.validate_artifact(payload, embedded_resource_ids=resource_ids)
+
+
+@pytest.mark.parametrize(
+    ("skill_id", "wrong_checklist"),
+    [
+        ("the-system-change", "t0:design_contract_review_checklist"),
+        ("the-design-authoring", "t0:skill_candidate_review_checklist"),
+        ("the-skill-authoring", "t0:reviewer_prompt_review_checklist"),
+        ("the-review-authoring", "t0:system_change_plan_review_checklist"),
+    ],
+)
+def test_author_self_check_rejects_wrong_allowlisted_checklist(
+    skill_id: str,
+    wrong_checklist: str,
+) -> None:
+    with pytest.raises(
+        contract.SkillArtifactContractError,
+        match="does not match the registered Skill binding",
+    ):
+        contract.validate_artifact(
+            _candidate(name=skill_id, author_self_check=True),
+            embedded_resource_ids=(
+                "t0:skill_author_self_check",
+                wrong_checklist,
+            ),
+        )
+
+
+def test_author_self_check_must_be_structurally_inside_method() -> None:
+    payload = _candidate(
+        name="the-skill-authoring",
+        author_self_check=True,
+    )
+    self_check = (
+        b"\n### 6.1 Author Self-Check\n\n"
+        b"Use the registered Author Self-Check and canonical checklist.\n"
+    )
+    misplaced = payload.replace(self_check, b"").replace(
+        b"## 6. Method",
+        self_check + b"\n## 6. Method",
+        1,
+    )
+
+    with pytest.raises(
+        contract.SkillArtifactContractError,
+        match="must be inside the Method section",
+    ):
+        contract.validate_artifact(
+            misplaced,
+            embedded_resource_ids=(
+                "t0:skill_author_self_check",
+                "t0:skill_candidate_review_checklist",
+            ),
+        )
+
+
+def _self_check_rows(*check_ids: str) -> tuple[dict[str, object], ...]:
+    return tuple(
+        {
+            "check_id": check_id,
+            "exact_evidence": f"candidate evidence for {check_id}",
+            "local_result": "locally closed",
+            "unresolved_finding": None,
+        }
+        for check_id in check_ids
+    )
+
+
+def test_invocation_local_author_self_check_accepts_exact_closed_rows() -> None:
+    candidate = b"exact candidate\n"
+    check_ids = ("check_a", "check_b")
+
+    result = contract.validate_author_self_check_submission(
+        candidate,
+        declared_candidate_sha256=hashlib.sha256(candidate).hexdigest(),
+        required_check_ids=check_ids,
+        rows=_self_check_rows(*check_ids),
+    )
+
+    assert result.candidate_sha256 == hashlib.sha256(candidate).hexdigest()
+    assert result.required_check_ids == check_ids
+    assert result.row_count == 2
+
+
+@pytest.mark.parametrize(
+    ("declared_sha256", "check_ids", "rows", "error_code"),
+    [
+        (
+            "0" * 64,
+            ("check_a",),
+            _self_check_rows("check_a"),
+            contract.AUTHOR_SELF_CHECK_CANDIDATE_MISMATCH,
+        ),
+        (
+            hashlib.sha256(b"exact candidate\n").hexdigest(),
+            ("check_a", "check_b"),
+            _self_check_rows("check_b", "check_a"),
+            contract.AUTHOR_SELF_CHECK_COVERAGE_INVALID,
+        ),
+        (
+            hashlib.sha256(b"exact candidate\n").hexdigest(),
+            ("check_a",),
+            (
+                {
+                    "check_id": "check_a",
+                    "exact_evidence": "",
+                    "local_result": "locally closed",
+                    "unresolved_finding": None,
+                },
+            ),
+            contract.AUTHOR_SELF_CHECK_EVIDENCE_MISSING,
+        ),
+        (
+            hashlib.sha256(b"exact candidate\n").hexdigest(),
+            ("check_a",),
+            (
+                {
+                    "check_id": "check_a",
+                    "exact_evidence": "candidate evidence",
+                    "local_result": "finding remains",
+                    "unresolved_finding": "fix the candidate",
+                },
+            ),
+            contract.AUTHOR_SELF_CHECK_UNRESOLVED,
+        ),
+    ],
+)
+def test_invocation_local_author_self_check_rejects_invalid_submission(
+    declared_sha256: str,
+    check_ids: tuple[str, ...],
+    rows: tuple[dict[str, object], ...],
+    error_code: str,
+) -> None:
+    with pytest.raises(contract.AuthorSelfCheckValidationError) as caught:
+        contract.validate_author_self_check_submission(
+            b"exact candidate\n",
+            declared_candidate_sha256=declared_sha256,
+            required_check_ids=check_ids,
+            rows=rows,
+        )
+
+    assert caught.value.code == error_code

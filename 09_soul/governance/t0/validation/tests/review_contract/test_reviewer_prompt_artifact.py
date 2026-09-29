@@ -42,7 +42,7 @@ def _prompt() -> bytes:
         "Use the frozen subject and return the registered result.\n\n"
         "## 3. Boundaries and Failure Routing\n\n"
         "Return wrong-owner issues without expanding the subject.\n\n"
-        "## 4. Design Review Checklist\n\n"
+        "## 4. Subject Review Checklist\n\n"
         + _resource_block(CHECKLIST_RESOURCE_ID, "Check the declared result.")
     ).encode("utf-8")
 
@@ -64,8 +64,8 @@ def test_reviewer_prompt_accepts_exact_five_section_layout() -> None:
             1,
         ),
         lambda payload: payload.replace(
-            b"## 4. Design Review Checklist",
-            b"## 5. Extra\n\nExtra.\n\n## 4. Design Review Checklist",
+            b"## 4. Subject Review Checklist",
+            b"## 5. Extra\n\nExtra.\n\n## 4. Subject Review Checklist",
             1,
         ),
         lambda payload: payload.replace(
@@ -197,111 +197,23 @@ def test_reviewer_reviewer_package_contract_is_closed() -> None:
         "instruction_ownership_and_nonduplication",
         "cold_start_executability_and_schema_fixture_consistency",
     ]
-    assert set(output_schema["$defs"]["check_result"]["properties"]["check_id"]["enum"]) == set(
-        check_ids
-    )
-    assert [
-        item["allOf"][1]["properties"]["check_id"]["const"]
-        for item in output_schema["properties"]["check_results"]["prefixItems"]
-    ] == check_ids
-
+    output_ids = [*check_ids, "prose_and_meaning_preservation"]
+    assert output_schema["$defs"]["check_result"]["properties"]["check_id"]["enum"] == output_ids
+    assert output_schema["properties"]["check_results"]["items"] == {"$ref": "#/$defs/check_result"}
     passed_output = {
         "verdict": "passed",
-        "reviewer_prompt_judgment": {
-            "intended_result": "prompt can govern its declared review",
-            "task_and_reader_gain": "task and reader decision are explicit",
-            "input_decision_output": "inputs, decision, and output are closed",
-            "boundaries_and_failure_routing": "boundaries route to exact owners",
-            "instruction_ownership": "universal and checklist ownership are separate",
-            "cold_start_executability": "prompt and invocation input are sufficient",
-            "prose_and_meaning_preservation": "wording preserves governing meaning",
-        },
         "check_results": [
-            {
-                "check_id": check_id,
-                "disposition": "passed",
-                "assessment": f"candidate evidence closes {check_id}",
-                "finding_ids": [],
-            }
-            for check_id in check_ids
+            {"check_id": check_id, "disposition": "passed", "assessment": "Candidate evidence.", "finding_ids": []}
+            for check_id in output_ids
         ],
-        "findings": [],
-        "safe_next_step": "submit the exact prompt to its containing Skill candidate",
+        "findings": [], "safe_next_step": "Use the reviewed prompt.",
     }
     validator = Draft202012Validator(output_schema)
     validator.validate(passed_output)
     with pytest.raises(ValidationError):
-        validator.validate(passed_output | {"unexpected": True})
-
-    repeated_check_output = deepcopy(passed_output)
-    repeated_check_output["check_results"][1] = deepcopy(
-        repeated_check_output["check_results"][0]
-    )
-    repeated_check_output["check_results"][1]["assessment"] = (
-        "different assessment must not make a repeated check_id valid"
-    )
+        validator.validate(passed_output | {"reviewer_prompt_judgment": {}})
     with pytest.raises(ValidationError):
-        validator.validate(repeated_check_output)
-
-    reordered_check_output = deepcopy(passed_output)
-    reordered_check_output["check_results"][0], reordered_check_output["check_results"][1] = (
-        reordered_check_output["check_results"][1],
-        reordered_check_output["check_results"][0],
-    )
-    with pytest.raises(ValidationError):
-        validator.validate(reordered_check_output)
-
-    blocked_output = deepcopy(passed_output)
-    blocked_output["verdict"] = "blocked"
-    blocked_output["reviewer_prompt_judgment"]["intended_result"] = (
-        "cannot judge the intended result because target_design_contract is missing"
-    )
-    for field in (
-        "task_and_reader_gain",
-        "input_decision_output",
-        "boundaries_and_failure_routing",
-        "instruction_ownership",
-        "cold_start_executability",
-        "prose_and_meaning_preservation",
-    ):
-        blocked_output["reviewer_prompt_judgment"][field] = (
-            "not evaluated because target_design_contract is missing"
-        )
-    blocked_output["check_results"] = [
-        {
-            "check_id": check_id,
-            "disposition": "not_run",
-            "assessment": "target_design_contract is missing",
-            "finding_ids": [],
-        }
-        for check_id in check_ids
-    ]
-    blocked_output["findings"] = []
-    blocked_output["safe_next_step"] = (
-        "target Design owner must provide the exact target_design_contract"
-    )
-    validator.validate(blocked_output)
-
-    false_blocked_output = deepcopy(blocked_output)
-    false_blocked_output["check_results"][0]["disposition"] = "passed"
-    with pytest.raises(ValidationError):
-        validator.validate(false_blocked_output)
-
-    false_blocked_finding = deepcopy(blocked_output)
-    false_blocked_finding["findings"] = [
-        {
-            "finding_id": "missing_input_is_not_a_subject_finding",
-            "severity": "block",
-            "finding_class": "input_decision_or_output_gap",
-            "quoted_evidence": "target_design_contract is missing",
-            "requirement": "required input must be available",
-            "impact": "semantic review cannot run",
-            "accountable_owner_ref": "designDoc/example.md",
-            "required_change": "provide the exact target Design",
-        }
-    ]
-    with pytest.raises(ValidationError):
-        validator.validate(false_blocked_finding)
+        validator.validate(passed_output | {"check_results": passed_output["check_results"][:-1]})
 
     fixture_schema = deepcopy(input_schema["properties"]["fixtures"])
     fixture_schema["$defs"] = {"fixture": input_schema["$defs"]["fixture"]}

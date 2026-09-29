@@ -69,6 +69,9 @@ _T0_PATH_PATTERN = re.compile(
     rb"(?:designDoc/)?(the_[a-z0-9_]+)\.md"
 )
 _IDENTITY_SEPARATOR_PATTERN = re.compile(rb"[-_ ]+")
+_PORTABLE_TOOL_PATH_PATTERN = re.compile(
+    rb"(?<![A-Za-z0-9_./-])09_soul/governance/t0/validation/[^\s`'\"<>()\[\]{}\\]+"
+)
 _KEBAB_IDENTITY_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _SNAKE_IDENTITY_PATTERN_FRAGMENT = r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*"
 _MANAGED_TARGET_PATTERN = re.compile(
@@ -116,7 +119,7 @@ _REVIEWER_PROMPT_EXPECTED_SECTIONS = (
     (1, "Review Task"),
     (2, "Inputs, Decision, and Output"),
     (3, "Boundaries and Failure Routing"),
-    (4, "Design Review Checklist"),
+    (4, "Subject Review Checklist"),
 )
 _UNIVERSAL_REVIEW_RESOURCE_IDS = frozenset(
     {
@@ -327,9 +330,10 @@ def _load_registered_artifact_contract_adapter(
     source_payload: bytes,
     *,
     error_code: str,
+    require_published_content: bool = True,
 ) -> Any:
     actual_source_hash = _sha256_bytes(source_payload)
-    if actual_source_hash != binding.source_sha256:
+    if require_published_content and actual_source_hash != binding.source_sha256:
         raise GovernanceSkillReleaseError(
             "artifact-contract source hash mismatch: "
             f"{binding.source}; declared={binding.source_sha256}; "
@@ -378,11 +382,14 @@ def _load_registered_artifact_contract_adapter(
     return module
 
 
-def _render_artifact_contract_review_checklist(
+def _render_artifact_contract_resource(
     project_root: Path,
     resource: InstructionResource,
     source_payload: bytes,
     artifact_contracts_by_source: dict[str, Any],
+    *,
+    renderer_name: str,
+    require_published_content: bool = True,
 ) -> bytes:
     binding = artifact_contracts_by_source.get(resource.source)
     if binding is None:
@@ -403,20 +410,21 @@ def _render_artifact_contract_review_checklist(
         binding,
         source_payload,
         error_code=GOVERNANCE_SKILL_INSTRUCTION_RESOURCE_INVALID,
+        require_published_content=require_published_content,
     )
     try:
-        renderer = getattr(module, "render_reviewer_checklist")
+        renderer = getattr(module, renderer_name)
         selected = renderer(
             _resolve_without_symlink_escape(project_root, binding.source)
         )
     except (AttributeError, OSError, TypeError, ValueError) as exc:
         raise GovernanceSkillReleaseError(
-            f"artifact-contract checklist projection failed: {resource.resource_id}",
+            f"artifact-contract projection failed: {resource.resource_id}",
             code=GOVERNANCE_SKILL_INSTRUCTION_RESOURCE_INVALID,
         ) from exc
     if not isinstance(selected, bytes):
         raise GovernanceSkillReleaseError(
-            "artifact-contract checklist projector must return bytes: "
+            "artifact-contract projector must return bytes: "
             f"{resource.resource_id}",
             code=GOVERNANCE_SKILL_INSTRUCTION_RESOURCE_INVALID,
         )
@@ -429,23 +437,34 @@ def _select_instruction_resource_bytes(
     *,
     project_root: Path | None = None,
     artifact_contracts_by_source: dict[str, Any] | None = None,
+    require_published_content: bool = True,
 ) -> bytes:
     # Validate the declared source before selecting or rendering from it.  A
     # derived artifact-contract checklist must not hide an invalid source
     # encoding or line-ending contract behind its rendered output.
     rows = _instruction_source_lines(source_payload, source=resource.source)
     selector = resource.selector
-    if selector.kind == "artifact_contract_review_checklist":
+    if selector.kind in {
+        "artifact_contract_author_self_check",
+        "artifact_contract_review_checklist",
+    }:
         if project_root is None or artifact_contracts_by_source is None:
             raise GovernanceSkillReleaseError(
                 "artifact-contract checklist selection requires T0 bindings",
                 code=GOVERNANCE_SKILL_INSTRUCTION_RESOURCE_INVALID,
             )
-        selected = _render_artifact_contract_review_checklist(
+        renderer_name = (
+            "render_author_self_check_instruction"
+            if selector.kind == "artifact_contract_author_self_check"
+            else "render_reviewer_checklist"
+        )
+        selected = _render_artifact_contract_resource(
             project_root,
             resource,
             source_payload,
             artifact_contracts_by_source,
+            renderer_name=renderer_name,
+            require_published_content=require_published_content,
         )
     elif selector.kind == "whole_file":
         selected = source_payload
@@ -479,7 +498,7 @@ def _select_instruction_resource_bytes(
             code=GOVERNANCE_SKILL_INSTRUCTION_RESOURCE_INVALID,
         )
     actual_hash = _sha256_bytes(selected)
-    if actual_hash != resource.sha256:
+    if require_published_content and actual_hash != resource.sha256:
         raise GovernanceSkillReleaseError(
             "instruction resource selection hash mismatch: "
             f"{resource.resource_id}; declared={resource.sha256}; "
@@ -487,6 +506,29 @@ def _select_instruction_resource_bytes(
             code=GOVERNANCE_SKILL_INSTRUCTION_RESOURCE_INVALID,
         )
     return selected
+
+
+def select_candidate_instruction_resource_bytes(
+    resource: InstructionResource,
+    source_payload: bytes,
+    *,
+    project_root: Path | None = None,
+    artifact_contracts_by_source: dict[str, Any] | None = None,
+) -> bytes:
+    """Select current declared text for authoring, not a published release.
+
+    Source ownership, selectors, encoding and the registered adapter's code
+    digest remain enforced. Text and rendered-text digests may differ from the
+    publication manifest: the caller compares these current bytes to its exact
+    candidate and freezes the inputs for review. This function writes nothing
+    and does not validate, admit or update a release. Release callers keep using
+    the strict selection path.
+    """
+    return _select_instruction_resource_bytes(
+        resource, source_payload, project_root=project_root,
+        artifact_contracts_by_source=artifact_contracts_by_source,
+        require_published_content=False,
+    )
 
 
 def _embedded_resource_spans(
@@ -662,6 +704,24 @@ def validate_reviewer_prompt_artifact(
 
     require_resource_in_section(universal_resource_ids[0], 0)
     require_resource_in_section(checklist_resource_ids[0], 4)
+
+
+def _without_portable_tool_paths(project_root: Path, payload: bytes) -> bytes:
+    """Exclude verified package tools from the project-local path scan."""
+    def replace(match: re.Match[bytes]) -> bytes:
+        relative = _validated_relative_path(
+            match.group().decode("utf-8"),
+            required_prefix=PurePosixPath("09_soul/governance/t0/validation"),
+            context="portable Governance tool path",
+        )
+        path = _resolve_without_symlink_escape(project_root, relative)
+        if not path.is_file():
+            raise GovernanceSkillReleaseError(
+                f"portable Governance tool path does not resolve: {relative}",
+                code=GOVERNANCE_SKILL_SOURCE_CLOSURE_INVALID,
+            )
+        return b"<portable-governance-tool>"
+    return _PORTABLE_TOOL_PATH_PATTERN.sub(replace, payload)
 
 
 def _payload_references_identity(payload: bytes, identity: str) -> bool:
@@ -1497,6 +1557,7 @@ def load_governance_skill_manifest(
         selector_start = raw_selector["start"]
         selector_end = raw_selector["end_exclusive"]
         if selector_kind not in {
+            "artifact_contract_author_self_check",
             "artifact_contract_review_checklist",
             "heading_range",
             "whole_file",
@@ -1508,6 +1569,7 @@ def load_governance_skill_manifest(
                 code=GOVERNANCE_SKILL_INSTRUCTION_RESOURCE_INVALID,
             )
         if selector_kind in {
+            "artifact_contract_author_self_check",
             "artifact_contract_review_checklist",
             "whole_file",
         }:
@@ -1904,7 +1966,9 @@ def load_governance_skill_manifest(
                         f"path {source_relative.as_posix()}",
                         code=GOVERNANCE_SKILL_MANIFEST_INVALID,
                     )
-                if source_relative != PurePosixPath("SKILL.md") and host_id == "codex":
+                # Ordinary package files may reach Codex; Runtime Module assets
+                # stay under the canonical Claude Skill Package.
+                if source_relative.parts[0] == "runtime_modules" and host_id == "codex":
                     raise GovernanceSkillReleaseError(
                         f"{projection_context} cannot project Runtime package assets "
                         "into the Codex Skill entry",
@@ -2230,8 +2294,11 @@ def _validated_source_payloads(
                     f"actual={actual_hash}"
                 )
             skill_source_payloads[package_file.source] = source_payload
+            path_check_payload = _without_portable_tool_paths(
+                project_root, source_payload
+            )
             for fragment in PORTABLE_SOURCE_FORBIDDEN_FRAGMENTS:
-                if fragment in source_payload:
+                if fragment in path_check_payload:
                     raise GovernanceSkillReleaseError(
                         "portable Governance Skill contains project-local identity: "
                         f"{package_file.source}: {fragment.decode('utf-8')}"

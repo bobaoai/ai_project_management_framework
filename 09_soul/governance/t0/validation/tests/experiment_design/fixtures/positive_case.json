@@ -1,0 +1,64 @@
+{
+  "case_kind": "positive",
+  "output": {
+    "verdict": "passed",
+    "check_results": [
+      {
+        "check_id": "experiment_goal",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "task_and_expected_actions",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "environment_and_independence",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "execution_and_permissions",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "evidence_and_measurement",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "evaluation_and_attribution",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "comparison_and_repetition",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "failure_and_recovery",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      },
+      {
+        "check_id": "prose_and_meaning_preservation",
+        "disposition": "passed",
+        "assessment": "格式测试示例；不代表一次真实审核。",
+        "finding_ids": []
+      }
+    ],
+    "findings": [],
+    "safe_next_step": "格式测试完成"
+  }
+}

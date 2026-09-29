@@ -1,760 +1,313 @@
 ---
-title: Design Doc Review Gate Contract
-status: active_draft
+title: Design Doc Management
 layer: T0
+canonical_owner: designDoc/the_design_doc_management.md
+parent: null
+owned_system_object: Design Intent
 t0_layer_id: the_design_doc_management
-reader_persona:
-  - System Builder
-  - Design Doc Author
-  - Design Doc Reviewer
-  - Runtime Projection Maintainer
 ---
 
-# Design Doc Review Gate Contract
+# 设计文档管理（Design Doc Management）
 
-## 0. Contract Capsule
+Design Doc 使读者知道要建设或改变什么，哪个主体对什么对象执行什么动作、交付什么结果，以及怎样判断结果成立。
+DDM 规定这种文档怎样写、怎样被找到和审查。文档内容由各自负责人决定；代码说明实际实现。
 
-Machine-audit block. Keep paths, ids, aliases, commands, and ledger pointers plain; use citation ids only in body prose and `References`.
+## 0. Intent Capsule
 
 ```yaml
 layer: T0
-t0_layer_id: the_design_doc_management
-status: active_draft
-canonical_owner: designDoc/the_design_doc_management.md
-scope: governance for free-form Design Doc drafting, bounded metadata / reasoning prose split, review-gate auditability, Contract Capsule recovery, runtime surface ledger discipline, T0 layer id registry, and Design Doc external-review prompt assembly
-non_goals:
-  - domain-specific correctness of any T1 workflow
-  - external AI runner mechanics and stale-output policy, which belong to the_external_agent_management
-  - code-level TradeCLI / runtime admission, which belongs to the_tradecli_code_management
-  - PM belief, investment judgment, evidence truth, and report prose quality
-inputs:
-  - free-form Design Doc drafts and materially updated active Design Docs
-  - adjacent owner docs named by the target
-  - runtime, skill, schema, prompt, or runner surfaces named by the target
-outputs:
-  - recoverable Contract Capsule
-  - runtime surface ledger and verification hooks for runtime-bearing docs
-  - design-doc-reviewer verdict and reviewer notes
-  - T0 layer id admission discipline
-truth_surfaces:
-  - designDoc/README.md
-  - 09_codex/skills/support-design-doc-reviewer/SKILL.md
-  - 09_codex/skills/support-design-doc-reviewer/design_doc_external_review_module.md
-  - src/tools/build_doc_review_prompt.py
-  - tests/test_doc_review_prompt_builder.py
-runtime_triggers: see Machine Audit Runtime Surfaces
-downstream_consumers:
-  - support-design-doc-reviewer
-  - support-external-agent-builder
-  - T0/T1 Design Doc authors and reviewers
-  - runtime projections that consume Design Doc authority
-open_decisions:
-  - status remains active_draft until the current T0 external-review cleanup pass closes capsule / ledger findings across admitted T0 docs
-review_gate: design-doc-reviewer
-runtime_surface_ledger: see Machine Audit Runtime Surfaces
-verification_hooks: see Machine Audit Runtime Surfaces
 ```
 
-## 1. 这份文档负责什么
+本 T0 管理 Charter、T0、T1 和 T2 Design Intent 的表达与采用。输入是明确的设计请求、适用的上游
+规则和已有文档；输出是可供读者理解、实施或作决定的设计，以及适用的独立审查结果。
+正式文档有一个确定来源；当前采用内容和修改历史由版本控制及发布工具记录。
 
-本文件定义 Hoveath / Analyst Billie 里 Design Doc 的写作自由与审计纪律。
+## 1. Primary System Flow
 
-它的核心立场：
-
-```text
-Design Doc 作者保持自由写作。
-Design Doc Reviewer 负责把自由文本投影成可审计 contract。
+```mermaid
+flowchart TD
+    R["Design 新增或修改请求"] --> A["Primary Agent 读取 DDM 与目标设计依据<br/>进入 the-design-authoring"]
+    A --> W["写出完整 Design 文稿<br/>按 DDM checklist 自检"]
+    W --> C["DDM 确定性代码检查<br/>结构、引用与受审内容"]
+    C -->|通过| E["独立 external review<br/>design_contract_reviewer<br/>语义审查，再做表达审查"]
+    E --> V["代码验证 Reviewer 输出<br/>对应本次文稿，检查项与结论一致"]
+    V -->|passed| U["按授权更新对应的 Design 源文件"]
+    V -->|non_pass：具体设计缺陷| A
+    C -->|文稿问题| A
+    D["需要删除的文档"] --> L["处理仍在使用的引用"]
+    L --> X["删除文档"]
 ```
 
-The metadata / prose split is a T0 writing law:
+输入必须使作者明确本次要改变的结果和范围；输出必须使下一位读者完成本文对应层级的判断。
+流程图表达职责与必要依赖，不要求每个节点有独立接口、记录或批准状态。涉及新的产品或架构取舍时，
+由用户或其明确委派的负责人决定；已授权范围内的写作、自检与修订由 Primary Agent 连续完成。
+检查发现问题时修正文档，缺少信息时补齐依据。它们是本次工作的处理结果，不是文档的使用状态。
 
-```text
-Metadata, capsules, ledgers, and schema-like fields are bounded audit surfaces.
-Body prose is the reasoning surface where mechanism, examples, judgment, and reader gain may expand.
-```
+Design 写作由 `the-design-authoring` 承担，独立外审固定使用 DDM 所属的
+`design_contract_reviewer`，由 Agent Runtime 以独立 Reviewer 身份执行。Review Contract 向它提供
+通用规则，DDM 提供 Design checklist。Primary Agent 组织调用并核对意见，不能用自己的自检代替外审。
 
-因此本文件不要求每篇 Design Doc 写成填表文档。正文可以是推理、叙事、系统图、反例、设计备忘、迁移计划或审计报告。它只要求每篇进入长期系统面的 Design Doc，最终都能被 reviewer 抽取出一份稳定的 contract capsule。
+`non_pass` 中的设计缺陷返回作者修订；`blocked` 说明缺少的必要依据，由 Primary Agent 找到提供方补齐。
+Reviewer 调用失败或输出验证失败，返回 Runtime 或相应校验代码的负责人处理，再对同一文稿重试；
+这类失败不要求作者改设计。修订文稿后重新检查和外审；纯编辑或机械更新的适用范围见第 8 节。
 
-## 1.5 Drafting Mode vs Review Gate
+最后一步是把通过审查的内容写回对应 Design 源文件。Portable T0 更新其 portable source，项目 Design
+更新其所属源文件。将更新后的版本同步到安装投影或其他项目属于部署，单独按部署授权执行；它不属于
+本图的 Design 更新路径，也不是本次文稿审查通过的条件。
 
-Design Doc writing has two modes.
+## 2. User Intent
 
-### Drafting mode
+在开始实现或复用设计前，让人和 Agent 理解同一份目标与职责边界。写作方法应能从当前文档入口找到，
+无需重建历史聊天，也无需先维护一套文档生命周期或项目治理数据库。
 
-When the user asks in a command-line conversation to "write a Design Doc", the authoring agent should prioritize:
+## 3. Reader Gain
 
-- design clarity
-- problem framing
-- alternatives and tradeoffs
-- examples and failure modes
-- reader judgment
+- Primary Agent 能找到适用文档和写作 Skill，判断本次该写在哪一层。
+- Design Owner 能判断设计是否达到授权目标、是否侵入相邻职责，以及哪些决定仍需自己作出。
+- Implementation Owner 能取得本层已经决定的要求，并继续选择下一层允许自行决定的实现方式。
+- Architecture Reviewer 能基于目标、证据和边界发现缺陷，而不是要求每份文档采用同一种运行机制。
 
-The authoring agent should not force the first draft into a table, capsule, or checklist unless the user explicitly asks for that shape. A draft may remain narrative, exploratory, or proposal-shaped.
+## 4. Owned System Object
 
-### Review gate
+DDM 拥有 Design Intent 的表达、发现和审查规则，包括各层应回答的问题、必要文档结构，以及
+`design_contract_reviewer` 的目标专用判断标准。每份文档的业务或系统含义仍由其所属负责人拥有。
 
-When the draft is being finalized, promoted, materially updated, or propagated into skills / routing / code / schemas / runner commands, `design-doc-reviewer` must run.
+## 5. Authority
 
-`design-doc-reviewer` is a review-gate alias for the logical skill [Skill:support-design-doc-reviewer], not a runtime projection path.
+DDM 决定 Design Doc 必须让读者理解什么、何种修改需要独立 Design review、审查完成后怎样使用结果。
+它不选择业务行为、代码实现、Runtime 配置或部署方式。
 
-At that point the reviewer explicitly requires the Contract Capsule, runtime surface ledger, and verification hooks to be recoverable. Missing recoverable fields may be patched. Missing unrecoverable fields become review findings.
+Primary Agent 使用 `the-design-authoring` 写作和自检，并在需要时调用独立 Reviewer。负责组织工作
+不等于代替 Reviewer 判断，也不需要为这些动作分别创建管理角色。
 
-This contract therefore binds the review process, not the writer's first creative pass.
+## 6. 设计生产
 
-## 2. Contract Capsule
+### 6.1 层级与内容
 
-Contract Capsule 是 Design Doc 的可审计投影，不是作者起草时的写作模板。
+<!-- design-layer-semantics:start -->
+所有 Design Doc 都明确 `User Intent` 和 `Reader Gain`。前者说明为什么需要这份设计，后者说明谁读完
+后能作出什么判断或完成什么工作。正文以中文为主体；已有标识符、代码符号和引用保留准确名称。
 
-It is part of the machine-audit contract. It should use plain YAML paths, ids, and command names, not prose citations.
+设计围绕本层实际要建设、维护或改变的对象展开。每项主要功能或职责应使读者识别：哪个主体，在什么
+情境下，对哪个对象执行什么动作，产生什么结果，以及谁使用这个结果。设计对象是所讨论的系统、组件
+或能力；执行主体是承担动作的组件、服务、Agent 或人，文档负责人不自动等于执行主体。主体与对象的
+精度应足以区分本层实际涉及的职责，沿用已有名称；新增对象应说明其用途，不能仅靠命名补足设计。
 
-作者可以在文档顶部主动写 capsule；也可以只写正文，让 reviewer 在 review gate 补上或提出缺口。reviewer 补 capsule 时，不得改变正文主张；只能抽取、归纳、标出 open decision，或返回给作者修订。
+交付结果可以是可用功能、对象的改变、判断或供指定读者使用的材料，不要求另建文件或运行记录。
+职责边界说明具体动作由谁完成，以及何种结果交给谁继续处理；仅列领域名称、负责人或“协调、治理、
+支持、维护”等职责词，不代表功能已经定义。上述内容可以在连贯正文中表达，无需新增固定句式或表格。
 
-### 2.1 必须可恢复的字段
-
-以下字段不要求每篇正文逐项填完，但 reviewer 必须能从文档中恢复出来。如果恢复不出来，就是 review finding。
-
-```yaml
-layer: T0 | T1 | T2 | temp | legacy
-t0_layer_id: <the_* stable layer id; required when layer = T0>
-status: active | active_draft | proposal | deprecated_pointer | legacy_context | temp_audit
-canonical_owner: <this doc path or owner doc path>
-scope: <what this doc owns>
-non_goals: <what this doc explicitly does not own>
-inputs: <upstream artifacts / truths consumed>
-outputs: <artifacts / decisions / contracts produced>
-truth_surfaces: <files, schemas, indexes, runtime stores, or docs that make claims checkable>
-runtime_triggers: <commands, builders, skills, or none>
-downstream_consumers: <skills, docs, runtime modules, or artifacts that rely on this doc>
-open_decisions: <unsettled choices that must not be treated as implemented contract>
-review_gate: <design-doc-reviewer | domain reviewer | engineering-project-review | none>
-runtime_surface_ledger: <review-gate required when this doc names executable commands, builders, schemas, skills, runners, or tests>
-verification_hooks: <review-gate required when runtime_surface_ledger is non-empty>
-registry_path: <path to per-module Python registry file; required when module has a typed registry>
-```
-
-Authors may also include `reader_persona` to declare expected reader roles. It is editorial enrichment, not a binding capsule field unless a domain owner explicitly makes it part of that domain's capsule.
-
-### 2.2 字段解释
-
-| Field | Meaning | Common failure |
+| Layer | 本层必须决定什么 | 留给下一层或其他负责人什么 |
 | --- | --- | --- |
-| `layer` | Authority level of the doc | a T1 domain doc silently changes T0 routing |
-| `t0_layer_id` | Stable id for a T0 layer; must start with `the_` | a T0 layer is referred to as `charter`, `timestamp_semantic`, or `design_doc_management` in one place and a different bare name elsewhere |
-| `status` | How binding the doc is today | proposal language is consumed as active contract |
-| `canonical_owner` | Where future changes belong | two docs both contain full rule bodies |
-| `scope` | What problem the doc owns | doc title says one thing, body governs adjacent systems |
-| `non_goals` | What the doc refuses to own | downstream work leaks into upstream contract |
-| `inputs` | Required upstream artifacts | workflow cannot start deterministically |
-| `outputs` | Produced artifact / contract | reader cannot tell what "done" means |
-| `truth_surfaces` | Concrete checkable surfaces | design says "index" but no file/store exists |
-| `runtime_triggers` | Commands/builders/skills that enact it | skill says run Python but no command exists |
-| `downstream_consumers` | Who reads or depends on it | downstream prompt reads archive internals by habit |
-| `open_decisions` | Real unresolved choices | TODO is phrased as implemented behavior |
-| `review_gate` | Required reviewer before propagation | author self-review is mistaken for independent review |
-| `runtime_surface_ledger` | Executable / machine-read surfaces the doc claims | doc changes CLI flags but command examples and tests stay old |
-| `verification_hooks` | Smoke tests, unit tests, or manual checks proving runtime claims still bind | reviewer accepts prose while the command no longer runs |
-| `registry_path` | Path to per-module typed Python registry; required when module has a typed registry | Design Doc declares class assignments but no registry exists to validate them |
+| Charter | 项目目的、产品范围、人类决策权与宪制边界 | 日常操作、具体接口、运行配置和当前清单 |
+| T0 | 多个独立下层共同遵守的规则，明确适用主体、对象、条件及对动作和交接的影响 | 项目流程、具体实现、运行记录和其他 T0 的内部规定 |
+| T1 | 一个领域或独立子系统的主要使用情境与功能，承担功能的组成部分，以及它们如何协作交付结果 | 有界能力的内部实现，以及同级领域内部事务 |
+| T2 | 一项有界能力中，主体如何处理输入对象、产生输出或改变，关键条件、必要接口及与 code truth 的交界 | 不影响已定行为的内部算法和类组织、其他领域的决定和重复维护的当前代码清单 |
 
-## 2.5 Body References vs Machine Paths
+各层先写明确结果，再写实现该结果真正需要的规则。State、transaction、replay、rollback、Schema、
+Registry 和 Validator 按实际能力使用；没有需要时无需创造机制或填写占位合同。
+下一层可以自行作出的合理设计选择，不构成上一层的缺陷。完整性要求本层已决定足以支持当前结果的
+功能、工作方式与必要取舍，不要求同时交付下一层设计、实现或部署。读者可以继续选择内部实现，
+但不应重新猜测本层要提供什么功能、谁处理什么对象或交付什么结果。项目提案说明选定的改动对象、
+方案和理由；交付设计说明改后功能、承担动作的组成部分及验收结果。它们按实际请求提供，不成为每份
+Design 必备的额外产物。本层尚未决定且会使下游无法继续的缺口仍需解决；缺少授权取舍时明确提出建议，
+交有权决定的人处理，不能把假设写成已确认要求。
 
-Design Doc prose and machine-audited blocks have different reference rules.
+设计实际涉及时间含义时读取 `the_timestamp_semantic.md`；涉及机器标识或引用含义时读取
+`the_identifier_and_reference_semantics.md`。仅在普通文字中提及日期或 ID 不触发额外设计要求。
+<!-- design-layer-semantics:end -->
 
-This section governs durable Design Doc body prose. Codex chat / review-response file links are a top-level Codex Always Rule in `AGENTS.md`.
+### 6.2 文档结构
 
-正文中的 normative repo-local dependency should use a human-readable name plus a short citation id, then resolve that id in a visible `References` section. The citation id is an audit handle, not a replacement for prose meaning.
+Design source 的 frontmatter 帮助读者和工具定位文档、层级及设计关系。DDM 统一定义以下五个字段；
+作者填写这些字段，`the-design-authoring` 和文档工具直接消费同一份定义。
 
-Example:
+| 字段 | 含义与取值 |
+| --- | --- |
+| `title` | 非空文档标题，供读者发现与辨认 |
+| `layer` | 本文承担的设计层级，取 `Charter`、`T0`、`T1` 或 `T2` |
+| `canonical_owner` | 本文的准确来源文档引用；投影副本指向其 Portable source，不填写人的姓名或临时候选路径 |
+| `parent` | 本文直接继承的设计引用；没有直接父级时填写 YAML `null` |
+| `owned_system_object` | 本文负责的对象或决定的简短说明，与正文中的职责一致 |
 
-```md
-Task routing follows the Task Intake Routing Contract [T0-Task-Intake]. External review prompt assembly follows the external agent builder skill [Skill:support-external-agent-builder].
+`canonical_owner` 和 `parent` 都是 canonical references，不是自由文本。它们的引用语义和解析根遵守
+`the_identifier_and_reference_semantics.md` 及所属 project resolver；DDM 保留 source 中的 exact reference，
+validator 只按该规则交给 resolver 判断可解析性。Portable projection 继续指向 upstream source reference，
+不把它改写为安装副本或临时候选文件的路径。父级关系由实际设计继承确定，文件名中的编号不能代替该判断。
+现有消费者需要的 `t0_layer_id` 可作为 T0 的兼容字段保留，其存在不向其他层级增加字段要求。正文展开目标
+读者、职责和设计理由；frontmatter 保留定位所需内容，不加入 `status`、读者清单、审核结论、模型配置或
+部署信息。
 
-## References
+DDM 拥有 metadata 的 schema、parser、validator 和 review adapter。Schema 定义字段、类型与兼容范围；
+parser 将 YAML `null` 传为真正的空值；validator 检查 source 与正文的一致性。Review adapter 由 DDM 所属
+Portable Governance 代码维护，负责把 DDM metadata 和完整候选转换为 Reviewer input。`the-design-authoring`
+Skill Package 提供 Reviewer prompt、Reviewer schema 与 fixtures；Agent Runtime 提供独立 Module 执行、
+共同结果格式、机械输出校验、输入隔离和执行证据。所有消费者复用 DDM 的唯一解析结果，不另写字段表或解析规则。
 
-- `[T0-Task-Intake]` [Task Intake Routing Contract](the_task_routing.md)
-- `[Skill:support-external-agent-builder]` logical skill id; current Codex projection: [External Agent Builder Skill](../09_codex/skills/support-external-agent-builder/SKILL.md)
-```
 
-Machine-audited blocks keep plain paths and commands:
+保留可预测的导航：章节连续编号；同一概念在一处定义，其他位置引用。T0 的六个固定内容标题是
+`User Intent`、`Reader Gain`、`Owned System Object`、`Authority`、`System-wide Invariants` 和
+`Peer Boundaries`。`Owned System Object` 说明所管理的事情，不要求为它创建运行对象。
 
-- YAML frontmatter
-- Contract Capsule fields
-- `runtime_surface_ledger`
-- `verification_hooks`
-- code blocks, shell commands, glob patterns, and placeholders
+各层沿用以下结构；自有内容放在指定位置。标题中的 Lifecycle、Effects 或 Recovery 只要求说明适用
+含义，不要求创建相应机制。简单能力可在该节一句话说明边界，无需附加空表或逐项声明所有未使用机制。
 
-Those areas are for hardcoded audit, not prose navigation. Do not force Markdown links into them.
+| Layer | 固定章节顺序 |
+| --- | --- |
+| Charter | `Intent Capsule` → `Constitutional Authority Map` → `User Intent` → `Reader Gain` → `Product Identity and Scope` → `Human Authority` → 自有宪制内容 → `Constitutional Invariants` → `Design and Code Boundary` → `Amendment Authority` → `T0 Topology Reference` → `References` |
+| T0 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Owned System Object` → `Authority` → 自有内容 → `System-wide Invariants` → `Peer Boundaries` → `References` |
+| T1 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Domain Outcome and Owned Objects` → 自有内容 → `Architecture and Lifecycle` → `Public Boundaries and Quality Rules` → `T2 Partition and Dependencies` → `Completion and Failure` → `References` |
+| T2 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Capability and Operation` → 自有内容 → `Public Interface and Effects` → `Completion, Failure, and Recovery` → `Dependencies and Verification` → `References` |
 
-The review gate should distinguish:
+`Intent Capsule` 是简短的范围、输入和输出说明，允许直接使用正文；不要求重复 frontmatter 或维护
+runtime trigger、ledger、lifecycle 等统一字段。程序实际消费的身份和引用留在唯一的 code-owned schema，
+由工具检查。结构规则应帮助读者定位信息，不能代替对内容含义的审查。
 
-- **Normative body references**: external docs, skills, schemas, code paths, indexes, or generated artifacts whose contents affect the claim being made. These should have citation ids and a visible reference-list link.
-- **Non-normative mentions**: examples, historical notes, obvious repeated mentions after a first citation, or machine-readable path lists. These do not need a separate citation.
+### 6.3 Flowmap、输入输出与失败
 
-### 2.5.1 T0 Layout Rule
+Charter 用职责图说明权力和范围。T0 的 Flowmap 说明职责与交接；T1 说明领域组成和工作关系；T2
+说明能力的实际路径。图中主体、动作和对象应与正文可相互定位，交接应说明传递的结果及接收方继续的
+工作。图上保留会改变读者判断的依赖、分支和结果，避免只连接领域标签或把文档管理动作充作系统行为。
 
-T0 documents should keep these surfaces visually separate:
+实际接口直接说明输入、输出和可观察影响。程序确实需要根据失败选择不同处理时，使用该接口已有或
+明确设计的稳定 error code。错误码由拥有接口的代码合同定义一次，文档引用其含义。
+补充信息、修订候选、接受或拒绝建议等沟通结果可以直接表达，无需新增 error code 或接口表。
 
-| Surface | Purpose | Link style |
+图、正文和适用接口必须一致。Peer 交接只说明所需结果和负责人，不复制对方内部流程或错误清单。
+
+### 6.4 使用已有依据
+
+作者从目标所指向的具体对象、使用情境、现有设计及直接相关依据开始，再确定实现功能所需的职责。
+修订现有系统时，核对哪些能力已有、哪些需要改变；新建系统时说明拟建功能与依据，不虚构当前实现。
+新建或改变职责划分时比较完整受影响集合；
+局部修订只增加判断该修订所需的背景，不因文件同属一层就自动扩大到全部文档。
+
+范围、目标和负责人已明确时，可直接依据授权请求开始。需要拆分工作或确定依赖时，使用
+System Change 提供的计划。已有计划时，写作和审核一并使用当前步骤、完成条件、相关排除项与后续
+边界。本文不要求每个设计请求携带注册计划、request ID、hash 或审批状态。
+
+## 7. 代码与文档事实
+
+文档说明目标和约束，代码及 schema 说明实际接口与实现，测试说明哪些行为已经验证。当前版本、文件
+清单和检查结果由代码生成；无需为每份 Design 额外建立 `Code Projection` 与 `Current Inspection` 对象。
+已有生成视图可继续用于展示事实，且必须能追溯到对应代码或发布内容。
+
+代码先验证能够确定判断的事项：身份与链接可解析、必要章节存在、实际机器字段符合 schema、
+共同指令投影一致、受审内容与返回结果相符。DDM 拥有 Design artifact schema 和 checklist 的意义；
+具体 schema、validator、hash 和投影实现在 Portable Governance 代码中维护。
+
+代码不能证明文档目标合理、未知影响面没有遗漏，或一段 evidence 真正支持结论。Reviewer 承担这些
+语义判断；格式通过不能表述为设计通过。
+
+需要软件实现时，Design 交付已经确定的目标、职责、约束和最小必要接口要求。Software Delivery
+决定如何开展 Code Design、实现和工程验证。设计本身不要求额外的 Registry、数据库或运行状态机。
+
+## 8. 修改与采用
+
+职责、行为、公开接口、接受标准或其他重要含义改变时，使用独立 `design_contract_reviewer`。
+仅修正文法、链接或机械投影且保留全部含义时，运行适用代码检查和作者保真自检即可。
+
+文档只有正在使用和删除两种处理。使用入口指向当前采用的内容；修改完成后更新该内容，不再需要时
+处理引用并删除。版本控制记录修改差异和历史，发布工具确定安装内容；无需额外的状态字段或状态机。
+独立审核绑定本次待审内容，修改后不能继续引用旧内容的通过结论。审核期间，现行文档仍按原内容使用。
+
+T0 更新与部署是两回事：更新改变其准确源文件；部署把选定版本送到消费环境。源文件更新完成时，应
+如实说明哪些环境已部署、哪些仍使用原版本，不能把源文件修改表述为所有消费环境都已更新。
+
+删除或替换文档前检查仍被使用的引用，为读者留下有效入口；有多个受影响面时先确定依赖和责任。
+历史保存在版本控制中，不要求为删除另建生命周期对象。安装未改语义的同一份 portable 内容，只验证
+引用与投影一致性。发布到其他环境仍依照该操作的实际授权。
+
+## 9. 审查与完成
+
+需要定义产物审查要求的 Design Doc，使用 `确定性检查`、`语义审查`、`表达审查`、`完成条件` 四个
+连续子章节；本章放在该层自有内容末尾。DDM 固定结构，同级 T0 `the_review_contract.md` 定义共同含义，
+各文档填入自己实际需要的要求。其他文档无须仅为形式完整增加本章。
+
+### 9.1 确定性检查
+
+代码运行第 7 节中适用于候选的检查并记录实际结果。失败信息直接说明问题、文件或输入，以及下一步；
+Reviewer 不重复计算 hash、解析 schema 或验证投影。不存在的检查不能由文字宣称已经执行。
+
+### 9.2 语义审查
+
+`design_contract_reviewer` 的固定 prompt、schema 和 fixtures 保存在 `the-design-authoring` Skill Package。
+DDM 拥有下面的 checklist；Review Contract 提供共同指令和结果结构；Runtime 独立执行 Reviewer。
+
+受审输入包含完整候选、本次授权目标、修改范围和足够的相关设计背景。背景不自动成为修改目标。
+本次明确授权改变的旧规则是比较依据，不能成为保留该旧规则的循环理由。
+
+<!-- design-contract-review-checklist:start -->
+| 顺序 | `check_id` | 必须确定的结果 | `finding_class` |
+| --- | --- | --- | --- |
+| 1 | `intent_and_reader_result` | 设计实现本次授权目标与适用计划步骤的结果；User Intent 与 Reader Gain 清楚，不把自行新增的承诺或后续工作当成当前要求 | `intent_gap` |
+| 2 | `layer_owner_and_parent` | 所属层级、负责人和必要父级清楚，本次结果实际涉及的职责集合没有重叠或缺口，不为检查完整而重整全部邻接系统 | `layer_or_owner_defect` |
+| 3 | `layer_content_fit` | 内容属于本层，机制按实际需要使用，没有为填满模板增加下层设计 | `layer_content_misfit` |
+| 4 | `peer_authority_and_inheritance` | 遵守适用上游规则，与直接相关 peer 的交接一致；实际涉及时间或机器引用时使用对应 T0 | `peer_or_inheritance_conflict` |
+| 5 | `boundary_coherence` | 各主要职责落实到可识别的执行主体、处理对象和动作；交接说明传递什么结果、谁接收并继续什么工作，文档负责人不替代执行主体，不以职责区分创造多余管理角色 | `boundary_ambiguity` |
+| 6 | `design_and_code_truth_separation` | 目标与实际实现可区分，当前事实有代码依据，不额外要求无消费需求的机器对象 | `code_truth_leakage` |
+| 7 | `flow_interface_and_error_closure` | Flowmap、正文与实际需要的输入输出和失败处理一致，文档交接不被误写成软件接口 | `flow_or_interface_closure_gap` |
+| 8 | `failure_completion_and_rollback` | 完成、信息不足与真实失败的后果清楚；恢复或回滚仅在实际影响需要时定义 | `failure_or_completion_gap` |
+| 9 | `implementability_without_redesign` | 具体情境中的主要功能、选定工作方式和交付结果已由本层说明，下一层无需重新猜测；功能或交付的实质歧义是设计缺口，不降为文字建议；合理下层实现选择和不影响本步的后续工作仍被保留 | `implementability_gap` |
+| 10 | `review_approval_and_admission` | 审查、实际实现与采用结果的证据不被混淆，所需授权明确，不强制额外状态或重复审批 | `review_or_admission_conflict` |
+| 11 | `prose_and_meaning_preservation` | 语义检查通过后，冷读者能准确理解设计；表达修正保持事实、职责和条件 | `prose_or_communication_defect` |
+<!-- design-contract-review-checklist:end -->
+
+前十项用于语义判断，第十一项用于表达检查。Code 把这份 checklist 机械注入 Reviewer；不手工维护
+第二份标准。同一根因只生成一条 finding，选最直接的判断项归类；其他受影响项引用同一问题。
+职责与可实施性检查沿候选适用的情境判断：不了解聊天背景的读者，是否会对主要功能、动作主体、处理
+对象或交付结果形成实质不同的解释。发现歧义时指出具体条款及其导致的不同动作或结果；允许下层选择
+的算法、类组织等差异不构成缺陷。无需新增情境数量、统一字段或实际运行的前置要求。
+独立 Reviewer 对必修意见说明具体证据、实际适用要求、不修对本步的后果及为什么必须现在处理。
+Primary Agent 核对 finding 后修订成立的问题；对事实错误、越界要求或纯偏好说明理由并交回独立重判。
+多轮保持同一授权目标与完成标准，重开已处理问题说明新的依据；范围约束不豁免本次实际回归。
+
+### 9.3 表达审查
+
+语义判断成立后检查同一份内容是否容易理解、是否存在歧义或重复。表达修正必须保持事实、职责、
+因果、不确定性和停止条件；该检查由同一个独立 Reviewer 完成，无需新增角色。
+
+### 9.4 完成条件
+
+代码检查通过，内容达到所需结果，重要含义变更已获得绑定当前候选的独立审查，且采用动作处于已有
+授权内，便可交付或采用。新的重大取舍返回用户或其委派负责人决定；一般修订不重复申请同一授权。
+note 默认不进入本轮；争议中的必修意见在取得纠正后的有效独立结论前，不能由作者自行宣布通过。
+真实依赖缺口须说明为何影响当前结果，交给真实负责人，不自动扩大文稿、实现或部署范围。
+
+Reviewer 返回 `passed`、`non_pass` 或 `blocked`：分别表示没有阻止当前结果的缺陷、存在可修订的
+具体缺陷、缺少必要依据而无法判断。`fix` 表示需要修订，`block` 表示当前无法继续，`note` 表示建议；
+建议不能使已满足要求的结果失败。输出遵守 Review Contract §6.4 的共同含义，使用 Runtime 提供的
+Reviewer 共同格式及机械校验，并通过 DDM 的
+检查覆盖、候选范围与结果一致性校验；Design artifact 自身的 schema 继续由 DDM 拥有。
+
+## 10. System-wide Invariants
+
+1. 每份 Design 有明确来源、层级和负责人；User Intent 与 Reader Gain 可直接找到。
+2. 文档规定目标与边界，代码证明实现事实；二者冲突时指出差异并修正真实来源。
+3. 只固定本层必须决定的事情；接口、错误码、状态与记录按实际需要定义。
+4. 重要语义改变由独立 Reviewer 判断；作者可以组织审核，但不能把自检当独立结论。
+5. 每次审核绑定本次候选；旧结论不能证明已改变的内容。
+6. 检查服务于结果和职责边界；形式通过不证明设计正确，完成流程也不增加授权。
+7. Portable 内容在来源处修改，安装与共同指令由代码同步；普通项目工作无需反复审核未变内容。
+
+## 11. Peer Boundaries
+
+| 交接方 | DDM 保留的职责 | 对方保留的职责 |
 | --- | --- | --- |
-| YAML frontmatter | repo-level metadata | plain values |
-| `## 0. Contract Capsule` | recoverable machine-audit contract | plain paths / ids / aliases |
-| Body prose | human and agent reasoning surface | readable names plus citation ids, such as `Timestamp Semantic Contract [T0-Time]` |
-| `Machine Audit Runtime Surfaces` | ledger, hooks, commands, concrete projection paths | plain paths / commands |
-| `References` | citation id resolution for body prose | clickable Markdown links |
-
-The reviewer should not require the first draft to follow this layout. At review gate, active T0/T1 docs should converge toward it.
-
-## 2.6 Logical Skills vs Runtime Projections
-
-Design Docs manage logical skill contracts. Runtime directories implement projections of those skills.
-
-This is the boundary:
-
-```text
-Design Doc body -> logical skill id
-References -> logical skill id plus available projection links
-runtime_surface_ledger -> concrete projection path for hard audit
-```
-
-正文 should not treat `09_codex/skills/**`, `09_claude/skills/**`, `.claude/skills/**`, or `.cursor/skills/**` as the canonical skill itself. Those are runtime projections.
-
-Use a stable logical skill citation in body prose:
-
-```md
-Design Doc review is handled by [Skill:support-design-doc-reviewer].
-
-## References
-
-- `[Skill:support-design-doc-reviewer]` logical skill id; current Codex projection: [Design Doc Reviewer Skill](../09_codex/skills/support-design-doc-reviewer/SKILL.md)
-```
-
-When a claim is genuinely projection-specific, say so explicitly:
-
-```md
-The current Codex projection for [Skill:support-design-doc-reviewer] carries the external review module used by the Codex prompt builder.
-```
-
-Concrete projection paths still belong in the runtime ledger:
-
-```yaml
-runtime_surface_ledger:
-  - surface: skill
-    projection: codex
-    path_or_command: 09_codex/skills/support-design-doc-reviewer/SKILL.md
-```
-
-Reviewer stance:
-
-- `skill_id` is stable conceptual identity.
-- Runtime projection path is executable / readable local implementation.
-- A Design Doc may require a skill by logical id.
-- A runtime projection may be the current available implementation.
-- Only the ledger should make the hardcoded projection path an audit target.
-
-## 3. Writing Freedom
-
-Design Docs are allowed to be different shapes.
-
-Allowed shapes:
-
-- architectural contract
-- domain overview
-- source-family playbook
-- schema support note
-- migration plan
-- implementation audit
-- temporary investigation report
-- deprecated pointer
-- retrospective
-
-Authors should optimize for reader judgment, not capsule completeness. If a design needs a diagram, narrative, failure story, or long example, write it. The review gate exists so the writer does not have to stop every paragraph to maintain a table.
-
-The capsule is the audit surface. The body is the thinking surface.
-
-### 3.1 Bounded Metadata And Reasoning Prose
-
-Design Docs should keep audit metadata bounded and let reasoning prose carry the full design argument.
-
-Bounded surfaces include:
-
-- YAML frontmatter
-- Contract Capsule fields
-- runtime surface ledgers
-- verification hooks
-- schema-like metadata tables
-- machine paths, ids, aliases, and command shapes
-
-These surfaces exist for identity, routing, audit, dependency closure, review gates, and machine checks. They should be stable, compact, and difficult to reinterpret. A field that cannot be checked or routed should not be added just because the prose contains a rich idea.
-
-Reasoning prose exists for:
-
-- mechanism
-- examples
-- failure modes
-- tradeoffs
-- reader judgment
-- field rationale
-- cannot-know / cannot-support nuance
-- domain-specific writing quality
-
-The review gate may require missing recoverable metadata before promotion. It must not compress the reasoning surface into metadata just to make the document look more structured. Field completeness is not contract success if the reader can no longer understand the mechanism, judgment, or boundary being carried.
-
-This rule applies across Design Docs, Source Cards, phase notes, Theme writing, Expertise contracts, and other long-lived artifact contracts: bounded metadata gives the system handles; expansive prose transfers judgment.
-
-### 3.2 Auditable YAML Blocks
-
-Material and Expertise contracts should include auditable YAML blocks when they define a reusable contract shape or dogfood instance.
-
-Rules:
-
-- Use a short text label immediately before the fenced block, such as `Machine-auditable contract block:` or `Machine-auditable dogfood block:`.
-- The fenced block must be valid YAML under ` ```yaml `.
-- Keep it to fields that a test, reviewer, builder, or future schema can actually read.
-- Put mechanism, rationale, edge cases, examples, and cannot-support nuance in prose around the block.
-- Do not use placeholder-only YAML as the only auditable surface for an admitted child contract; if the contract is admitted, at least one block should name `contract_id` or `schema_kind`.
-- Dogfood examples may carry real ids and refs even before a runtime schema exists.
-- Any date / timestamp field in an auditable YAML block must follow the Timestamp Semantic Contract [T0-Time]. Prefer semantic field names such as `created_at_utc`, `valid_until_calendar_day_utc`, `session_date_market`, or `recorded_at_utc`.
-- Bare time names such as `date`, `timestamp`, `valid_until`, `created_at`, or `updated_at` are not allowed in new auditable YAML blocks unless the block is explicitly documenting a legacy field and names the replacement.
-- Artifact Graph [T0-Artifact-Graph] takes over only when a YAML block is used as a graph node, edge, freshness predicate, sidecar, provenance, or builder surface.
-
-Minimum contract-shape block:
-
-```yaml
-contract_id: <stable_contract_id>
-schema_kind: <contract_shape | dogfood_instance | runtime_schema_candidate>
-owner_t1: <material | expertise | digestion | research | operation>
-status: active_draft
-required_fields: []
-blocked_outputs: []
-runtime_schema_status: not_admitted | proposed | active
-timestamp_semantics: follows designDoc/the_timestamp_semantic.md
-```
-
-Reviewer rules:
-
-- If a Material or Expertise contract defines a durable object or relation but has no auditable YAML block, flag `missing_auditable_yaml_block`.
-- If a block contains fields whose semantics are explained nowhere in prose, flag `yaml_without_reasoning_surface`.
-- If prose changes a field requirement but the auditable block stays old, flag `contract_block_drift`.
-- If a block contains a date / timestamp field that does not follow Timestamp Semantic naming, flag `timestamp_semantic_violation`.
-
-## 4. Reviewer Contract
-
-`design-doc-reviewer` is a sub-reviewer under the self-review family.
-
-It runs when a Design Doc draft is ready for review, finalization, promotion, or propagation into skills / routing / code / schemas / runner commands. It also runs when an already-active Design Doc is materially updated, or during audit when an existing doc family shows drift.
-
-The reviewer is allowed to:
-
-- add or normalize the Contract Capsule
-- add a short `Reviewer Notes` section
-- mark open decisions
-- convert a migrated full doc into a deprecated pointer when the canonical owner is clear
-- flag stale references, missing runtime triggers, duplicated authority, or contract drift
-- flag metadata overreach when schema-like fields swallow reasoning that belongs in body prose
-- flag missing or stale auditable YAML blocks for admitted Material / Expertise contracts
-
-The reviewer is not allowed to:
-
-- rewrite the design argument as the author
-- collapse mechanism, examples, failure modes, or judgment prose into metadata-only fields
-- silently decide an open product/design question
-- move a proposal into active contract without owner/PM approval
-- replace domain-specific reviewers such as evidence reviewer, theme report reviewer, or engineering project reviewer
-- add runtime requirements that the codebase cannot satisfy
-
-## 5. Review Procedure
-
-The reviewer runs these checks in order.
-
-### 5.1 Classify
-
-Classify the document:
-
-```text
-T0 system contract
-T1 domain / workflow contract
-T2 schema / implementation support
-temp audit / investigation
-legacy / deprecated pointer
-```
-
-If the doc class is unclear, stop and mark `layer: unresolved` rather than guessing.
-
-### 5.2 Recover The Capsule
-
-Recover the Contract Capsule from the document body.
-
-If a field is absent but recoverable, fill it.
-If a field is not recoverable, add a finding such as:
-
-```text
-missing_contract_field: runtime_triggers
-```
-
-Do not invent a trigger, owner, or output just to make the capsule look complete.
-
-### 5.3 Check Authority
-
-Check whether the doc is claiming authority it should not have.
-
-Common checks:
-
-- A domain doc must not override T0 routing.
-- A schema support doc must not redefine workflow ownership.
-- A deprecated pointer must not retain a full competing rule body.
-- A temp audit must not become the canonical source by being more detailed than the real contract.
-- A T0 system contract must declare a stable `t0_layer_id` starting with `the_`.
-
-Canonical T0 layer ids currently admitted:
-
-```text
-the_charter
-the_task_routing
-the_artifact_graph
-the_timestamp_semantic
-the_design_doc_management
-the_contract_audit
-the_tradecli_code_management
-the_external_agent_management
-```
-
-### 5.4 Check Upstream And Downstream Contracts
-
-For each input and output, verify the adjacent document or artifact exists.
-
-Check:
-
-- upstream input names match real artifact names
-- output path exists or is clearly proposed
-- downstream consumer reads the declared surface, not an older cache
-- runtime trigger exists when the doc says an operator can run it
-- open decisions are not described as finished implementation
-
-### 5.4.1 Check Surface Ownership Drift
-
-Check whether the target keeps the four-surface ownership split intact (extended from Charter v1.6 by the Contract Audit Architecture [T0-CA]):
-
-```text
-DesignDoc owns what / why / boundary / authority / class assignment reasoning.
-Registry owns typed refs / class definitions / structural validation.
-Skills own how an AI should act now.
-Code owns how something can be deterministically checked or executed.
-```
-
-Registry is admitted by [T0-CA]. When a module declares a `registry_path`, the registry becomes the typed authority for class ids, ref lists, and structural validation. The DesignDoc remains the upstream authority for design intent and class assignment reasoning. The sync direction is: DesignDoc prose → Registry → Code / Skills.
-
-This is a review-gate check, not a first-draft writing constraint. A draft may be exploratory. Before promotion or propagation, the reviewer must flag places where one surface starts doing another surface's job.
-
-Reviewer rules:
-
-- DesignDocs may define recognized objects, workflows, artifact shapes, why they exist, boundaries, owners, and synchronization obligations. DesignDocs do not maintain complete ref id lists when a registry exists.
-- Registry owns all typed class ids, ref lists, and structural validation. Registry does not own design reasoning or boundary justification.
-- T1 DesignDocs may define AI workflow semantics as durable authority; the corresponding Skill is the runtime projection that tells an AI how to act now.
-- Skills may orchestrate admitted Code, but they do not own deterministic command behavior, schema validation, or executable results.
-- Code may enforce and validate deterministic behavior, but it must not become the hidden authority for why a workflow exists or which domain boundary wins.
-- Produced artifacts, reports, sidecars, and runtime stores hold generated state; they are not independent design authority unless a DesignDoc explicitly makes that artifact the canonical state surface and lists the relevant ledger / validation hook.
-- External worker prompts must keep model / CLI identity as execution surface; the task lens belongs to the owner Skill and the authority lens belongs to the owner DesignDoc.
-- If a DesignDoc maintains complete ref id lists (section ending with "refs:" followed by per-line ids) and the module has a `registry_path`, flag `ref_list_belongs_in_registry`.
-
-Common findings:
-
-- prose embeds registry-like fields that should be in a projection / runtime surface, with no `Machine Audit Runtime Surfaces` ledger
-- a DesignDoc maintains complete ref id lists that duplicate the registry
-- a registry changes class assignment without a corresponding DesignDoc prose update
-- a Skill changes durable domain authority without pointing to the owner DesignDoc
-- Code changes workflow contract behavior but no owner DesignDoc update or implementation-only declaration exists
-- a generated report, sidecar, or runtime output is cited as design authority rather than produced state
-- an external-review prompt treats the model / CLI identity as the review lens instead of execution metadata
-
-### 5.4.2 Check Registry Alignment
-
-When a Design Doc declares a `registry_path`, check the alignment between Design Doc prose and the typed registry.
-
-Reviewer rules:
-
-- The registry file must exist and be importable as Python.
-- Class ids mentioned in Design Doc prose (in backtick format) must exist in the registry.
-- If the Design Doc declares a class assignment ("writer is a Tool, not a Skill"), the registry's class type for that entity must match.
-- If the Design Doc declares "Skill layer is empty for this module", the registry must contain zero Skill instances.
-- If the Design Doc declares forbidden outputs, the registry's `forbidden_output_refs` should be consistent.
-
-This check is a lightweight version of the full three-layer audit defined in [T0-CA] §7. The full audit (capsule recovery + registry structural validation + AI semantic alignment) is the canonical mechanism. This reviewer step catches the most common mismatches without requiring a full AI audit pass.
-
-Common findings:
-
-- `registry_file_missing`: `registry_path` declared but file does not exist or fails import
-- `class_id_not_in_registry`: Design Doc prose mentions a class id that the registry does not contain
-- `class_assignment_mismatch`: Design Doc says "X is a Tool" but registry has X as a Skill or Agent
-- `skill_layer_contradiction`: Design Doc says "no Skills" but registry contains Skill instances
-- `forbidden_output_drift`: Design Doc forbidden output list and registry `forbidden_output_refs` disagree
-
-### 5.4.3 Check Machine Audit Runtime Surfaces
-
-If a Design Doc names any command, builder, schema, skill, prompt module, runner, CLI flag, test, generated artifact, or executable code path, the review gate must recover or patch a runtime surface ledger. The author does not need to include this ledger during first drafting. Before the doc is treated as canonical or propagated, the ledger must exist in the capsule, in a dedicated `Machine Audit Runtime Surfaces` section, or in reviewer notes.
-
-Minimum ledger shape:
-
-```yaml
-runtime_surface_ledger:
-  - surface: <command | builder | builder_command | skill | prompt_module | registry | schema | helper | runner | rule | doc | test | generated_artifact>
-    projection: <codex | claude_code | cursor | portable | runtime_agnostic | n/a>  # optional; required when a surface is a runtime projection
-    path_or_command: <exact local path or command shape>
-    owner: <owning Design Doc / skill / runtime module>
-    doc_claim: <what this doc claims about the surface>
-    sync_obligation: <what must change together if this surface changes>
-    status: active | proposed | deprecated | external_dependency
-verification_hooks:
-  - <unit test, smoke command, schema validation, or explicit manual check>
-```
-
-This is the contract that prevents the common failure:
-
-```text
-Design Doc changed, but the command / skill / test / prompt builder stayed old.
-```
-
-Reviewer rules:
-
-- If a doc includes a copy-pastable command, the command's flags must match the current code or be marked `proposed`.
-- If a doc references a concrete skill projection path, the skill file must exist or be marked `proposed`.
-- If a doc body references a skill as canonical, prefer logical `Skill:<skill_id>` citation and keep concrete projection paths in the ledger.
-- If a doc references a schema or generated artifact, the owner and validation hook must be named.
-- If a doc changes a command contract, at least one verification hook must exercise the new command shape or explicitly state why no automated hook exists.
-- Do not accept "run the tool" as a hook; name the exact command, test, or manual artifact check.
-
-### 5.4.4 Check Bounded Metadata And Reasoning Prose
-
-Check whether the document preserves the metadata / prose split from §3.1.
-
-Reviewer rules:
-
-- Metadata, capsules, ledgers, and schema-like tables should stay compact, recoverable, and machine-auditable.
-- Body prose should remain free to carry mechanism, examples, failure modes, tradeoffs, and judgment transfer.
-- A document may define minimum required fields, but those fields should not pretend to contain the whole reasoning surface.
-- When a field list grows large enough to describe method, salience, stance, causal mechanism, falsifiers, or reader interpretation, the reviewer should ask whether that content belongs in prose or a dedicated child contract.
-- If the body prose is thin because all meaning was pushed into metadata, flag `reasoning_compressed_into_metadata`.
-- If metadata is unbounded because it tries to carry every nuance of the writing, flag `metadata_overreach`.
-
-Common findings:
-
-- a Source Card or expert artifact contract hardens dozens of fields but leaves no prose room for source voice, mechanism, or cannot-support reasoning
-- a Theme or phase-writing contract treats prose quality as a checklist instead of preserving the writer's judgment surface
-- a Design Doc adds audit fields that no reviewer, builder, or downstream consumer can check
-- a reviewer patch removes examples and failure modes while normalizing the capsule
-
-### 5.4.5 Check Body References
-
-For prose outside YAML / code / command blocks, check whether normative repo-local dependencies remain readable in place and also resolve to clickable entries in a visible `References` section.
-
-Reviewer rules:
-
-- If the body makes a normative claim that depends on another local doc, skill, schema, code file, index, or generated artifact, the first body-level mention should include a human-readable name plus a short id, such as `Timestamp Semantic Contract [T0-Time]` or `Design Doc reviewer skill [Skill:support-design-doc-reviewer]`.
-- Do not leave a citation id standing alone as the only meaningful text in a sentence or list item.
-- The target must contain a visible `References` section that maps the id to a clickable Markdown link.
-- The linked path must exist, unless explicitly marked `proposed`, `external_dependency`, or historical.
-- Repeated mentions after the first citation may use the citation id, the title, or an inline code path.
-- Do not require citation ids for YAML frontmatter, Contract Capsule paths, runtime ledger paths, verification hooks, shell commands, code blocks, glob patterns, or placeholders. Those remain plain auditable paths.
-
-Common findings:
-
-- body says "see `the_timestamp_semantic.md`" but the document has no reference-list link
-- body cites `[T0-Time]` but the `References` section has no matching entry
-- body list item says only `[Knowledge-Memory]`, forcing readers to jump to references to understand the sentence
-- reference-list link points to a moved or deleted file
-- a YAML path is converted into a Markdown link, making hardcoded audit harder
-
-### 5.4.6 Check Skill Projection Boundary
-
-For body prose, check that skill references are logical, not accidentally tied to the current runtime.
-
-Reviewer rules:
-
-- Body prose should reference skills by logical id, such as `[Skill:support-design-doc-reviewer]`.
-- `References` entries for skills should name the logical skill id and may list current projection links, such as Codex / Claude Code / Cursor.
-- If only one projection exists today, the entry may say `current Codex projection`; it must not imply that Codex is the skill's canonical identity.
-- Runtime projection paths belong in `runtime_surface_ledger.path_or_command`, with `projection` named when useful.
-- If the body is explicitly discussing Codex, Claude Code, or Cursor runtime behavior, projection-specific paths are allowed, but the claim must be framed as projection-specific.
-
-Common findings:
-
-- body says a workflow is owned by `09_codex/skills/<name>/SKILL.md` rather than `[Skill:<name>]`
-- a reference-list entry labels a Codex path as the canonical skill without a logical `skill_id`
-- a runtime projection path is missing from the ledger, so the concrete file cannot be hard-audited
-- a projection-specific claim omits which runtime projection it belongs to
-
-### 5.4.7 Check Auditable YAML Blocks
-
-For admitted Material and Expertise contracts, check whether the document includes a machine-readable YAML block for any reusable object or relation shape it defines.
-
-Reviewer rules:
-
-- A contract defining a durable object or relation should include a fenced `yaml` block with `contract_id` or `schema_kind`.
-- A dogfood fixture should include at least one real YAML block with real ids / refs when the fixture is meant to test a contract.
-- The block should contain only audit handles and fields that a test, builder, reviewer, or future schema can read.
-- The block should not replace prose explanation.
-- If the block and prose disagree, the reviewer should flag drift and ask the owner to pick the intended contract.
-
-Common findings:
-
-- `missing_auditable_yaml_block`: a Material / Expertise child contract defines a relation or object shape only in prose
-- `contract_block_drift`: prose names a required field but the YAML block omits it
-- `yaml_without_reasoning_surface`: YAML fields exist but no prose explains mechanism, cannot-support boundary, or PM-use boundary
-- `dogfood_block_not_parseable`: dogfood YAML does not parse or misses required relation fields
-- `timestamp_semantic_violation`: auditable YAML block contains `date`, `timestamp`, `valid_until`, `created_at`, or `updated_at` instead of a Timestamp Semantic field name
-
-### 5.5 Check Naming Drift
-
-Search for old vocabulary that would misroute future agents.
-
-Each domain may have its own watchlist. General watchlist:
-
-```text
-KnowledgeBase when Information Pool or archive is meant
-content.md / content.txt when read_content.md is the downstream surface
-evidence_units when agent_evidence.json is meant
-source_family when source_collection.family is meant
-publish_date / email_date when observed_at_utc / recorded_at_utc is meant
-```
-
-Old vocabulary is allowed only when explicitly marked as legacy or historical context.
-
-### 5.6 Emit Review Result
-
-The reviewer writes one of:
-
-```text
-accept_as_is
-accept_with_capsule_patch
-accept_with_notes
-needs_author_revision
-needs_owner_decision
-deprecated_pointer_recommended
-```
-
-The review result must name exact file paths and the reason for each unresolved issue.
-
-## 6. Relationship To Existing Self-Review
-
-The portable doc self-review method [Portable-Doc-Self-Review] remains the portable self-review method for proposals and long-form docs.
-
-This contract adds one specialized sub-reviewer:
-
-```text
-doc self-review
-  -> design-doc-reviewer
-```
-
-Use the general self-review for reader-state, structure, and prose quality.
-Use `design-doc-reviewer` for system auditability:
-
-- contract capsule
-- authority layer
-- upstream/downstream handoff
-- runtime trigger existence
-- bounded metadata / reasoning prose split
-- auditable YAML blocks for Material / Expertise contracts
-- naming drift
-- duplicate canonical owner
-
-Author self-review can improve the doc. It does not replace the design-doc-reviewer when the doc changes a T0/T1 contract.
-
-## 7. Relationship To External Worker Execution
-
-Design-doc review can run in-session or through an external reviewer.
-
-When it runs externally, the runner mechanics must follow the External Worker Execution Contract [T0-External-Worker], the external review builder skill [Skill:support-external-agent-builder], and the prompt builder [Builder-Doc-Review-Prompt].
-
-When it runs through an external surface, it must follow:
-
-```text
-designDoc/the_external_agent_management.md
-09_codex/skills/support-external-agent-builder/external_review_builder.md
-src/tools/build_doc_review_prompt.py
-```
-
-The logical design-doc reviewer skill [Skill:support-design-doc-reviewer] owns the review lens. The External Worker Execution Contract [T0-External-Worker] owns the runner surface, prompt assembly, manifest, hashes, and stale-output policy.
-
-For Design Doc external review, the task-specific prompt module [Module-Design-Doc-External-Review] is currently carried by the Codex projection of [Skill:support-design-doc-reviewer]:
-
-```text
-09_codex/skills/support-design-doc-reviewer/design_doc_external_review_module.md
-```
-
-The external manifest must classify this as:
-
-```yaml
-external_agent_class: external_formal_reviewer
-review_target_type: design_doc_review
-execution_profile: required
-```
-
-Execution surfaces such as Claude Code CLI, DeepSeek V4, Anthropic API, Codex CLI, and OpenAI API are recorded in the manifest. They should not be leaked into the worker prompt unless the surface's capabilities change the evidence the worker can inspect.
-
-## 8. Machine Audit Runtime Surfaces
-
-```yaml
-runtime_surface_ledger:
-  - surface: skill
-    projection: codex
-    path_or_command: 09_codex/skills/support-design-doc-reviewer/SKILL.md
-    owner: designDoc/the_design_doc_management.md
-    doc_claim: Codex-side Design Doc sub-reviewer under doc self-review.
-    sync_obligation: Update when Contract Capsule fields, reviewer layers, metadata / prose split rules, auditable YAML block rules, body-reference traceability rules, surface ownership drift rules, or external review command shape change.
-    status: active
-  - surface: prompt_module
-    projection: codex
-    path_or_command: 09_codex/skills/support-design-doc-reviewer/design_doc_external_review_module.md
-    owner: 09_codex/skills/support-design-doc-reviewer/SKILL.md
-    doc_claim: External formal-review module for Design Doc contract audit.
-    sync_obligation: Update when Design Doc review questions, capsule fields, metadata / prose split rules, auditable YAML block rules, body-reference traceability rules, surface ownership drift rules, runtime ledger rules, or external agent manifest semantics change.
-    status: active
-  - surface: builder_command
-    projection: runtime_agnostic
-    path_or_command: ./.venv/bin/python -m src.tools.build_doc_review_prompt --runner-family <runner_family> --review-target-type design_doc_review --execution-profile-id <profile-id> --model-id <model-id> --reasoning-profile <reasoning-profile> --target <target-design-doc-path> --output <prompt-output-path> --extra-reference designDoc/the_design_doc_management.md --extra-reference designDoc/the_external_agent_management.md --include-target-runtime-surfaces --module 09_codex/skills/support-design-doc-reviewer/design_doc_external_review_module.md
-    owner: src/tools/build_doc_review_prompt.py
-    doc_claim: Assembles an external Design Doc review prompt and manifest.
-    sync_obligation: Update this command wherever it appears when builder CLI args or manifest fields change.
-    status: active
-  - surface: test
-    projection: runtime_agnostic
-    path_or_command: tests/test_doc_review_prompt_builder.py
-    owner: src/tools/build_doc_review_prompt.py
-    doc_claim: Verifies runner_family and review_target_type stay manifest metadata and required hashes exist.
-    sync_obligation: Update when external review manifest contract changes.
-    status: active
-verification_hooks:
-  - ./.venv/bin/python -m pytest tests/test_doc_review_prompt_builder.py -q
-  - ./.venv/bin/python -m src.tools.build_doc_review_prompt --runner-family codex_cli --review-target-type design_doc_review --execution-profile-id codex_cli_gpt_5_5_xhigh --model-id gpt-5.5 --reasoning-profile xhigh --target designDoc/the_design_doc_management.md --output .scratch/design_doc_review_prompt_smoke.md --extra-reference designDoc/the_external_agent_management.md --include-target-runtime-surfaces --module 09_codex/skills/support-design-doc-reviewer/design_doc_external_review_module.md
-```
-
-## 9. Application Rule
-
-For new or materially changed active Design Docs:
-
-1. Author writes freely.
-2. Draft may remain proposal-shaped without a capsule, ledger, or hooks.
-3. Author or operator runs general doc self-review when reader-state or prose quality needs it.
-4. `design-doc-reviewer` runs when the draft is being finalized, promoted, materially updated, or propagated.
-5. Reviewer adds / normalizes recoverable capsule fields, runtime surface ledger, and verification hooks, or emits findings for unrecoverable fields.
-6. Only after review should the position be propagated into skills, routing files, runtime code, schemas, runner commands, or mirror projections.
-
-For legacy docs:
-
-- Do not mass-rewrite all existing docs just to add capsules.
-- Add capsules opportunistically when a doc is touched for real work.
-- If a legacy doc conflicts with a newer canonical owner, convert it into a pointer rather than maintaining two full bodies.
-
-## 10. References
-
-- `[Portable-Doc-Self-Review]` [Portable Doc Self Review](../09_soul/skills/bestpractice_doc_self_review.md)
-- `[T0-External-Worker]` [External Worker Execution Contract](the_external_agent_management.md)
-- `[Skill:support-design-doc-reviewer]` logical skill id `support-design-doc-reviewer`; current Codex projection: [Design Doc Reviewer Skill](../09_codex/skills/support-design-doc-reviewer/SKILL.md)
-- `[Module-Design-Doc-External-Review]` Codex projection prompt module for `[Skill:support-design-doc-reviewer]`: [Design Doc External Review Module](../09_codex/skills/support-design-doc-reviewer/design_doc_external_review_module.md)
-- `[Skill:support-external-agent-builder]` logical skill id `support-external-agent-builder`; current Codex projection: [External Agent Builder Skill](../09_codex/skills/support-external-agent-builder/SKILL.md)
-- `[Builder-Doc-Review-Prompt]` [Doc Review Prompt Builder](../src/tools/build_doc_review_prompt.py)
-- `[T0-CA]` [Contract Audit Architecture](the_contract_audit.md)
-
-## 11. Bottom Line
-
-The system should stay pleasant to think in and hard to misroute.
-
-Free writing preserves design quality and judgment transfer. Reviewer-enforced capsules preserve audit quality. Bounded metadata gives the system handles; body prose keeps the reasoning alive. The boundary between those jobs is the contract.
+| Project Charter 与各 Design owner | 文档表达与 Design review | 项目范围、人类决策权和各自设计含义 |
+| Task Routing 与 System Change | Design 方法和结果要求 | 意图导航，以及需要拆分时的范围与依赖计划 |
+| Skill Management | Design authoring 和 Design Reviewer 的目标语义 | 完整 Skill、可发现性及 Skill review |
+| Review Contract | Design 专用 checklist 与结果判断 | 共同审核纪律、结果结构、prompt 布局及 prompt review |
+| Agent Runtime | 解释 Design review 的结论 | Reviewer 共同格式及机械校验、独立 Module 执行、输入隔离和执行证据 |
+| Software Delivery | 交付设计要求 | Code Design、实现、测试与实际软件发布 |
+
+## 12. References
+
+- [Task Routing](the_task_routing.md)
+- [System Change Governance](the_system_change_governance.md)
+- [Skill Management](the_skill_management.md)
+- [Review Contract](the_review_contract.md)
+- [Agent Runtime](the_agent_runtime.md)
+- [Software Delivery](the_software_delivery.md)
+- [Timestamp and Clock Semantics](the_timestamp_semantic.md)
+- [Identifier and Reference Semantics](the_identifier_and_reference_semantics.md)

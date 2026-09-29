@@ -3,18 +3,19 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
 
 ERROR_CODE = "DESIGN_REPRESENTATION_INCOMPLETE"
 CONTRACT_PATH = Path(__file__).with_suffix(".json")
-_H2_PATTERN = re.compile(r"^##\s+(\d+)\.\s+(.+?)\s*$", re.MULTILINE)
-_H3_PATTERN = re.compile(r"^###\s+(\d+\.\d+)\s+(.+?)\s*$", re.MULTILINE)
+_H2_PATTERN = re.compile(r"^##[ \t]+(\d+)\.[ \t]+(.+?)[ \t]*$", re.MULTILINE)
+_H3_PATTERN = re.compile(r"^###[ \t]+(\d+\.\d+)[ \t]+(.+?)[ \t]*$", re.MULTILINE)
 _PLACEHOLDERS = {"todo", "tbd", "placeholder", "待补充", "待定"}
 
 
@@ -187,6 +188,25 @@ def render_reviewer_checklist(contract_path: Path = CONTRACT_PATH) -> bytes:
     return ("\n".join(lines) + "\n").encode("utf-8")
 
 
+def _structural_text(text: str) -> str:
+    """Mask fenced examples while preserving offsets into the original text."""
+    fence: str | None = None
+    lines: list[str] = []
+    for line in text.splitlines(keepends=True):
+        if fence is None:
+            opening = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line.rstrip("\n"))
+            if opening and not (opening[1][0] == "`" and "`" in opening[2]):
+                fence = opening[1]
+                lines.append("".join("\n" if char == "\n" else " " for char in line))
+            else:
+                lines.append(line)
+        else:
+            lines.append("".join("\n" if char == "\n" else " " for char in line))
+            if re.fullmatch(r" {0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}[ \t]*", line.rstrip("\n")):
+                fence = None
+    return "".join(lines)
+
+
 def validate_artifact(payload: bytes, *, layer: str) -> DesignArtifactValidationResult:
     contract = load_contract()
     normalized_layer = layer.lower()
@@ -198,7 +218,8 @@ def validate_artifact(payload: bytes, *, layer: str) -> DesignArtifactValidation
         raise DesignArtifactContractError("Design candidate must be UTF-8") from exc
     if "\r" in text:
         raise DesignArtifactContractError("Design candidate must use LF line endings")
-    matches = list(_H2_PATTERN.finditer(text))
+    structure = _structural_text(text)
+    matches = list(_H2_PATTERN.finditer(structure))
     if not matches:
         raise DesignArtifactContractError("Design candidate has no numbered level-two sections")
     numbers = [int(match.group(1)) for match in matches]
@@ -243,7 +264,7 @@ def validate_artifact(payload: bytes, *, layer: str) -> DesignArtifactValidation
             if optional_index + 1 < len(matches)
             else len(text)
         )
-        optional_body = text[optional_body_start:optional_body_end]
+        optional_body = structure[optional_body_start:optional_body_end]
         observed_subsections = [
             (match.group(1), match.group(2))
             for match in _H3_PATTERN.finditer(optional_body)
@@ -271,9 +292,29 @@ def validate_artifact(payload: bytes, *, layer: str) -> DesignArtifactValidation
     capsule_index = headings.index("Intent Capsule")
     capsule_start = matches[capsule_index].end()
     capsule_end = matches[capsule_index + 1].start()
-    layer_line = f"layer: {layer_contract['layer_value']}"
-    if layer_line not in text[capsule_start:capsule_end].splitlines():
-        raise DesignArtifactContractError(f"Intent Capsule must contain exact {layer_line!r}")
+    frontmatter = ""
+    if text.startswith("---\n"):
+        frontmatter_end = text.find("\n---\n", 3)
+        if frontmatter_end == -1:
+            raise DesignArtifactContractError("Design frontmatter is not closed")
+        frontmatter = text[4:frontmatter_end]
+    declarations: list[str] = []
+    for location, body in (
+        ("frontmatter", frontmatter),
+        ("Intent Capsule", text[capsule_start:capsule_end]),
+    ):
+        values = re.findall(r"^layer:[ \t]*(.*?)[ \t]*$", body, re.MULTILINE)
+        if len(values) > 1:
+            raise DesignArtifactContractError(f"Design layer is repeated in {location}")
+        declarations.extend(values)
+    expected_layer = layer_contract["layer_value"]
+    allowed_values = {expected_layer, f'"{expected_layer}"', f"'{expected_layer}'"}
+    if not declarations:
+        raise DesignArtifactContractError("Design layer declaration is missing")
+    if any(value not in allowed_values for value in declarations):
+        raise DesignArtifactContractError(
+            f"Design layer declarations conflict with requested {expected_layer!r}"
+        )
     validator_ids = [
         "design_utf8_and_line_endings",
         "design_numbered_section_sequence",
@@ -289,3 +330,42 @@ def validate_artifact(payload: bytes, *, layer: str) -> DesignArtifactValidation
         headings=tuple(headings),
         validator_ids=tuple(validator_ids),
     )
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Expose the existing read-only validator without host dependencies."""
+    parser = argparse.ArgumentParser(
+        description="检查 Design 文档结构与 layer；不执行语义审核，不修改文件。"
+    )
+    parser.add_argument("files", type=Path, nargs="+", help="待检查的 Design 文档")
+    parser.add_argument(
+        "--layer", type=str.lower, choices=("charter", "t0", "t1", "t2"),
+        required=True, help="本次文件的目标层级",
+    )
+    parser.add_argument("--json", action="store_true", help="输出 JSON 检查结果")
+    args = parser.parse_args(argv)
+    results: list[dict[str, Any]] = []
+    for path in args.files:
+        try:
+            checked = validate_artifact(path.read_bytes(), layer=args.layer)
+        except (OSError, DesignArtifactContractError) as exc:
+            results.append({
+                "file": str(path), "valid": False,
+                "error_code": exc.code if isinstance(exc, DesignArtifactContractError) else type(exc).__name__,
+                "message": str(exc),
+            })
+        else:
+            results.append({"file": str(path), "valid": True, **asdict(checked)})
+    if args.json:
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+    else:
+        for result in results:
+            if result["valid"]:
+                print(f"通过结构检查：{result['file']}（{len(result['validator_ids'])} 项；不代表语义审核通过）")
+            else:
+                print(f"检查失败：{result['file']} [{result['error_code']}] {result['message']}")
+    return 0 if all(result["valid"] for result in results) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -95,10 +95,7 @@
   ],
   "reviewer_checklist": {
     "resource_id": "t0:design_contract_review_checklist",
-    "intro_lines": [
-      "前十项是 semantic stage；第十一项只在 semantic stage 全部通过后执行。输入",
-      "`required_check_ids` 必须与下表顺序和集合完全一致。"
-    ],
+    "intro_lines": [],
     "columns": [
       "顺序",
       "`check_id`",
@@ -109,85 +106,81 @@
       {
         "order": 1,
         "check_id": "intent_and_reader_result",
-        "required_result": "`intended_result`、`User Intent`、`Reader Gain` 和 material Design choice 清楚一致；Reader Gain 说明 reader 与新增能力",
+        "required_result": "设计实现本次授权目标与适用计划步骤的结果；User Intent 与 Reader Gain 清楚，不把自行新增的承诺或后续工作当成当前要求",
         "finding_class": "intent_gap",
         "stage": "semantic"
       },
       {
         "order": 2,
         "check_id": "layer_owner_and_parent",
-        "required_result": "layer、identity、owner、parent、same-level peer、dependency 和 structural disposition 一致；完整 peer set 不重复、不遗漏、不侵入 authority",
+        "required_result": "所属层级、负责人和必要父级清楚，本次结果实际涉及的职责集合没有重叠或缺口，不为检查完整而重整全部邻接系统",
         "finding_class": "layer_or_owner_defect",
         "stage": "semantic"
       },
       {
         "order": 3,
         "check_id": "layer_content_fit",
-        "required_result": "owned object 唯一；authority、inheritance、delegation 和 layer scaffold 正确；只包含本层相关内容",
+        "required_result": "内容属于本层，机制按实际需要使用，没有为填满模板增加下层设计",
         "finding_class": "layer_content_misfit",
         "stage": "semantic"
       },
       {
         "order": 4,
         "check_id": "peer_authority_and_inheritance",
-        "required_result": "inherited constraints、peer handoff、dependency direction 和结构变更 coverage 闭合；不复制 peer internal contract",
+        "required_result": "遵守适用上游规则，与直接相关 peer 的交接一致；实际涉及时间或机器引用时使用对应 T0",
         "finding_class": "peer_or_inheritance_conflict",
         "stage": "semantic"
       },
       {
         "order": 5,
         "check_id": "boundary_coherence",
-        "required_result": "semantic owner、author、operator、Reviewer、persistence owner、implementation binding 与 approval authority 可区分",
+        "required_result": "各主要职责落实到可识别的执行主体、处理对象和动作；交接说明传递什么结果、谁接收并继续什么工作，文档负责人不替代执行主体，不以职责区分创造多余管理角色",
         "finding_class": "boundary_ambiguity",
         "stage": "semantic"
       },
       {
         "order": 6,
         "check_id": "design_and_code_truth_separation",
-        "required_result": "Design Intent、immutable Code Projection 与 mutable Current Inspection 分离",
+        "required_result": "目标与实际实现可区分，当前事实有代码依据，不额外要求无消费需求的机器对象",
         "finding_class": "code_truth_leakage",
         "stage": "semantic"
       },
       {
         "order": 7,
         "check_id": "flow_interface_and_error_closure",
-        "required_result": "适用的 layer Flowmap、owner-local interface/error、图、表和正文互相解析；parent 不复制 child row",
+        "required_result": "Flowmap、正文与实际需要的输入输出和失败处理一致，文档交接不被误写成软件接口",
         "finding_class": "flow_or_interface_closure_gap",
         "stage": "semantic"
       },
       {
         "order": 8,
         "check_id": "failure_completion_and_rollback",
-        "required_result": "invariant、public handoff、failure、completion、recovery、rollback、materiality 和 lifecycle obligation 属于正确 layer",
+        "required_result": "完成、信息不足与真实失败的后果清楚；恢复或回滚仅在实际影响需要时定义",
         "finding_class": "failure_or_completion_gap",
         "stage": "semantic"
       },
       {
         "order": 9,
         "check_id": "implementability_without_redesign",
-        "required_result": "下一层无需补一个未声明的 authority、product behavior、boundary、payload、failure 或 peer decision",
+        "required_result": "具体情境中的主要功能、选定工作方式和交付结果已由本层说明，下一层无需重新猜测；功能或交付的实质歧义是设计缺口，不降为文字建议；合理下层实现选择和不影响本步的后续工作仍被保留",
         "finding_class": "implementability_gap",
         "stage": "semantic"
       },
       {
         "order": 10,
         "check_id": "review_approval_and_admission",
-        "required_result": "independent review、owner decision、Design admission、implementation completion 与 release 是不同决定",
+        "required_result": "审查、实际实现与采用结果的证据不被混淆，所需授权明确，不强制额外状态或重复审批",
         "finding_class": "review_or_admission_conflict",
         "stage": "semantic"
       },
       {
         "order": 11,
         "check_id": "prose_and_meaning_preservation",
-        "required_result": "Semantic 全过后，同一 bytes 可被冷读并准确复述，不改变 governing meaning",
+        "required_result": "语义检查通过后，冷读者能准确理解设计；表达修正保持事实、职责和条件",
         "finding_class": "prose_or_communication_defect",
         "stage": "prose"
       }
     ],
-    "outro_lines": [
-      "对结构变更，第 2 项确定 identity、owner、parent 与 complete peer-set disposition；第 4 项确定",
-      "inherited law、peer handoff 和 predecessor/successor coverage。同一根因影响同一 finding_class 时不重复 finding；跨不同 finding_class 时分别生成 finding，并指向同一个待恢复结果。",
-      "只有 `block` 或 `fix` finding ID 可以进入 disposition=`finding` 的 check；`passed` 与 `not_run` check 的 `finding_ids` 必须为空，`note` 只保留在顶层 findings。"
-    ]
+    "outro_lines": []
   }
 }

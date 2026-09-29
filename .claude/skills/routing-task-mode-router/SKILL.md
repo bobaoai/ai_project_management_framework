@@ -64,7 +64,7 @@ Route into these stable top-level task lines first:
 - external learning research → `research-external-learning`
 - independent research (Digestion) → `digestion-independent-researcher`
 - external agent build (review / extraction / triage) → `support-external-agent-builder`
-- engineering review → `engineering-project-review`
+- engineering review → `engineering-change-review`
 - session support → `support-compaction-handoff`
 
 Do not flatten those into fewer buckets just because they share some modules or materials.
@@ -161,17 +161,17 @@ Use these top-level rules:
   - subskill selection by action type: review → `external_review_builder.md`
   - this includes requests such as "对这个 doc 做 External Review", "用外部 agent 审一下", "独立 review 这批改动"
   - the key signal is that the task should be executed by an independent external runner surface, not in the current session
-  - distinguish from `engineering-project-review`: engineering-project-review runs in-session and reads the actual diff; support-external-agent-builder assembles a prompt for an out-of-session runner (Claude Code CLI, DeepSeek, OpenAI, etc.)
+  - distinguish from `engineering-change-review`: engineering-change-review sends an exact engineering plan or exact commit to the registered engineering Reviewer on the local Agent Runtime; support-external-agent-builder assembles a prompt for an out-of-session runner (Claude Code CLI, DeepSeek, OpenAI, etc.)
   - distinguish from `research-external-learning`: external-learning studies outside systems to improve this repo; external-agent-builder builds a runner to execute a task through an outside AI surface
 - if the user asks to independently research a company, crypto project, or asset from scratch (assemble sources, build source packet, produce dossier or decision brief):
   - route to `digestion-independent-researcher`
   - this includes requests such as "帮我查一下这家公司的资料", "做个 independent research", "从头研究一下 X"
   - distinguish from `research-company-financial-analysis`: independent researcher assembles upstream Digestion artifacts (source packet, source cards, dossier); company financial analysis writes the PM-facing report from those artifacts
   - distinguish from archive curation: archive operator normalizes already-received material; independent researcher actively assembles new material from local + external sources
-- if the user asks to review engineering commits, charter-alignment changes, schema changes, or skill cluster work that has already landed:
-  - route to `engineering-project-review`
+- if the user asks to review an engineering plan before implementation, or engineering commits, charter-alignment changes, schema changes, or skill cluster work that has already landed:
+  - route to `engineering-change-review`
   - this includes requests such as "review 一下这批 commits", "看看这几个改动有没有问题", "engineering review"
-  - distinguish from `support-external-agent-builder`: engineering-project-review runs in-session against the actual diff; external-agent-builder assembles a prompt for an external runner
+  - distinguish from `support-external-agent-builder`: engineering-change-review reviews the exact plan or exact commit through the registered Reviewer on the local Agent Runtime; external-agent-builder assembles a prompt for an external runner
 - if the user asks to compact the current session, generate a handoff note, or prepare to continue in a new chat:
   - route to `support-compaction-handoff`
   - this includes requests such as "compact", "session handoff", "帮我生成一个 handoff note"
@@ -257,7 +257,7 @@ Use these as current concrete examples from the repo's actual working surface:
   - `downstream_skill = digestion-independent-researcher`
 - “review 一下这批 commits”:
   - `matched_mainline = engineering review`
-  - `downstream_skill = engineering-project-review`
+  - `downstream_skill = engineering-change-review`
 - “compact” / “session handoff”:
   - `matched_mainline = session support`
   - `downstream_skill = support-compaction-handoff`

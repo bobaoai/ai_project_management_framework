@@ -1,552 +1,313 @@
 ---
 title: Design Doc Management
-status: candidate
 layer: T0
-t0_layer_id: the_design_doc_management
 canonical_owner: designDoc/the_design_doc_management.md
+parent: null
 owned_system_object: Design Intent
-language: zh-CN with exact English identifiers
-reader_persona:
-  - Principal Manager
-  - Design Owner
-  - Architecture Reviewer
-  - Implementation Owner
+t0_layer_id: the_design_doc_management
 ---
 
 # 设计文档管理（Design Doc Management）
+
+Design Doc 使读者知道要建设或改变什么，哪个主体对什么对象执行什么动作、交付什么结果，以及怎样判断结果成立。
+DDM 规定这种文档怎样写、怎样被找到和审查。文档内容由各自负责人决定；代码说明实际实现。
 
 ## 0. Intent Capsule
 
 ```yaml
 layer: T0
-t0_layer_id: the_design_doc_management
-status: candidate
-canonical_owner: designDoc/the_design_doc_management.md
-owned_system_object: Design Intent
-scope:
-  - 项目 Charter 以及所有 T0、T1 和 T2 Design Doc
-  - Design Doc 的创建、变更、批准、审计、生命周期和退役
-  - 由可移植治理基线和项目 Charter 组装而成的项目 T0 authority
-  - 分离 human intent、machine contract、code registration、persistent state、Skill projection 和 generated inspection
-  - design-first 变更控制
-  - 与层级相符的表达：Charter 的 constitutional authority，以及 T0、T1 和 T2 的 owner-local 流程、接口和错误语义
-non_goals:
-  - 由另一个 T0、T1 或 T2 拥有的业务语义
-  - SystemChangePlan 创作和跨 owner 变更路由
-  - 实现清单、当前 binding、release state 或测试结果
-  - 外部 Independent Review 执行
-  - 软件发布准入
-inputs:
-  - Principal Manager 或承担问责责任的 owner 意图
-  - 拟议的 Charter、T0、T1 或 T2 设计变更及受影响的 contract 集合
-  - Design 请求对应的精确、已审查 SystemChangePlan step
-outputs:
-  - 已批准或已拒绝的 Design Intent
-  - material-change 分类
-  - 所需的 machine-contract 和 implementation handoff
-  - Design Doc 生命周期决策
-truth_surfaces:
-  - designDoc/the_design_doc_management.md
-  - logical:t0_contract_registry
-runtime_triggers:
-  - 新 Design Doc 提案
-  - material Design Intent 变更或退役提案
-downstream_consumers:
-  - Charter owner 以及每一位 T0、T1 和 T2 design owner
-  - design_contract_reviewer、implementation 和 Software Delivery workflow
-open_decisions: []
-review_gate: material change 必须通过 design_contract_reviewer 语义审查，并获得 Principal Manager 或获委派 design owner 的批准
-runtime_surface_ledger: 实现后从 code-owned design registrations 生成
-verification_hooks:
-  - Intent Capsule 验证和 canonical-owner 唯一性
-  - 适用 layer 的 required-section schema、连续编号与 protected heading-name 闭合
-  - 与层级相符的 Charter authority 闭合，或 owner-local primary-flow、interface-input/output 和 error-code 闭合
-  - layer、parent、naming、materiality 和 lifecycle semantics 闭合
-  - Design Intent、Code Projection 和 Current Inspection 分离
-  - Design 退役之前，由 DDM-owned Design reference validator 解析的 active inbound-reference 闭合
 ```
+
+本 T0 管理 Charter、T0、T1 和 T2 Design Intent 的表达与采用。输入是明确的设计请求、适用的上游
+规则和已有文档；输出是可供读者理解、实施或作决定的设计，以及适用的独立审查结果。
+正式文档有一个确定来源；当前采用内容和修改历史由版本控制及发布工具记录。
 
 ## 1. Primary System Flow
 
 ```mermaid
-flowchart LR
-    REQUEST["已授权的设计请求"] -->|"design_change_classify"| CLASS["实质性或非实质性变更"]
-    CLASS -->|"design_request"| SCOPE["已接受的创作范围<br/>以及 layer/owner boundary"]
-    SCOPE --> OWNER["所属 Design authority"]
-    OWNER -->|"T1/T2 concrete work delegation"| SPECIALIZATION["T1/T2 specialization<br/>拥有具体创作 workflow 和领域 operation"]
-    OWNER -->|"design_candidate_freeze"| FREEZE["检查表达完整性并冻结"]
-    SPECIALIZATION -->|"design_candidate_freeze"| FREEZE
-    FREEZE --> CANDIDATE["冻结的 Design candidate"]
-    CANDIDATE -->|"deterministic validation"| VALIDATE["DDM-owned Design validator"]
-    VALIDATE -->|"pass"| REVIEW["独立 design_contract_reviewer<br/>使用 DDM checklist 与 Review Contract 通用规则"]
-    VALIDATE -->|"fail"| REVISE
-    REVIEW -->|"passed verdict"| DECISION["承担问责责任的 owner 决策"]
-    REVIEW -->|"non_pass"| REVISE
-    REVIEW -->|"blocked"| RETURN
-    CANDIDATE -->|"non-material candidate"| DECISION
-    DECISION -->|"approved_design_handoff"| IMPLEMENT["Machine contract 和 Code Design"]
-    DECISION -->|"design_lifecycle_transition: revise or reject"| NO_HANDOFF["Candidate 保持 non-current<br/>不发生 implementation handoff"]
-    DECISION -->|"design_lifecycle_transition"| STATE["Current、Superseded 或 Retired 状态"]
-    CLOSURE["DDM-owned validator<br/>引用闭合结果"] --> DECISION
-    CLASS -.->|"DESIGN_ENTRY_MISMATCH"| RETURN["返回 System Change scope"]
-    DECISION -.->|"DESIGN_APPROVAL_EVIDENCE_INCOMPLETE"| HANDOFF_HOLD["暂停 Current admission<br/>和 implementation handoff"]
-    FREEZE -.->|"DESIGN_REPRESENTATION_INCOMPLETE"| REVISE["修订 Design Intent"]
-    DECISION -.->|"DESIGN_LIFECYCLE_TRANSITION_INVALID"| REVISE
-    DECISION -.->|"DESIGN_RETIREMENT_REFERENCE_OPEN"| HOLD["暂停退役"]
+flowchart TD
+    R["Design 新增或修改请求"] --> A["Primary Agent 读取 DDM 与目标设计依据<br/>进入 the-design-authoring"]
+    A --> W["写出完整 Design 文稿<br/>按 DDM checklist 自检"]
+    W --> C["DDM 确定性代码检查<br/>结构、引用与受审内容"]
+    C -->|通过| E["独立 external review<br/>design_contract_reviewer<br/>语义审查，再做表达审查"]
+    E --> V["代码验证 Reviewer 输出<br/>对应本次文稿，检查项与结论一致"]
+    V -->|passed| U["按授权更新对应的 Design 源文件"]
+    V -->|non_pass：具体设计缺陷| A
+    C -->|文稿问题| A
+    D["需要删除的文档"] --> L["处理仍在使用的引用"]
+    L --> X["删除文档"]
 ```
 
-| `interface_id` | 所属方 | 输入 | 输出 | 影响 | 错误码 |
-| --- | --- | --- | --- | --- | --- |
-| `design_change_classify` | Design Doc Management | 拟议的 Design 变更和受影响的 authority boundary | Material 或 non-material 分类 | 选择适用的 Design lifecycle gates；不创建 candidate | none |
-| `design_request` | Design Doc Management | 已分类的问责意图，以及精确、已审查的 SystemChangePlan step | 已接受的创作范围，以及 layer、owner 和 required-result boundary | 允许所属 Design owner 形成 candidate，但不转移 Design Intent authority | `DESIGN_ENTRY_MISMATCH` |
-| `design_candidate_freeze` | Design Doc Management | 已接受的创作范围，以及完整、由该层拥有的 Design Intent | 冻结的 Design candidate | 冻结一个可审查的语义 subject；不创建批准或实现状态 | `DESIGN_REPRESENTATION_INCOMPLETE` |
-| `approved_design_handoff` | Design Doc Management | 精确冻结的 material candidate、通过 DDM schema 与 semantic validator 且 registered verdict 为 `passed` 的 `design_contract_reviewer` output，以及明确授权 implementation handoff 的问责 owner 决策；non-material 或 non-approving decision 不调用此接口 | 已批准的 machine-contract 和 Code Design handoff | 仅授权已声明的下一个设计或实现决策；不创建审查或发布准入 | `DESIGN_APPROVAL_EVIDENCE_INCOMPLETE` |
-| `design_lifecycle_transition` | Design Doc Management | 当前 Design 状态和明确的 lifecycle-admission decision；material candidate 进入 `Current` 时还包括精确冻结 candidate，以及通过 DDM validator 且 registered verdict 为 `passed` 的 Reviewer output；`Current` 直接退役时还包括明确 retirement decision 和类型化引用闭合结果；`Superseded` 退役时还包括类型化引用闭合结果，以及已记录于 replacement/supersession decision 的 retirement disposition，缺少该 disposition 时则需明确 retirement decision | `Candidate`、`UnderReview`、`Current`、`Superseded` 或 `Retired` 生命周期状态 | 仅改变 Design 生命周期状态 | `DESIGN_APPROVAL_EVIDENCE_INCOMPLETE`、`DESIGN_LIFECYCLE_TRANSITION_INVALID`、`DESIGN_RETIREMENT_REFERENCE_OPEN` |
+输入必须使作者明确本次要改变的结果和范围；输出必须使下一位读者完成本文对应层级的判断。
+流程图表达职责与必要依赖，不要求每个节点有独立接口、记录或批准状态。涉及新的产品或架构取舍时，
+由用户或其明确委派的负责人决定；已授权范围内的写作、自检与修订由 Primary Agent 连续完成。
+检查发现问题时修正文档，缺少信息时补齐依据。它们是本次工作的处理结果，不是文档的使用状态。
 
-| `error_code` | 所属方 | 触发条件 | 含义 | 调用方动作 |
-| --- | --- | --- | --- | --- |
-| `DESIGN_ENTRY_MISMATCH` | Design Doc Management | 缺少所需的 SystemChangePlan step，或其 layer、owner、required result 或 produced subject kind 与 Design change 不匹配 | 未形成 Design candidate | 返回后继 SystemChangePlan |
-| `DESIGN_REPRESENTATION_INCOMPLETE` | Design Doc Management | 所属 layer 的 required section 缺失、重复、乱序、为空、使用占位内容或承载错误含义，或其 constitutional authority、Primary System Flow、interface input/output 或 observable failure-code closure 不完整 | Candidate 无法指导实现或审查 | 修订同一个 Design candidate |
-| `DESIGN_APPROVAL_EVIDENCE_INCOMPLETE` | Design Doc Management | Material candidate 进入 `Current` 或调用 material handoff 时，缺少绑定 exact candidate、覆盖全部 DDM checks、通过 DDM validator 且 registered verdict 为 `passed` 的 `design_contract_reviewer` output，或缺少分别明确授权 lifecycle admission 或 implementation 的 decision | 未发生 `Current` admission 或 implementation handoff | 返回承担问责责任的 Design owner；在补齐证据并取得对应 decision 前不得重试 |
-| `DESIGN_LIFECYCLE_TRANSITION_INVALID` | Design Doc Management | 请求的生命周期转换或所需的问责决策无效 | Design 生命周期状态未改变 | 返回所属 Design owner |
-| `DESIGN_RETIREMENT_REFERENCE_OPEN` | Design Doc Management | DDM-owned Design reference validator 报告存在未解决的 active inbound reference | 未发生退役 | 解决该引用或确定其 disposition，之后再重试退役 |
+Design 写作由 `the-design-authoring` 承担，独立外审固定使用 DDM 所属的
+`design_contract_reviewer`，由 Agent Runtime 以独立 Reviewer 身份执行。Review Contract 向它提供
+通用规则，DDM 提供 Design checklist。Primary Agent 组织调用并核对意见，不能用自己的自检代替外审。
 
-Design Doc Management 自己拥有 Design review 的 checklist、Reviewer prompt source、input/output
-schema、host semantic validator 和完成证据语义。Review Contract 只提供机械注入的通用阶段与
-instruction；Agent Runtime 只执行 Reviewer Module。两者都不取得 Design review result 或 owner
-decision authority。
+`non_pass` 中的设计缺陷返回作者修订；`blocked` 说明缺少的必要依据，由 Primary Agent 找到提供方补齐。
+Reviewer 调用失败或输出验证失败，返回 Runtime 或相应校验代码的负责人处理，再对同一文稿重试；
+这类失败不要求作者改设计。修订文稿后重新检查和外审；纯编辑或机械更新的适用范围见第 8 节。
+
+最后一步是把通过审查的内容写回对应 Design 源文件。Portable T0 更新其 portable source，项目 Design
+更新其所属源文件。将更新后的版本同步到安装投影或其他项目属于部署，单独按部署授权执行；它不属于
+本图的 Design 更新路径，也不是本次文稿审查通过的条件。
 
 ## 2. User Intent
 
-Design Doc Management 让项目 Charter 和每一份 T0、T1、T2 Design Doc 都能在实现之前
-明确表达 human intent。Design Doc Management 同时把这些 Design Intent 与
-code-owned implementation truth 分开。它管理 Design Intent 的创建、修改、审查、
-决策、生命周期和 `Retired` 状态，同时不接管各领域的业务语义。
+在开始实现或复用设计前，让人和 Agent 理解同一份目标与职责边界。写作方法应能从当前文档入口找到，
+无需重建历史聊天，也无需先维护一套文档生命周期或项目治理数据库。
 
 ## 3. Reader Gain
 
-- Principal Manager 读完一份 Design Intent 后，能判断其中提出的变更是否属于
-  material change，以及是否必须先批准再实现。
-- Design Owner 读完 candidate Design Intent 后，能判断它属于 Charter、T0、T1 还是
-  T2，该层必须表达什么，以及是否完整说明 `Retired` 条件。
-- Architecture Reviewer 读完 frozen Design Intent candidate 后，能判断 owner、parent、
-  peer、Flowmap、I/O 和 error boundary 是否闭合。
-- Implementation Owner 读完 approved Design Intent 后，能判断它是否足以形成
-  CodeDesignBasis，以及哪些缺失语义仍需 Design Owner 补齐。
+- Primary Agent 能找到适用文档和写作 Skill，判断本次该写在哪一层。
+- Design Owner 能判断设计是否达到授权目标、是否侵入相邻职责，以及哪些决定仍需自己作出。
+- Implementation Owner 能取得本层已经决定的要求，并继续选择下一层允许自行决定的实现方式。
+- Architecture Reviewer 能基于目标、证据和边界发现缺陷，而不是要求每份文档采用同一种运行机制。
 
 ## 4. Owned System Object
 
-本 T0 拥有 `Design Intent`：它是承载稳定人类判断的陈述，用于说明一个 Charter、T0、
-T1 或 T2 owner 在代码可以实现结果之前，表达什么含义、作出什么决策、委派什么事项，
-以及提出什么要求。作为 `Design Intent` 管理的一部分，本 T0 同时拥有 Design review 的
-checklist、`design_contract_reviewer` prompt source、input/output schema、semantic validator、
-output/verdict meaning 和 accountable owner evidence requirement；这些 control surfaces 不构成第二个
-owned system object。本 T0 不拥有 SystemChangePlan、实现、Runtime execution evidence 或软件发布。
-
-项目 T1/T2 specialization 拥有具体的创作 workflow、tool 和领域特定 Design operation。
-代码拥有 Registry、projection、validation 和 persistence mechanics。本 T0 定义通用的
-intent law，并委派这些具体职责，而不维护其当前清单。
+DDM 拥有 Design Intent 的表达、发现和审查规则，包括各层应回答的问题、必要文档结构，以及
+`design_contract_reviewer` 的目标专用判断标准。每份文档的业务或系统含义仍由其所属负责人拥有。
 
 ## 5. Authority
 
-Design Doc Management 拥有作为一类 artifact 的 Design Doc 规则。每份 Design Doc 的
-owner 拥有该文档内部的意图。Principal Manager 拥有 material product 和 architecture
-决策。
+DDM 决定 Design Doc 必须让读者理解什么、何种修改需要独立 Design review、审查完成后怎样使用结果。
+它不选择业务行为、代码实现、Runtime 配置或部署方式。
 
-正确的系统结果优先于形式化流程的完成。完成 authoring 或 review sequence 并不会让错误
-设计变得正确。当证据暴露出错误的 boundary、contract 或 implementation 时，应在源头
-修正所属 Design Doc 和 code truth；不得仅为保留既有流程或结构而增加补偿性的 shadow
-path。
-
-本合同回答：
-
-1. Charter 或 T0、T1、T2 Design Doc 必须传达什么？
-2. 哪种变更属于 material change，因而要求代码工作开始前获得批准？
-3. 哪些陈述属于 human-maintained intent，哪些属于 machine-readable 或 generated
-   surface？
-4. Candidate 如何成为 `Current`、成为 `Superseded` 或退役？
-5. Exact Design candidate 接受什么 Design review，什么 Reviewer output 可以作为 accountable owner
-   decision 的 evidence？
-
-本合同不判断研究结论是否正确、Runtime execution 是否成功，也不判断软件发布能否安全
-部署。
+Primary Agent 使用 `the-design-authoring` 写作和自检，并在需要时调用独立 Reviewer。负责组织工作
+不等于代替 Reviewer 判断，也不需要为这些动作分别创建管理角色。
 
 ## 6. 设计生产
 
-本章只定义 Design Intent 如何在正确层级表达完整结果。它不拥有 Skill packaging、Reviewer
-execution、代码布局或当前 implementation inventory。
+### 6.1 层级与内容
 
-### 6.1 合同层级与固定语义
+<!-- design-layer-semantics:start -->
+所有 Design Doc 都明确 `User Intent` 和 `Reader Gain`。前者说明为什么需要这份设计，后者说明谁读完
+后能作出什么判断或完成什么工作。正文以中文为主体；已有标识符、代码符号和引用保留准确名称。
 
-Charter、T0、T1 和 T2 都必须明确 `User Intent` 与 `Reader Gain`。`User Intent` 说明
-contract 为什么存在以及它服务的 product outcome。`Reader Gain` 同时写明读者，以及
-读完后新增的区分、决策或执行能力。
+设计围绕本层实际要建设、维护或改变的对象展开。每项主要功能或职责应使读者识别：哪个主体，在什么
+情境下，对哪个对象执行什么动作，产生什么结果，以及谁使用这个结果。设计对象是所讨论的系统、组件
+或能力；执行主体是承担动作的组件、服务、Agent 或人，文档负责人不自动等于执行主体。主体与对象的
+精度应足以区分本层实际涉及的职责，沿用已有名称；新增对象应说明其用途，不能仅靠命名补足设计。
 
-所有 Design Doc 的解释性正文以中文为主体；受保护 heading、registered identifier、
-`interface_id`、`error_code`、schema field、code symbol、path 和需要精确匹配的引用标识符
-保持原样，不另造翻译名。标题以下的 section 使用连续数字编号；编号只服务
-阅读导航，不表达 authority、priority、lifecycle 或执行顺序。
+交付结果可以是可用功能、对象的改变、判断或供指定读者使用的材料，不要求另建文件或运行记录。
+职责边界说明具体动作由谁完成，以及何种结果交给谁继续处理；仅列领域名称、负责人或“协调、治理、
+支持、维护”等职责词，不代表功能已经定义。上述内容可以在连贯正文中表达，无需新增固定句式或表格。
 
-| Layer | 拥有的设计问题 | 必须表达的结果 | 必须下沉的内容 |
-| --- | --- | --- | --- |
-| Charter | 项目的 constitutional identity 与 human authority | product identity、scope、Principal Manager authority、constitutional invariants、Design/code boundary、amendment authority，以及对当前 T0 topology projection 的类型化引用 | Operational flow、peer interface/error、Runtime binding、Reviewer execution 和当前 T0 inventory |
-| T0 | 多个独立 T1 必须一致回答的一个 system-wide question | `User Intent`、`Reader Gain`、`Owned System Object`、`Authority`、`System-wide Invariants`、`Peer Boundaries`，以及 T1 delegation、machine-enforcement result 和 review requirement | T1/T2 workflow、code field、provider、directory、database、Reviewer Module execution 和 peer internal contract |
-| T1 | 一个 project domain 或 independently governed product boundary | Domain outcome、objects/states、architecture/lifecycle、public boundary、quality rules、loops、human decision gates、inherited T0 constraints、dependencies、T2 partition、completion 和 failure | T2 operation detail，以及其他 T0 拥有的 authorization、data、time、Runtime、audit 和 delivery law |
-| T2 | 一个 T1 domain 内的有界 capability | Concrete operation、public I/O、effect、caller-visible failure、completion、dependency、verification，以及适用时的 recovery 或 rollback | 第二个 domain root、parent authority 扩张和 cross-domain ownership |
-
-T0 的六个 authority headings 是 `User Intent`、`Reader Gain`、`Owned System Object`、
-`Authority`、`System-wide Invariants` 和 `Peer Boundaries`。§6.2 另行登记每个 layer 的完整
-protected required-section sequence；两者承担不同作用。T1 delegation、machine-enforcement result
-和 review requirement 是 T0 的全文义务，不要求新增同名 heading。某项义务不能成为复制 child、
-peer、code 或 Reviewer control plane 的理由。
-
-Charter、T0、T1 和 T2 都使用 `## 0. Intent Capsule`。其中的 fenced YAML 保留以下 stable fields：
-`layer`、`status`、`canonical_owner`、`owned_system_object`、
-`scope`、`non_goals`、`inputs`、`outputs`、`truth_surfaces`、`runtime_triggers`、
-`downstream_consumers`、`open_decisions`、`review_gate`、`runtime_surface_ledger` 和
-`verification_hooks`。T0 另外必须包含唯一的 `t0_layer_id`；T1 和 T2 另外必须包含唯一
-`parent`；Charter 不包含 `t0_layer_id` 或 domain parent。
-`inputs` 只放本 authority 接受的
-work-plane input 或精确、已审查的 SystemChangePlan step；parent、peer 和 dependency
-reference 留在对应 boundary 与 reference section。
-
-T1 的 canonical 文件名是 `<domain>_00_<subject>.md`。每个 active domain 恰好有一个
-active `00` root。T2 的 canonical 文件名是 `<domain>_<NN>_<subject>.md`，其中 `NN`
-不能是 `00`；相同 domain prefix 将它绑定到唯一 T1 root。Cross-domain reference 是
-dependency，不是额外 parent。Numeric family 只服务人类导航，不表示 authority、lifecycle
-或执行顺序。
-
-### 6.2 Layer-specific required sections
-
-每一份 Charter、T0、T1 或 T2 Design candidate 都必须符合所属 layer 的 required-section
-schema。下表中的 heading name 是 protected identifiers，必须恰好出现一次并保持表中顺序；
-连续数字编号仍按文档实际章节位置生成。`<layer-owned sections>` 是所属 owner 可以增加的连续
-编号章节，但不能删除、改名、重排或复制 protected headings，也不能借扩展章节吸收 parent、peer
-或 child authority。
-
-| Layer | Required section sequence |
-| --- | --- |
-| Charter | `Intent Capsule` → `Constitutional Authority Map` → `User Intent` → `Reader Gain` → `Product Identity and Scope` → `Human Authority` → `<constitutional sections>` → `Constitutional Invariants` → `Design and Code Boundary` → `Amendment Authority` → `T0 Topology Reference` → `References` |
-| T0 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Owned System Object` → `Authority` → `<T0-owned sections>` → `System-wide Invariants` → `Peer Boundaries` → `References` |
-| T1 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Domain Outcome and Owned Objects` → `<domain-owned sections>` → `Architecture and Lifecycle` → `Public Boundaries and Quality Rules` → `T2 Partition and Dependencies` → `Completion and Failure` → `References` |
-| T2 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Capability and Operation` → `<capability-owned sections>` → `Public Interface and Effects` → `Completion, Failure, and Recovery` → `Dependencies and Verification` → `References` |
-
-Required section 存在只证明 representation closure。对应章节仍必须表达本层在 §6.1 中拥有的
-结果；空章节、占位文字或把同一含义搬入错误章节均返回
-`DESIGN_REPRESENTATION_INCOMPLETE`。新增一种 Design layer、修改 protected heading、改变顺序
-或改变 extension slot 都是 material DDM change。
-
-Code-owned Governance Release control 在 Design Doc Management 名下登记唯一的 Design-document
-schema binding。Schema 验证从 Markdown 确定性解析出的 Design candidate，而不把 Markdown 文件本身
-当 JSON。Design parser、validator 和 projector 可以拥有各自 code layout，但都必须解析同一个
-schema binding，不能保存第二份 required-section list。Schema 的 physical path、hash、projector
-version 和当前 binding 属于 code truth，并由 generated inspection 展示；本 T0 只规定它们必须唯一、
-可解析并形成 hash closure。消费项目只提供 project-specific Charter、Design registration 和
-Current Inspection binding，不复制或改写 portable schema。新 candidate 和发生 material revision
-的既有 Design Doc 必须绑定 current schema release；尚未迁移的既有文档保持已登记状态，并在下一次
-material revision 前不得被投影为符合 current schema。
-
-### 6.3 流程优先的表达
-
-Charter 必须提供 `Constitutional Authority Map`，但不要求 operational flow。每个 T0、T1
-和 T2 candidate 都在 extended prose 之前提供 `## 1. Primary System Flow`，并按所属层
-展示最小充分关系：
-
-| Layer | Flowmap 必须使读者看见的结果 |
-| --- | --- |
-| T0 | System responsibility、authority、peer handoff 和 T1 delegation |
-| T1 | Domain objects/states、architecture/lifecycle、public boundary、quality rules、loops、human decision gates、dependencies 和 T2 partition |
-| T2 | Concrete operation、effect、completion 和 recovery |
-
-Flowmap 只使用 logical responsibility、state 和 governed resource。每条 owner-local
-public handoff 解析到一行 interface contract，包含 `interface_id`、owner、input、output、
-effects 和 error codes。每条 caller-visible failure 解析到一行 error contract，包含
-`error_code`、owner、condition、meaning 和 caller action。Internal diagnostic 留在 code
-和 telemetry。
-
-如果该层没有 owner-local public operation 或 caller-visible failure，相应表格明确写
-`none`。Peer 只作为 owner-qualified input、output、decision 或 result 出现；消费方不能
-复制 peer 的 internal flow、interface、error 或 caller action。
-
-本规则适用于新 candidate，以及 material revision 实际改变的完整 surface。已准入的旧
-文档在下一次 material revision 时迁移，projector 不会只为增加 syntax 而改写其语义。
-
-### 6.4 创作边界与退出条件
-
-Design owner 只创作本层拥有的语义。Layer、parent、same-level peer 或 authority 尚未解决
-时，authoring 必须返回对应 Design owner 或 System Change scope；filename、附近 Skill、
-current code 和 ambient repository state 不能替代该决定。
-
-Skill Package 可以保存完整的 Agent-facing authoring instruction，也可以作为
-`design_contract_reviewer` prompt 的物理承载位置，但它不因此取得 Design authority。Design Doc
-Management 拥有 Design review checklist、prompt source、schema、semantic validator 和 output
-meaning。Skill Management 只治理承载该 source 的 Skill definition、candidate、artifact envelope、
-完整性和 Skill review，不能修改 Design Reviewer instruction meaning，也不拥有 retirement 或整体删除
-disposition。Design Reviewer prompt 的语义变更先形成 DDM-owned Design candidate，并由
-`design_contract_reviewer` 审核。Design meaning 通过后，DDM 把 exact approved meaning 交给 Skill
-Management，作为 containing Skill candidate 的语义输入。Skill Management 按自己的 contract 消费
-Review Contract-owned prompt authoring/review results，并把最终完整、已审核的 Skill result 返回 DDM。
-DDM 不控制或复制 peer 的 internal review flow、checklist 或 caller action。
-
-## 7. 代码生产
-
-本章只定义 approved Design Intent 交给代码时必须保持的结果。它不规定 physical module、
-field、table、storage、validator implementation 或 current binding。
-
-### 7.1 三个 truth surface
-
-| Truth surface | 拥有的含义 | 不拥有的含义 |
+| Layer | 本层必须决定什么 | 留给下一层或其他负责人什么 |
 | --- | --- | --- |
-| `Design Intent` | Human-judged outcome、authority、invariant、boundary、target behavior、public handoff 和 material open decision | 精确 schema、当前 binding、implementation status 或 operational inventory |
-| `Code Projection` | Approved identity、parent、dependency、interface 和 enforcement result 的不可变机器表示 | Mutable lifecycle、deployment、test 或 current pointer |
-| `Current Inspection` | 当前 lifecycle、admission、implementation、evidence 和 operational fact 的 generated view | Design authority 或 release identity |
+| Charter | 项目目的、产品范围、人类决策权与宪制边界 | 日常操作、具体接口、运行配置和当前清单 |
+| T0 | 多个独立下层共同遵守的规则，明确适用主体、对象、条件及对动作和交接的影响 | 项目流程、具体实现、运行记录和其他 T0 的内部规定 |
+| T1 | 一个领域或独立子系统的主要使用情境与功能，承担功能的组成部分，以及它们如何协作交付结果 | 有界能力的内部实现，以及同级领域内部事务 |
+| T2 | 一项有界能力中，主体如何处理输入对象、产生输出或改变，关键条件、必要接口及与 code truth 的交界 | 不影响已定行为的内部算法和类组织、其他领域的决定和重复维护的当前代码清单 |
 
-Design Doc 可以要求 logical machine contract，并说明代码执行后必须观察到的结果。Code
-Design 与 implementation 决定精确 schema、field、module layout、validator 和 storage。
-Prose 中的当前 implementation fact 只是解释，不成为 manually maintained inventory。
+各层先写明确结果，再写实现该结果真正需要的规则。State、transaction、replay、rollback、Schema、
+Registry 和 Validator 按实际能力使用；没有需要时无需创造机制或填写占位合同。
+下一层可以自行作出的合理设计选择，不构成上一层的缺陷。完整性要求本层已决定足以支持当前结果的
+功能、工作方式与必要取舍，不要求同时交付下一层设计、实现或部署。读者可以继续选择内部实现，
+但不应重新猜测本层要提供什么功能、谁处理什么对象或交付什么结果。项目提案说明选定的改动对象、
+方案和理由；交付设计说明改后功能、承担动作的组成部分及验收结果。它们按实际请求提供，不成为每份
+Design 必备的额外产物。本层尚未决定且会使下游无法继续的缺口仍需解决；缺少授权取舍时明确提出建议，
+交有权决定的人处理，不能把假设写成已确认要求。
 
-当 Design identity 同时包含 `Design Intent` 和 immutable `Code Projection` 时，review
-subject 绑定二者；任一变化都形成新的 subject。刷新 `Current Inspection` 不改变 Design
-identity。Inspection 暴露的 drift 返回真实 Design 或 implementation owner。
+设计实际涉及时间含义时读取 `the_timestamp_semantic.md`；涉及机器标识或引用含义时读取
+`the_identifier_and_reference_semantics.md`。仅在普通文字中提及日期或 ID 不触发额外设计要求。
+<!-- design-layer-semantics:end -->
 
-### 7.2 Design-to-code handoff
+### 6.2 文档结构
 
-```mermaid
-flowchart LR
-    D["Approved Design Intent"] -->|"approved_design_handoff"| B["CodeDesignBasis"]
-    B --> I["Engineering implementation"]
-    I --> R["Design registration"]
-    R --> S["Design schema 或 typed contract"]
-    S --> V["Design validator"]
-    V --> P["Code Projection"]
-    P --> X["Current Inspection"]
-    P -.->|"meaning drift"| D
-    X -.->|"implementation drift"| I
-```
+Design source 的 frontmatter 帮助读者和工具定位文档、层级及设计关系。DDM 统一定义以下五个字段；
+作者填写这些字段，`the-design-authoring` 和文档工具直接消费同一份定义。
 
-`approved_design_handoff` 只交付 approved outcome、authority、invariant、logical I/O、
-observable failure 和 verification obligation。`CodeDesignBasis` 再决定 logical module、
-dependency direction、public interface、error handling、test 和 future extension boundary。
-Software Delivery 拥有 implementation、release、deployment 和 rollback admission。
+| 字段 | 含义与取值 |
+| --- | --- |
+| `title` | 非空文档标题，供读者发现与辨认 |
+| `layer` | 本文承担的设计层级，取 `Charter`、`T0`、`T1` 或 `T2` |
+| `canonical_owner` | 本文的准确来源文档引用；投影副本指向其 Portable source，不填写人的姓名或临时候选路径 |
+| `parent` | 本文直接继承的设计引用；没有直接父级时填写 YAML `null` |
+| `owned_system_object` | 本文负责的对象或决定的简短说明，与正文中的职责一致 |
 
-Design Doc 的机器闭包固定为 `register → validate → project → inspect`。其中 registration、
-schema 或 typed contract、validator、projection 和 inspection 都只服务 Design artifact；Skill
-和 Runtime Module 分别使用自己 authority 下的 registration、schema 和 validator。三类对象可以
-复用相同机械顺序，但不得共用字段集合、生命周期或准入 authority。
+`canonical_owner` 和 `parent` 都是 canonical references，不是自由文本。它们的引用语义和解析根遵守
+`the_identifier_and_reference_semantics.md` 及所属 project resolver；DDM 保留 source 中的 exact reference，
+validator 只按该规则交给 resolver 判断可解析性。Portable projection 继续指向 upstream source reference，
+不把它改写为安装副本或临时候选文件的路径。父级关系由实际设计继承确定，文件名中的编号不能代替该判断。
+现有消费者需要的 `t0_layer_id` 可作为 T0 的兼容字段保留，其存在不向其他层级增加字段要求。正文展开目标
+读者、职责和设计理由；frontmatter 保留定位所需内容，不加入 `status`、读者清单、审核结论、模型配置或
+部署信息。
 
-Governance Release control 统一执行整个 portable T0 portfolio 的 source hash、schema binding、
-projection dependency 和 drift closure。Design Doc Management 只登记自己拥有的 Design schema、
-Design projection 和 Design Reviewer checklist projection；其他 artifact authority 登记自己的
-contract。共同代码只计算、验证和投影，不取得 Design 或 Skill 的语义 authority，也不把两类
-artifact 合并成一个通用 schema。
+DDM 拥有 metadata 的 schema、parser、validator 和 review adapter。Schema 定义字段、类型与兼容范围；
+parser 将 YAML `null` 传为真正的空值；validator 检查 source 与正文的一致性。Review adapter 由 DDM 所属
+Portable Governance 代码维护，负责把 DDM metadata 和完整候选转换为 Reviewer input。`the-design-authoring`
+Skill Package 提供 Reviewer prompt、Reviewer schema 与 fixtures；Agent Runtime 提供独立 Module 执行、
+共同结果格式、机械输出校验、输入隔离和执行证据。所有消费者复用 DDM 的唯一解析结果，不另写字段表或解析规则。
 
-DDM required-section validator 只从上述唯一 Design schema binding 读取，并独立拒绝 required section
-缺失、重复、乱序或为空。DDM Reviewer projection 只把 §9.2 的 authoritative check set 及其顺序和
-meaning 机械投影到 `design_contract_reviewer` 的受控 checklist block；不得把 section existence、顺序、
-hash 或其他 machine-decidable representation checks 再交给 Reviewer 判断。该 prompt 属于
-DDM-owned Design review source，并物理存放在 `the-design-authoring` Skill Package；存放位置、Skill
-artifact validation 或投影不会把 source authority 转移给 Skill Management。共同 release
-记录必须绑定 DDM source release、Design schema hash、projector hash 和 prompt target hash；任一
-不一致时，Design Reviewer candidate 不得通过 deterministic gate。Reviewer prompt 不得手抄、增删
-或重排 DDM-owned semantic checklist。共同代码还必须按 Review Contract 的 canonical marker/source
-binding 验证 universal instruction block 的 exact-byte parity；该验证不把 universal instruction authority
-转移给 DDM。DDM 不另建一套 release manifest 或 hash mechanism。
 
-代码必须能够机械验证以下结果：Design identity 与 owner 唯一；Charter/T0/T1/T2 layer 和
-parent closure 正确；materiality 与 lifecycle transition 合法；required Design review 和
-accountable decision 绑定 exact candidate；active reference 在 retirement 前闭合；generated
-inspection 可由 code 和 persistent record 复现。实现这些结果的 Registry、Schema、字段和
-Validator 由代码拥有。
+保留可预测的导航：章节连续编号；同一概念在一处定义，其他位置引用。T0 的六个固定内容标题是
+`User Intent`、`Reader Gain`、`Owned System Object`、`Authority`、`System-wide Invariants` 和
+`Peer Boundaries`。`Owned System Object` 说明所管理的事情，不要求为它创建运行对象。
 
-## 8. 设计管理
+各层沿用以下结构；自有内容放在指定位置。标题中的 Lifecycle、Effects 或 Recovery 只要求说明适用
+含义，不要求创建相应机制。简单能力可在该节一句话说明边界，无需附加空表或逐项声明所有未使用机制。
 
-本章管理 Design lifecycle、materiality 和 project-facing projection。它不重新定义 Design
-内容、Reviewer execution 或软件交付状态。
+| Layer | 固定章节顺序 |
+| --- | --- |
+| Charter | `Intent Capsule` → `Constitutional Authority Map` → `User Intent` → `Reader Gain` → `Product Identity and Scope` → `Human Authority` → 自有宪制内容 → `Constitutional Invariants` → `Design and Code Boundary` → `Amendment Authority` → `T0 Topology Reference` → `References` |
+| T0 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Owned System Object` → `Authority` → 自有内容 → `System-wide Invariants` → `Peer Boundaries` → `References` |
+| T1 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Domain Outcome and Owned Objects` → 自有内容 → `Architecture and Lifecycle` → `Public Boundaries and Quality Rules` → `T2 Partition and Dependencies` → `Completion and Failure` → `References` |
+| T2 | `Intent Capsule` → `Primary System Flow` → `User Intent` → `Reader Gain` → `Capability and Operation` → 自有内容 → `Public Interface and Effects` → `Completion, Failure, and Recovery` → `Dependencies and Verification` → `References` |
 
-### 8.1 Lifecycle
+`Intent Capsule` 是简短的范围、输入和输出说明，允许直接使用正文；不要求重复 frontmatter 或维护
+runtime trigger、ledger、lifecycle 等统一字段。程序实际消费的身份和引用留在唯一的 code-owned schema，
+由工具检查。结构规则应帮助读者定位信息，不能代替对内容含义的审查。
 
-```mermaid
-stateDiagram-v2
-    [*] --> Candidate
-    Candidate --> UnderReview: owner 提交 exact candidate
-    UnderReview --> Candidate: 拒绝或要求修订
-    UnderReview --> Current: required review 与 owner decision 通过
-    Current --> Superseded: successor 成为 Current
-    Current --> Retired: retirement decision 与 reference closure 通过
-    Superseded --> Retired: retirement disposition 与 reference closure 通过
-```
+### 6.3 Flowmap、输入输出与失败
 
-`Candidate`、`UnderReview`、`Current`、`Superseded` 和 `Retired` 只描述 Design Contract
-release。被拒绝的 `UnderReview` candidate 回到 `Candidate`，保持 non-current；不新增
-rejection state。Successor 在审查期间不改变 predecessor 的 `Current` authority；successor
-成为 `Current` 后，predecessor 才成为 `Superseded`。
+Charter 用职责图说明权力和范围。T0 的 Flowmap 说明职责与交接；T1 说明领域组成和工作关系；T2
+说明能力的实际路径。图中主体、动作和对象应与正文可相互定位，交接应说明传递的结果及接收方继续的
+工作。图上保留会改变读者判断的依赖、分支和结果，避免只连接领域标签或把文档管理动作充作系统行为。
 
-进入 `Current`、授权 implementation handoff 和 Software Delivery admission 是三个不同
-结果。Material candidate 进入 `Current` 需要 exact review evidence 和 accountable lifecycle
-decision；implementation handoff 另需明确授权。一个 owner decision 可以分别表达两项决定，
-但任何一项都不自动推出另一项。
+实际接口直接说明输入、输出和可观察影响。程序确实需要根据失败选择不同处理时，使用该接口已有或
+明确设计的稳定 error code。错误码由拥有接口的代码合同定义一次，文档引用其含义。
+补充信息、修订候选、接受或拒绝建议等沟通结果可以直接表达，无需新增 error code 或接口表。
 
-Design retirement 消费 DDM-owned Design reference validator 产生的 owner-qualified reference-closure result。
-有 replacement 时，supersession decision 可以预先记录 reference closure 后的 retirement
-disposition；否则仍需明确 retirement decision。没有 replacement 的整体下线必须取得明确
-retirement decision。`Retired` identity 保持可追溯且不再可路由。
+图、正文和适用接口必须一致。Peer 交接只说明所需结果和负责人，不复制对方内部流程或错误清单。
 
-### 8.2 Material change
+### 6.4 使用已有依据
 
-改变下列任一含义属于 material change：
+作者从目标所指向的具体对象、使用情境、现有设计及直接相关依据开始，再确定实现功能所需的职责。
+修订现有系统时，核对哪些能力已有、哪些需要改变；新建系统时说明拟建功能与依据，不虚构当前实现。
+新建或改变职责划分时比较完整受影响集合；
+局部修订只增加判断该修订所需的背景，不因文件同属一层就自动扩大到全部文档。
 
-- canonical identity、owner、layer、parent 或 responsibility boundary；
-- authority、entitlement、human gate 或 canonical-write decision；
-- public input、output、state、error 或 compatibility semantics；
-- evidence、quality gate、review requirement 或 accountable decision；
-- data authority、residency、retention、migration 或 Timestamp meaning；
-- workflow graph、loop、execution class、Runtime contract 或 release unit；
-- protected side effect、recovery 或 rollback obligation。
+范围、目标和负责人已明确时，可直接依据授权请求开始。需要拆分工作或确定依赖时，使用
+System Change 提供的计划。已有计划时，写作和审核一并使用当前步骤、完成条件、相关排除项与后续
+边界。本文不要求每个设计请求携带注册计划、request ID、hash 或审批状态。
 
-Editorial clarification、corrected link 和 generated projection refresh 只有在保持上述全部
-含义不变时才是 non-material。Non-material classification 免除 material review 和 approval，
-不免除 SystemChangePlan、owner resolution 或 exact change scope。
+## 7. 代码与文档事实
 
-### 8.3 Portable 与 project-facing Design
+文档说明目标和约束，代码及 schema 说明实际接口与实现，测试说明哪些行为已经验证。当前版本、文件
+清单和检查结果由代码生成；无需为每份 Design 额外建立 `Code Projection` 与 `Current Inspection` 对象。
+已有生成视图可继续用于展示事实，且必须能追溯到对应代码或发布内容。
 
-Portable governance distribution 提供 reusable T0 Design Intent；消费项目提供自己的
-Charter，并以 deterministic tooling 投影 project-facing T0 authority。Charter 决定需要的
-constitutional authority classes；code-owned Design Registry 生成当前 identity、owner binding、
-Design reference 与 topology。Directory membership 或 filename glob 不创建 authority。
+代码先验证能够确定判断的事项：身份与链接可解析、必要章节存在、实际机器字段符合 schema、
+共同指令投影一致、受审内容与返回结果相符。DDM 拥有 Design artifact schema 和 checklist 的意义；
+具体 schema、validator、hash 和投影实现在 Portable Governance 代码中维护。
 
-安装未变化的 portable intent 只运行 compatibility、hash 和 projection checks，不创建第二次
-semantic review 或第二个 Design authority。`Current Inspection` 展示安装版本、lifecycle、
-binding、reference、conformance 和 drift；编辑 generated output 不能改变任何 Design state。
+代码不能证明文档目标合理、未知影响面没有遗漏，或一段 evidence 真正支持结论。Reviewer 承担这些
+语义判断；格式通过不能表述为设计通过。
+
+需要软件实现时，Design 交付已经确定的目标、职责、约束和最小必要接口要求。Software Delivery
+决定如何开展 Code Design、实现和工程验证。设计本身不要求额外的 Registry、数据库或运行状态机。
+
+## 8. 修改与采用
+
+职责、行为、公开接口、接受标准或其他重要含义改变时，使用独立 `design_contract_reviewer`。
+仅修正文法、链接或机械投影且保留全部含义时，运行适用代码检查和作者保真自检即可。
+
+文档只有正在使用和删除两种处理。使用入口指向当前采用的内容；修改完成后更新该内容，不再需要时
+处理引用并删除。版本控制记录修改差异和历史，发布工具确定安装内容；无需额外的状态字段或状态机。
+独立审核绑定本次待审内容，修改后不能继续引用旧内容的通过结论。审核期间，现行文档仍按原内容使用。
+
+T0 更新与部署是两回事：更新改变其准确源文件；部署把选定版本送到消费环境。源文件更新完成时，应
+如实说明哪些环境已部署、哪些仍使用原版本，不能把源文件修改表述为所有消费环境都已更新。
+
+删除或替换文档前检查仍被使用的引用，为读者留下有效入口；有多个受影响面时先确定依赖和责任。
+历史保存在版本控制中，不要求为删除另建生命周期对象。安装未改语义的同一份 portable 内容，只验证
+引用与投影一致性。发布到其他环境仍依照该操作的实际授权。
 
 ## 9. 审查与完成
 
-Design Doc Management 拥有 Design Intent 的 review subject、semantic criteria 和
-accountable decision 所需 evidence，也拥有 `design_contract_reviewer` 的 checklist、target-specific
-prompt source、input/output schema、semantic validator 和 output meaning。同级 T0
-`the_review_contract.md` 拥有 universal instruction 与 `审查与完成` 四部分的共同含义；Agent Runtime
-只拥有 execution 和 execution evidence。
-
-任何 Design Doc 需要为其 owned subject 增加 `审查与完成` 时，都把它放在所属 layer 的 registered
-extension slot 最后，紧邻该 slot 的下一 protected heading，并使用以下四个连续子章节：`确定性检查`、
-`语义审查`、`表达审查`、`完成条件`。因此 T0 位于 `System-wide Invariants` 前；Charter、T1 和 T2
-分别位于 §6.2 为其声明的下一 protected heading 前。DDM 不决定某份 Design 是否需要该章节；owning
-Design 根据自己的 subject 与 required result 作出该决定。
-
-DDM 只固定章节位置与结构；同级 T0 `the_review_contract.md` 定义四部分的共同含义；使用该章节的
-subject authority 填写自己的 code gate、semantic checklist、Reviewer output 和 completion evidence。
+需要定义产物审查要求的 Design Doc，使用 `确定性检查`、`语义审查`、`表达审查`、`完成条件` 四个
+连续子章节；本章放在该层自有内容末尾。DDM 固定结构，同级 T0 `the_review_contract.md` 定义共同含义，
+各文档填入自己实际需要的要求。其他文档无须仅为形式完整增加本章。
 
 ### 9.1 确定性检查
 
-进入 `design_contract_reviewer` 前，code 必须先检查 Design structure、required section、identity、owner、
-layer/parent binding、exact bytes、schema、hash、checklist projection 和 Reviewer prompt source closure。
-DDM 定义必须得到什么确定性结果；code-owned Registry、Schema、Validator 和 generated inspection 保存并
-报告当前机器 truth。Design Doc 不复制 current code state，也不能用 prose 声称 gate 已通过。失败时
-code 直接返回 Design 或 implementation owner，不调用 semantic Reviewer。
+代码运行第 7 节中适用于候选的检查并记录实际结果。失败信息直接说明问题、文件或输入，以及下一步；
+Reviewer 不重复计算 hash、解析 schema 或验证投影。不存在的检查不能由文字宣称已经执行。
 
 ### 9.2 语义审查
 
-Design review 只审 exact frozen Charter、T0、T1 或 T2 candidate。Subject 包含完整 candidate
-Design Intent，以及判断该 candidate 所必需的 Charter、parent、same-level peer、dependency
-和 inherited-constraint context。当 immutable `Code Projection` 属于 Design identity 时，
-subject 同时包含该 projection。`Current Inspection` 只作为 drift 或 implementability evidence。
-新增、拆分、合并或改变同级 responsibility boundary 时，context 必须包含完整 same-level peer
-set，使 Reviewer 能判断新结构是否重复、遗漏或侵入既有 authority。
+`design_contract_reviewer` 的固定 prompt、schema 和 fixtures 保存在 `the-design-authoring` Skill Package。
+DDM 拥有下面的 checklist；Review Contract 提供共同指令和结果结构；Runtime 独立执行 Reviewer。
 
-Context 不会因为被提供给 Reviewer 就成为 candidate。跨 owner 变更形成分别由各 owner
-拥有的 candidates。Filename、directory、file count、ambient repository search、模型或
-provider 都不能创建 subject identity、Design authority 或 Reviewer routing。
+受审输入包含完整候选、本次授权目标、修改范围和足够的相关设计背景。背景不自动成为修改目标。
+本次明确授权改变的旧规则是比较依据，不能成为保留该旧规则的循环理由。
 
-下表是 Design review 的唯一 authoritative check set。它的 `check_id`、顺序和 meaning 同时定义
-本文件所称的 `required checks`、`全部 DDM checks` 与 Reviewer 必须执行的完整集合。前十项属于
-semantic stage；只有前十项全部通过后，才对同一份 exact candidate bytes 执行第十一项。§7.2
-只把本表机械投影进 `design_contract_reviewer`，不能另造、删减或重排 check。
-
+<!-- design-contract-review-checklist:start -->
 | 顺序 | `check_id` | 必须确定的结果 | `finding_class` |
 | --- | --- | --- | --- |
-| 1 | `intent_and_reader_result` | `intended_result`、`User Intent`、`Reader Gain` 和 material Design choice 清楚一致；`Reader Gain` 说明 reader 与新增能力 | `intent_gap` |
-| 2 | `layer_owner_and_parent` | layer、identity、owner、parent、same-level peer、dependency 和 structural disposition 一致；完整 peer set 不重复、不遗漏、不侵入 authority | `layer_or_owner_defect` |
-| 3 | `layer_content_fit` | owned object 唯一；authority、inheritance、delegation 和 layer scaffold 正确；只包含本层相关内容 | `layer_content_misfit` |
-| 4 | `peer_authority_and_inheritance` | inherited constraints、peer handoff、dependency direction 和结构变更 coverage 闭合；不复制 peer internal contract | `peer_or_inheritance_conflict` |
-| 5 | `boundary_coherence` | semantic owner、author、operator、Reviewer、persistence owner、implementation binding 与 approval authority 保持可区分 | `boundary_ambiguity` |
-| 6 | `design_and_code_truth_separation` | Design Intent、immutable Code Projection 与 mutable Current Inspection 分离 | `code_truth_leakage` |
-| 7 | `flow_interface_and_error_closure` | 适用的 layer Flowmap、owner-local interface/error、图、表和正文互相解析；parent 不复制 child row | `flow_or_interface_closure_gap` |
-| 8 | `failure_completion_and_rollback` | invariant、public handoff、failure、completion、recovery、rollback、materiality 和 lifecycle obligation 属于正确 layer | `failure_or_completion_gap` |
-| 9 | `implementability_without_redesign` | 下一层无需补一个未声明的 authority、product behavior、boundary、payload、failure 或 peer decision | `implementability_gap` |
-| 10 | `review_approval_and_admission` | independent review、owner decision、Design admission、implementation completion 与 release 是不同决定 | `review_or_admission_conflict` |
-| 11 | `prose_and_meaning_preservation` | Semantic stage 全部通过后，同一份 exact candidate bytes 可被冷读并准确复述，且不改变 governing meaning | `prose_or_communication_defect` |
+| 1 | `intent_and_reader_result` | 设计实现本次授权目标与适用计划步骤的结果；User Intent 与 Reader Gain 清楚，不把自行新增的承诺或后续工作当成当前要求 | `intent_gap` |
+| 2 | `layer_owner_and_parent` | 所属层级、负责人和必要父级清楚，本次结果实际涉及的职责集合没有重叠或缺口，不为检查完整而重整全部邻接系统 | `layer_or_owner_defect` |
+| 3 | `layer_content_fit` | 内容属于本层，机制按实际需要使用，没有为填满模板增加下层设计 | `layer_content_misfit` |
+| 4 | `peer_authority_and_inheritance` | 遵守适用上游规则，与直接相关 peer 的交接一致；实际涉及时间或机器引用时使用对应 T0 | `peer_or_inheritance_conflict` |
+| 5 | `boundary_coherence` | 各主要职责落实到可识别的执行主体、处理对象和动作；交接说明传递什么结果、谁接收并继续什么工作，文档负责人不替代执行主体，不以职责区分创造多余管理角色 | `boundary_ambiguity` |
+| 6 | `design_and_code_truth_separation` | 目标与实际实现可区分，当前事实有代码依据，不额外要求无消费需求的机器对象 | `code_truth_leakage` |
+| 7 | `flow_interface_and_error_closure` | Flowmap、正文与实际需要的输入输出和失败处理一致，文档交接不被误写成软件接口 | `flow_or_interface_closure_gap` |
+| 8 | `failure_completion_and_rollback` | 完成、信息不足与真实失败的后果清楚；恢复或回滚仅在实际影响需要时定义 | `failure_or_completion_gap` |
+| 9 | `implementability_without_redesign` | 具体情境中的主要功能、选定工作方式和交付结果已由本层说明，下一层无需重新猜测；功能或交付的实质歧义是设计缺口，不降为文字建议；合理下层实现选择和不影响本步的后续工作仍被保留 | `implementability_gap` |
+| 10 | `review_approval_and_admission` | 审查、实际实现与采用结果的证据不被混淆，所需授权明确，不强制额外状态或重复审批 | `review_or_admission_conflict` |
+| 11 | `prose_and_meaning_preservation` | 语义检查通过后，冷读者能准确理解设计；表达修正保持事实、职责和条件 | `prose_or_communication_defect` |
+<!-- design-contract-review-checklist:end -->
 
-每个 check 只接受表中登记的 `finding_class`。同一根因影响同一 class 的多个判断时只生成一条 finding；
-跨不同 class 时分别生成 finding，并在 `required_change` 中指向同一个待恢复结果，不能把一个 finding ID
-挂到不匹配的 check。
-
-Reviewer 只能基于 exact evidence 报告 finding，并把 correction 路由给拥有相关含义的 owner；
-它不能编辑 candidate、替 owner 选择设计或审查 peer implementation。Machine-decidable
-representation check 由 code validator 执行；semantic Reviewer 不能用散文替代失败的
-deterministic gate。
+前十项用于语义判断，第十一项用于表达检查。Code 把这份 checklist 机械注入 Reviewer；不手工维护
+第二份标准。同一根因只生成一条 finding，选最直接的判断项归类；其他受影响项引用同一问题。
+职责与可实施性检查沿候选适用的情境判断：不了解聊天背景的读者，是否会对主要功能、动作主体、处理
+对象或交付结果形成实质不同的解释。发现歧义时指出具体条款及其导致的不同动作或结果；允许下层选择
+的算法、类组织等差异不构成缺陷。无需新增情境数量、统一字段或实际运行的前置要求。
+独立 Reviewer 对必修意见说明具体证据、实际适用要求、不修对本步的后果及为什么必须现在处理。
+Primary Agent 核对 finding 后修订成立的问题；对事实错误、越界要求或纯偏好说明理由并交回独立重判。
+多轮保持同一授权目标与完成标准，重开已处理问题说明新的依据；范围约束不豁免本次实际回归。
 
 ### 9.3 表达审查
 
-全部适用的 semantic criteria 通过以后，同一份 exact candidate bytes 还必须让冷读者准确复述
-governing meaning，而且不能改变数字、归因、
-authority、因果、不确定性、compatibility 或停止条件。Review Contract 决定统一的阶段顺序；本 T0
-定义 Design review 必须保留的 semantic 与 prose 结果。
+语义判断成立后检查同一份内容是否容易理解、是否存在歧义或重复。表达修正必须保持事实、职责、
+因果、不确定性和停止条件；该检查由同一个独立 Reviewer 完成，无需新增角色。
 
 ### 9.4 完成条件
 
-Material Design candidate 必须取得 `design_contract_reviewer` 对 exact subject 的完整判断。
-该 Reviewer 必须独立判断本章定义的 semantic 与 prose 结果，并返回符合 DDM-owned output schema
-且通过 DDM-owned semantic validator 的 output。Reviewer prompt source 和 checklist 由 DDM 拥有；
-Review Contract 提供通用规则；Agent Runtime 提供执行。DDM 不复制 Runtime 内部流程或 error codes。
+代码检查通过，内容达到所需结果，重要含义变更已获得绑定当前候选的独立审查，且采用动作处于已有
+授权内，便可交付或采用。新的重大取舍返回用户或其委派负责人决定；一般修订不重复申请同一授权。
+note 默认不进入本轮；争议中的必修意见在取得纠正后的有效独立结论前，不能由作者自行宣布通过。
+真实依赖缺口须说明为何影响当前结果，交给真实负责人，不自动扩大文稿、实现或部署范围。
 
-只有该 output 与 exact candidate、required checks 和 registered verdict 一致时，它才可作为
-accountable owner decision 的 evidence。相近 Reviewer、unmanaged prose review 或缺失 binding
-不能满足 gate。Design owner 决定接受、拒绝或修订；Reviewer finding 本身不改变 lifecycle、
-authority 或 implementation authorization。
-
-Registered verdict meaning：
-
-- `passed`：前十项 semantic checks 与第十一项 prose check 全部通过，且没有 `block` 或 `fix` finding；
-- `non_pass`：required closure 足以判断，但存在 candidate 或 authoritative context owner 可以修正的
-  `block` 或 `fix` finding；
-- `blocked`：required authority 或 semantic context 缺失、冲突，导致至少一项 required judgment 无法
-  成立，并返回至少一条 `block` finding 给真实 owner。
-
-Registered severity meaning：`block` 表示当前结果不能安全推进；`fix` 表示 exact candidate 中存在由
-candidate owner 可修正的缺口；`note` 只记录不阻止当前 verdict 的观察，不使 check disposition 失败。
+Reviewer 返回 `passed`、`non_pass` 或 `blocked`：分别表示没有阻止当前结果的缺陷、存在可修订的
+具体缺陷、缺少必要依据而无法判断。`fix` 表示需要修订，`block` 表示当前无法继续，`note` 表示建议；
+建议不能使已满足要求的结果失败。输出遵守 Review Contract §6.4 的共同含义，使用 Runtime 提供的
+Reviewer 共同格式及机械校验，并通过 DDM 的
+检查覆盖、候选范围与结果一致性校验；Design artifact 自身的 schema 继续由 DDM 拥有。
 
 ## 10. System-wide Invariants
 
-1. 每份 Design Doc 都有一个 canonical identity 和一个 Design owner。
-2. Charter、T0、T1 和 T2 的 authority 不得由 filename、directory、Skill、Runtime 或 current code 反向推断。
-3. 每个 T0 只拥有一个 system-wide object 或 decision；每个 T1 命名 inherited T0 constraints；每个 T2 只拥有一个 T1 内的有界 capability。
-4. 每个 active domain 恰好有一个 active `<domain>_00_*` root；same-domain、non-`00` Design Contract 都是该 root 下的 T2。
-5. 每个 T0、T1 和 T2 都提供 layer-specific Flowmap、owner-local I/O 和 stable caller-visible error semantics。
-6. Design Intent、Code Projection 和 Current Inspection 始终保持分离；generated view 绝不成为 editable authority。
-7. Material Design review 和 accountable approval 先于 production implementation；production implementation 还必须绑定 approved `CodeDesignBasis`。
-8. Machine-decidable Design obligation 必须由 code 执行；prose 不能声称一个不存在的 validator 已经执法。
-9. Independent Review 不成为 authoring、repair、approval 或 self-admission。
-10. Lifecycle state、implementation authorization 和 Software Delivery admission 是不同决定；任一结果都不能静默推出另一个结果。
-11. `Superseded` 和 `Retired` identity 保持可追溯；active inbound reference 未闭合时不能退役。
-12. 每个 Design candidate 绑定其 exact reviewed SystemChangePlan step；该 binding 不把 Design lifecycle 或 authority 转移给 System Change Governance。
+1. 每份 Design 有明确来源、层级和负责人；User Intent 与 Reader Gain 可直接找到。
+2. 文档规定目标与边界，代码证明实现事实；二者冲突时指出差异并修正真实来源。
+3. 只固定本层必须决定的事情；接口、错误码、状态与记录按实际需要定义。
+4. 重要语义改变由独立 Reviewer 判断；作者可以组织审核，但不能把自检当独立结论。
+5. 每次审核绑定本次候选；旧结论不能证明已改变的内容。
+6. 检查服务于结果和职责边界；形式通过不证明设计正确，完成流程也不增加授权。
+7. Portable 内容在来源处修改，安装与共同指令由代码同步；普通项目工作无需反复审核未变内容。
+
 ## 11. Peer Boundaries
 
-| 交接事项 | Design Doc Management 负责 | Peer authority 负责 |
+| 交接方 | DDM 保留的职责 | 对方保留的职责 |
 | --- | --- | --- |
-| System change | 声明 Design candidate 的 layer、owner、required result 和 review requirement | System Change Governance 规划跨 owner 顺序和 exact step |
-| Design content | 定义 artifact law、layer semantics、lifecycle 和 review criteria | 各 Charter、T0、T1 或 T2 owner 定义本 contract 内的 intent |
-| Product decision | 标记 materiality 和所需 evidence | Principal Manager 或明确获委派的 owner 作出 product-level decision |
-| Design references | 声明 required parent、peer、dependency 和 retirement condition，并由 DDM-owned validator 生成 inbound-reference closure result | 被引用的 Design owner 决定其自身 lifecycle 与 reference disposition |
-| Agent-facing method | 定义必须保持的 Design semantics，并拥有 `design_contract_reviewer` source meaning | Skill Management 拥有 authoring Skill definition、candidate、artifact envelope 与 Skill review；System Change Governance 拥有 Skill retirement/整体删除 disposition 与 owner routing；code 拥有 projection mechanics；均不拥有 Design Reviewer source meaning |
-| Independent review | 拥有 Design checklist、`design_contract_reviewer` prompt/schema/validator/output，并消费验证结果；固定可选 `审查与完成` 章节的结构 | Review Contract 拥有 universal instruction 与 `审查与完成` 四段的共同含义；Agent Runtime 拥有 Module execution |
-| Machine implementation | 提供 approved Design Intent 与 logical enforcement result | Code 拥有 Registry、Schema、field、validator、persistence 和 generated inspection |
-| Software delivery | 提供 approved Design handoff 和 material obligation | Software Delivery 拥有 CodeDesignBasis、implementation、release、deployment 和 rollback admission |
-| Portable deployment | 提供 reusable T0 Design Intent 和 DDM-owned Design artifact binding | Governance Release code 统一维护 hash、schema-binding 和 projection mechanics；消费项目提供 Charter 和 local bindings |
+| Project Charter 与各 Design owner | 文档表达与 Design review | 项目范围、人类决策权和各自设计含义 |
+| Task Routing 与 System Change | Design 方法和结果要求 | 意图导航，以及需要拆分时的范围与依赖计划 |
+| Skill Management | Design authoring 和 Design Reviewer 的目标语义 | 完整 Skill、可发现性及 Skill review |
+| Review Contract | Design 专用 checklist 与结果判断 | 共同审核纪律、结果结构、prompt 布局及 prompt review |
+| Agent Runtime | 解释 Design review 的结论 | Reviewer 共同格式及机械校验、独立 Module 执行、输入隔离和执行证据 |
+| Software Delivery | 交付设计要求 | Code Design、实现、测试与实际软件发布 |
 
 ## 12. References
 
-- Project Charter（由消费项目提供）
+- [Task Routing](the_task_routing.md)
 - [System Change Governance](the_system_change_governance.md)
 - [Skill Management](the_skill_management.md)
 - [Review Contract](the_review_contract.md)
 - [Agent Runtime](the_agent_runtime.md)
 - [Software Delivery](the_software_delivery.md)
+- [Timestamp and Clock Semantics](the_timestamp_semantic.md)
+- [Identifier and Reference Semantics](the_identifier_and_reference_semantics.md)

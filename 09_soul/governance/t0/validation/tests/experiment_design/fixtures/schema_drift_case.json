@@ -1,0 +1,6 @@
+{
+  "case_kind": "schema_drift",
+  "input_patch": {
+    "schema_version": "experiment_reviewer_input_v0"
+  }
+}

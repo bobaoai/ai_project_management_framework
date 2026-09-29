@@ -157,12 +157,12 @@ These are narrower or design-focused helpers:
 - `ingestion-source-connector-designer`
 - `ingestion-source-family-operator`
 - `ingestion-image-review-reader`
-- `engineering-project-review`
+- `engineering-change-review`
 - `digestion-expert-factory`
 - `support-deep-research-survey`
 - `support-external-agent-builder`
 
-Use them when the task is connector architecture, source-family message ingestion readiness, source-image interpretation, peer-commit review, Digestion expert creation/maintenance, Deep Research output-surface adaptation, or external AI runner construction, not as default entry points for ordinary research/PM workflows.
+Use them when the task is connector architecture, source-family message ingestion readiness, source-image interpretation, independent engineering plan or exact-commit review, Digestion expert creation/maintenance, Deep Research output-surface adaptation, or external AI runner construction, not as default entry points for ordinary research/PM workflows.
 
 `digestion-expert-factory` creates and maintains domain experts, source-card patterns, typed-claim firewalls, company templates, crypto modules, and generated expert skill projections. It produces experts; it does not run one-off asset research.
 
@@ -170,7 +170,7 @@ Use them when the task is connector architecture, source-family message ingestio
 
 `support-external-agent-builder` turns external AI calls such as Claude Code CLI, DeepSeek, OpenAI, Cursor subagent, or external reviewer runs into stable runner artifacts: fixed prefix, canonical general module, task module, data-dependent module, embedded evidence, manifest hashes, preflight, hard-stop behavior, and auditable output paths. Its review-specific subskill is `support-external-agent-builder/external_review_builder.md`. It builds the runner surface; it does not replace the domain reviewer or decide the final PM-facing verdict.
 
-`engineering-project-review` is governed by `designDoc/the_tradecli_code_management.md` for `tradectl` / runtime code admission and audit. It is invoked when a peer Claude / Cursor / human session lands one or more engineering commits (charter-alignment phase, schema/contract change, skill cluster work) and the user wants an independent verdict before the next phase. It reproduces校验门 claims, reads the actual diff, and emits severity-tagged findings + a punch list. It is review-only and does not edit the work under review.
+`engineering-change-review` is governed by `designDoc/the_software_delivery.md` (Software Delivery). It organizes independent review of an exact engineering plan (CodeDesignBasis) before implementation, or of an exact commit after implementation, through the registered `engineering_change_reviewer` Module on the local Agent Runtime, and checks that the verdict binds to the reviewed plan or commit. It is review-only and does not edit the work under review.
 
 ## Routing Reminder
 

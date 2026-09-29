@@ -14,7 +14,7 @@
       "t0_layer_id": "the_agency_platform",
       "source": "09_soul/governance/t0/the_agency_platform.md",
       "target": "designDoc/the_agency_platform.md",
-      "sha256": "d3b5919cf97d6c7a07cd6096e9ab9240e09f97883207b9f0714be0aa2f5e47bb"
+      "sha256": "bf7fc37a42760912738adb97fbc791f69e09f03c326a621bb547e01ab94cbf59"
     },
     {
       "t0_layer_id": "the_agent_runtime",
@@ -32,49 +32,67 @@
       "t0_layer_id": "the_task_routing",
       "source": "09_soul/governance/t0/the_task_routing.md",
       "target": "designDoc/the_task_routing.md",
-      "sha256": "ea1162eb63f3c3b213abb087aa6d3cfb93bf46ff9e98bae608bb468e8cfb2d1b"
+      "sha256": "834d37ec3acbd11503b0049524c735fba9fc868c31110d04508940b1cb509601"
     },
     {
       "t0_layer_id": "the_system_change_governance",
       "source": "09_soul/governance/t0/the_system_change_governance.md",
       "target": "designDoc/the_system_change_governance.md",
-      "sha256": "8f82bcd7a510fc4216e26ef5649c31089dcefb66946758d906034997fa42a155"
+      "sha256": "540f16353e0fe74138e896d1842c5200cffabf4ba305f572f2a23e4e45017ac2"
     },
     {
       "t0_layer_id": "the_data_governance",
       "source": "09_soul/governance/t0/the_data_governance.md",
       "target": "designDoc/the_data_governance.md",
-      "sha256": "eaaf2288f690496588101b74243a6ff6b1a30680ebcd72306e57d7629214f4b8"
+      "sha256": "c8103252ba1740c8e1a45f9add2a4786a4cedbaec50f3464cd96f622e86230e2"
     },
     {
       "t0_layer_id": "the_timestamp_semantic",
       "source": "09_soul/governance/t0/the_timestamp_semantic.md",
       "target": "designDoc/the_timestamp_semantic.md",
-      "sha256": "741800aa4a1697fface2ac883636b14828bfa4d241cf95b3489cc39000e1c6f6"
+      "sha256": "f1c105b8bfb0b75361d3d812239efcbf229acdb6f37232d60263e5355117c404"
+    },
+    {
+      "t0_layer_id": "the_identifier_and_reference_semantics",
+      "source": "09_soul/governance/t0/the_identifier_and_reference_semantics.md",
+      "target": "designDoc/the_identifier_and_reference_semantics.md",
+      "sha256": "ea6ef16caa0b24ccc7a2bb20fc3525760f78d2d778114d6cf694b224fa2dd9e2"
     },
     {
       "t0_layer_id": "the_design_doc_management",
       "source": "09_soul/governance/t0/the_design_doc_management.md",
       "target": "designDoc/the_design_doc_management.md",
-      "sha256": "989398d0a743f4dce51c440ce4fe04f79bc4e3f39732484f624456b5e249acf8"
+      "sha256": "fb872dc0bbbb024b6e4e4504393dca65d6e0cc991ef9117bc8ceaa33330a4777"
     },
     {
       "t0_layer_id": "the_skill_management",
       "source": "09_soul/governance/t0/the_skill_management.md",
       "target": "designDoc/the_skill_management.md",
-      "sha256": "c65505ed3bb946a9b974d930de886c3809434ac1ba73643c2db0ba0ddac5a24b"
+      "sha256": "3bf811bfa3a646c211f27b46ddb3f4243d42ce8534d81f7f7a2322074752e11c"
     },
     {
       "t0_layer_id": "the_review_contract",
       "source": "09_soul/governance/t0/the_review_contract.md",
       "target": "designDoc/the_review_contract.md",
-      "sha256": "5c48f45d71a1a73983ebdbe3ae8c8be5231a788fce4cd6e121c6f656811bf061"
+      "sha256": "85a25934b0ccfe7f19476720572bb95217246176b8cb0103bed3627d2f9d30e5"
     },
     {
       "t0_layer_id": "the_software_delivery",
       "source": "09_soul/governance/t0/the_software_delivery.md",
       "target": "designDoc/the_software_delivery.md",
-      "sha256": "a452993f10e8cdedfef5dfade3b2f51c34a64451b48d6e9866fa9c1ce0c826d0"
+      "sha256": "3ef009029ca83a6c15d5c4fb19e81ba02c330970dce6a068aba603d1dd62fe97"
+    },
+    {
+      "t0_layer_id": "the_agent_experiment_design",
+      "source": "09_soul/governance/t0/the_agent_experiment_design.md",
+      "target": "designDoc/the_agent_experiment_design.md",
+      "sha256": "8f07fdccbfd045b7a1487162ce3691e0c16b99ee2b636849887c764309bc4d10"
+    },
+    {
+      "t0_layer_id": "the_project_documentation",
+      "source": "09_soul/governance/t0/the_project_documentation.md",
+      "target": "designDoc/the_project_documentation.md",
+      "sha256": "412bd52efdfa4daa071007df6f188cce0d5f551db8cd592e6389b0a71e46ff6e"
     }
   ],
   "artifact_contracts": [
@@ -82,17 +100,17 @@
       "artifact_contract_id": "design_document_artifact_contract",
       "owner_t0_layer_id": "the_design_doc_management",
       "source": "09_soul/governance/t0/validation/artifact_contracts/design_artifact_contract.json",
-      "source_sha256": "c9330a8549e169c7c41ce347d6e8f07208e5236f029c16fcff80b3ce2c6c0a7c",
+      "source_sha256": "f4d71f414873e75e52329cb645ac44942d393045b20aab11e63e71d4c097f9b1",
       "adapter": "09_soul/governance/t0/validation/artifact_contracts/design_artifact_contract.py",
-      "adapter_sha256": "2d49710a53e8cf2dc48a360aabb1e45099020bd39e745ec869cc05aa19c03ba7"
+      "adapter_sha256": "9bb2145ebc886609ef2009fa567557655398242927b479300bbd4176dbb0ac0e"
     },
     {
       "artifact_contract_id": "skill_definition_artifact_contract",
       "owner_t0_layer_id": "the_skill_management",
       "source": "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.json",
-      "source_sha256": "c3dbdfe109c656dc88dded2f501414212ed46a52bbd7d1f54556eec70cd25339",
+      "source_sha256": "0a9019a416509839a7e81e5ec56fff499911db7a86906041e230dcfdf788fda3",
       "adapter": "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.py",
-      "adapter_sha256": "5dfe5e26611a5994bcb23e6a91c68e013398a030a60764067c1f903c0852e5eb"
+      "adapter_sha256": "dbd2565c984375db5506ee71279a4e6298df963a351ac0df38138537a51f8462"
     }
   ]
 }

@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema:experiment_reviewer_input@v1",
+  "title": "Experiment Reviewer Input",
+  "$defs": {
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "document_id",
+        "owner_ref",
+        "title",
+        "body",
+        "sha256"
+      ]
+    },
+    "governing_document": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_ref": {
+          "type": "string",
+          "minLength": 1,
+          "const": "designDoc/the_agent_experiment_design.md"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "const": "8f07fdccbfd045b7a1487162ce3691e0c16b99ee2b636849887c764309bc4d10"
+        }
+      },
+      "required": [
+        "document_id",
+        "owner_ref",
+        "title",
+        "body",
+        "sha256"
+      ]
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "experiment_reviewer_input_v1"
+    },
+    "module_id": {
+      "const": "experiment_reviewer"
+    },
+    "review_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "change": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "goal",
+        "change"
+      ]
+    },
+    "experiment_design": {
+      "$ref": "#/$defs/document"
+    },
+    "governing_contract": {
+      "$ref": "#/$defs/governing_document"
+    },
+    "context_documents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/document"
+      }
+    },
+    "deterministic_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidate_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "const": [
+            "experiment_sections",
+            "experiment_environment_sections",
+            "experiment_declared_inputs"
+          ]
+        }
+      },
+      "required": [
+        "candidate_sha256",
+        "checks"
+      ]
+    },
+    "required_check_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "const": [
+        "experiment_goal",
+        "task_and_expected_actions",
+        "environment_and_independence",
+        "execution_and_permissions",
+        "evidence_and_measurement",
+        "evaluation_and_attribution",
+        "comparison_and_repetition",
+        "failure_and_recovery",
+        "prose_and_meaning_preservation"
+      ]
+    },
+    "prior_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "finding_id",
+          "body"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "module_id",
+    "review_request",
+    "experiment_design",
+    "governing_contract",
+    "context_documents",
+    "deterministic_evidence",
+    "required_check_ids",
+    "prior_findings"
+  ]
+}

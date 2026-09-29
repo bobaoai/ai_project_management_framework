@@ -1,0 +1,10 @@
+{
+  "schema_version": "runtime_module_registration_v4",
+  "skill_id": "experiment-authoring",
+  "module_id": "experiment_reviewer",
+  "owner_contract_path": "designDoc/the_agent_experiment_design.md",
+  "input_schema_ref": "schema:experiment_reviewer_input@v1",
+  "input_schema_path": "schemas/input.schema.json",
+  "output_schema_ref": "schema:experiment_reviewer_output@v1",
+  "output_schema_path": "schemas/output.schema.json"
+}

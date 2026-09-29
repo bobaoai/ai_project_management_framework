@@ -1,0 +1,7 @@
+{
+  "case_id": "experiment_reviewer_positive_case_v1",
+  "case_kind": "positive",
+  "module_id": "experiment_reviewer",
+  "mutation": "Use complete experiment output fixture with all nine check_ids.",
+  "expected_disposition": "schema_accepted"
+}
