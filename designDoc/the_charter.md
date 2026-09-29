@@ -5,13 +5,11 @@ layer: T0
 t0_layer_id: the_charter
 canonical_owner: designDoc/the_charter.md
 language: zh-CN
-parallel: designDoc/the_charter.en.md
 ---
 
 # Analyst Billie Charter
 
-**Version 1.7 — 2026-05-06**
-**English parallel**: [T0-Charter-EN]
+**Version 1.7.1 — 2026-09-28**
 
 ## 0. Contract Capsule
 
@@ -33,7 +31,6 @@ outputs:
   - supreme T0 constraints for all lower Design Docs, skills, schemas, runtime commands, and artifacts
 truth_surfaces:
   - designDoc/the_charter.md
-  - designDoc/the_charter.en.md
 runtime_triggers: none
 downstream_consumers:
   - all T0 and T1 Design Docs
@@ -229,12 +226,9 @@ Evidence 不得偏倚。对抗证据 (counter-evidence) 与未决反驳 (unresol
 
 ---
 
-## References
-
-- `[T0-Charter-EN]` [English parallel Charter](the_charter.en.md)
-
 ## 修订记录
 
+- **v1.7.1 (2026-09-28)** —— 移除指向已撤回英文平行版本 `the_charter.en.md` 的四处导航与重复真相面引用（frontmatter `parallel`、版本行下的英文平行链接、Contract Capsule `truth_surfaces` 条目、References 条目）及随之为空的 References 标题；宪法承诺不变。
 - **v1.7 (2026-05-06)** —— 在 **第二条之一 · 系统表面分工** 中补入 refined interpretation：T1 DesignDoc 可以定义持久 AI workflow semantics；Skill 是其当前 runtime 执行投影；Skill 可编排 Code，但不拥有 deterministic command behavior、schema validation 或 executable result。
 - **v1.6 (2026-05-06)** —— 新增 **第二条之一 · 系统表面分工**：明确 DesignDoc / Skills / Code 的权威分界，并区分设计维护入口与产品运行入口；产物、sidecar、reports 与运行时状态保存生成结果，但不独立拥有系统权威。
 - **v1.5 (2026-04-26)** —— 第三轮评审后小修四处语义边界，结构与承诺不变：
