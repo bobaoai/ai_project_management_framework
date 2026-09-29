@@ -299,12 +299,7 @@ def test_blank_assessment_is_rejected(payload):
 
 def test_schema_compiles_through_public_module_reviewer_without_execution():
     from agent_runtime import ModuleReviewer
-    from agent_runtime.registry import (
-        ModuleRegistrationSource, BehaviorPolicyReleaseCandidate, EvaluationPolicyReleaseCandidate,
-        RetryPolicyReleaseCandidate, compile_behavior_policy_release,
-        compile_evaluation_policy_release, compile_retry_policy_release,
-    )
-    from agent_runtime.contracts.registry_release_definition import ModuleEntryPolicy, OutputResolutionPolicy
+    from agent_runtime.registry import ModuleRegistrationSource
 
     registration = json.loads((MODULE / "module_registration.json").read_text())
     authority = DESIGN.read_text()
@@ -317,26 +312,17 @@ def test_schema_compiles_through_public_module_reviewer_without_execution():
         output_schema_ref=registration["output_schema_ref"],
         output_schema_document=(MODULE / "schemas/output.schema.json").read_text(),
         instruction_text="格式编译测试替身；不执行模型。",
-        declared_operation_ids=tuple(registration["declared_operation_ids"]),
-        compatible_transport_kinds=tuple(registration["compatible_transport_kinds"]),
-        behavior_policy_ref=registration["behavior_policy_ref"],
-        evaluation_policy_ref=registration["evaluation_policy_ref"],
-        retry_policy_ref=registration["retry_policy_ref"],
-        entry_policy=ModuleEntryPolicy.STANDALONE_ALLOWED,
-        output_resolution_policy=OutputResolutionPolicy.EVALUATED_SINGLE,
+        schema_version=registration["schema_version"],
     )
-    exported = ModuleReviewer(source).export(
-        module_version="v1",
-        behavior_policy=compile_behavior_policy_release(BehaviorPolicyReleaseCandidate(
-            policy_id="workflow_execution_isolated", policy_version="v1", context_isolation="workflow_execution_isolated")),
-        evaluation_policy=compile_evaluation_policy_release(EvaluationPolicyReleaseCandidate(
-            policy_id="module_candidate", policy_version="v1", evaluation_mode="module_candidate")),
-        retry_policy=compile_retry_policy_release(RetryPolicyReleaseCandidate(
-            policy_id="bounded_candidate", policy_version="v1", max_attempts=3)),
-        execution_profile=None,
-    )
+    exported = ModuleReviewer(source).export(module_version="v1")
     assert exported.module_release.module_id == "experiment_reviewer"
-    assert exported.execution_profile is None
+    assets = {asset.release_ref: asset for asset in exported.origin_bundle.schema_assets}
+    assert exported.module_release.input_schema_ref == registration["input_schema_ref"]
+    assert exported.module_release.output_schema_ref == registration["output_schema_ref"]
+    assert assets[registration["input_schema_ref"]].schema_document() == json.loads(source.input_schema_document)
+    assert assets[registration["output_schema_ref"]].schema_document() == json.loads(source.output_schema_document)
+    assert exported.origin_bundle.execution_profiles == ()
+    assert exported.origin_bundle.execution_variant_policies == ()
 
 
 def runtime_result(output=None):

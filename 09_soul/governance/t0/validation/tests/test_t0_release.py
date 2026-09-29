@@ -70,7 +70,7 @@ def test_production_portable_t0_release_is_clean() -> None:
     report = release.check_governance_t0_release(REPO_ROOT)
 
     assert report.is_clean
-    assert report.contract_count == 13
+    assert report.contract_count == 14
     assert report.charter_target == "designDoc/the_charter.md"
 
 

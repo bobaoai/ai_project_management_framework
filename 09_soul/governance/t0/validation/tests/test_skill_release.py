@@ -442,7 +442,7 @@ def test_production_governance_skill_release_is_clean() -> None:
     manifest = release.load_governance_skill_manifest(REPO_ROOT)
 
     assert report.is_clean
-    assert report.skill_count == 8
+    assert report.skill_count == 10
     assert report.projection_count == sum(
         len(package_file.projections)
         for skill in manifest.portable_governance_skills
@@ -457,6 +457,8 @@ def test_production_governance_skill_release_is_clean() -> None:
         "engineering-code-design": "designDoc/the_software_delivery.md",
         "engineering-change-review": "designDoc/the_software_delivery.md",
         "experiment-authoring": "designDoc/the_agent_experiment_design.md",
+        "project-documentation-authoring": "designDoc/the_project_documentation.md",
+        "agent-work-coordination": "designDoc/the_task_routing.md",
     }
     actual = {
         skill.skill_id: (
@@ -2440,6 +2442,8 @@ def test_reviewer_module_prompts_share_one_universal_review_style() -> None:
             "engineering_change_reviewer/prompt.md",
             "09_soul/governance/skills/experiment-authoring/runtime_modules/"
             "experiment_reviewer/prompt.md",
+            "09_soul/governance/skills/project-documentation-authoring/runtime_modules/"
+            "project_documentation_reviewer/prompt.md",
         },
         "t0:experiment_review_checklist": {
             "09_soul/governance/skills/experiment-authoring/SKILL.md",
@@ -2664,6 +2668,7 @@ def test_ddm_and_skill_review_instruction_consumer_mapping_is_exact() -> None:
         "design_contract_reviewer",
         "engineering_change_reviewer",
         "experiment_reviewer",
+        "project_documentation_reviewer",
         "reviewer_reviewer",
         "skill_candidate_reviewer",
         "system_change_plan_reviewer",

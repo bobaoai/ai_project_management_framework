@@ -121,20 +121,20 @@ def test_invalid_output_is_rejected_by_the_owning_validator(review_case, problem
 
 
 def test_four_declarations_export_with_runtime_common_format():
-    from agent_runtime import ModuleReviewer
-    from agent_runtime.registry import (BehaviorPolicyReleaseCandidate, EvaluationPolicyReleaseCandidate,
-        RetryPolicyReleaseCandidate, compile_behavior_policy_release, compile_evaluation_policy_release,
-        compile_retry_policy_release)
-    behavior = compile_behavior_policy_release(BehaviorPolicyReleaseCandidate(policy_id="workflow_execution_isolated", policy_version="v1", context_isolation="workflow_execution_isolated"))
-    evaluation = compile_evaluation_policy_release(EvaluationPolicyReleaseCandidate(policy_id="module_candidate", policy_version="v1", evaluation_mode="module_candidate"))
-    retry = compile_retry_policy_release(RetryPolicyReleaseCandidate(policy_id="bounded_candidate", policy_version="v1", max_attempts=3))
+    from agent_runtime import ModuleReviewer, load_reviewer_registration
     for skill, module_id in (("the-design-authoring", "design_contract_reviewer"), ("the-skill-authoring", "skill_candidate_reviewer"), ("the-system-change", "system_change_plan_reviewer"), ("the-review-authoring", "reviewer_reviewer")):
-        reviewer = ModuleReviewer.from_registration(ROOT, skill_id=skill, module_id=module_id)
-        first = reviewer.export(module_version="format_test", behavior_policy=behavior, evaluation_policy=evaluation, retry_policy=retry, execution_profile=None)
-        second = reviewer.export(module_version="format_test", behavior_policy=behavior, evaluation_policy=evaluation, retry_policy=retry, execution_profile=None)
+        source = load_reviewer_registration(ROOT, skill_id=skill, module_id=module_id)
+        reviewer = ModuleReviewer(source)
+        first = reviewer.export(module_version="format_test")
+        second = reviewer.export(module_version="format_test")
         assert first.module_release.release_sha256 == second.module_release.release_sha256
-        assert first.execution_profile is None
-        assert first.execution_blocker_code is not None
+        assets = {asset.release_ref: asset for asset in first.origin_bundle.schema_assets}
+        assert first.module_release.input_schema_ref == source.input_schema_ref
+        assert first.module_release.output_schema_ref == source.output_schema_ref
+        assert assets[source.input_schema_ref].schema_document() == json.loads(source.input_schema_document)
+        assert assets[source.output_schema_ref].schema_document() == json.loads(source.output_schema_document)
+        assert first.origin_bundle.execution_profiles == ()
+        assert first.origin_bundle.execution_variant_policies == ()
 
 
 @pytest.mark.parametrize("skill,module_id", [
