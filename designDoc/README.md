@@ -8,18 +8,14 @@ T0 layer ids use the `the_` prefix. Use this table for T0 / system-boundary firs
 
 For broad architecture context before choosing a T0 owner, read [ai_native_trading_operating_system.md](ai_native_trading_operating_system.md). It is a system overview, not a T0 authority layer.
 
-T0 docs keep machine-audit contract surfaces separate from body prose:
-
-- YAML frontmatter and `## 0. Contract Capsule` use plain paths / ids / commands.
-- `Machine Audit Runtime Surfaces` holds runtime ledgers, projection paths, commands, and verification hooks.
-- Body prose uses citation ids, resolved in `References`.
+The [Design Doc Management](the_design_doc_management.md) contract defines document metadata, content structure, and review requirements. This README provides navigation to the relevant authority; it does not define a separate document format.
 
 | Entry | Function / question cluster | Owns | Does not own | Coordinates / conflict rule |
 | --- | --- | --- | --- | --- |
 | [the_charter](the_charter.md) | surface ownership; constitutional conflicts; object ontology; PM/system authority split | constitutional constraints; DesignDoc / Skill / Code surface split; archive truth; no false precision; no floating objects | runtime commands; field-by-field schema listings; task inventories | wins conflicts; use first when asking which surface owns a claim or change |
 | [the_task_routing](the_task_routing.md) | new user request; task mainline; first authority; routing layer separation; skill-boundary intake | user request entry; recurring task mainline; first authority; routing layer separation | artifact freshness internals; T1 domain decisions; PM belief | defers to Charter for surface ownership |
 | [the_timestamp_semantic](the_timestamp_semantic.md) | timestamp/date field roles; storage suffixes; time comparisons; mixed-session freshness semantics | timestamp and date field authority; valid comparison semantics | object ontology; task routing; non-time fields; code implementation procedure | Code enforces deterministic comparisons |
-| [the_design_doc_management](the_design_doc_management.md) | Design Doc drafting, writing philosophy, promotion, auditability, Contract Capsule, runtime ledger, review gate | drafting freedom; bounded metadata / reasoning prose split; review gate; Contract Capsule; body references; runtime surface ledger; T0 id registry | domain correctness; external runner mechanics; PM belief | defers to domain T0/T1 owner for substance |
+| [the_design_doc_management](the_design_doc_management.md) | Design Doc authoring, metadata, content structure, and review | Design Intent; document metadata and structure; review requirements | domain correctness; model / provider execution; PM belief | defers to the owning Design for substance |
 | [Topic Branches](#topic-branches) | domain-family next read after T0/system-boundary selection | directory for ingestion, digestion, research, operation, analysis, source/data, portability | T0 conflict resolution; system-boundary authority; child-doc registries | use after the table resolves system-boundary first; each family overview owns its child registry |
 
 ## Global Conflict Shortcut
@@ -27,7 +23,7 @@ T0 docs keep machine-audit contract surfaces separate from body prose:
 If system contracts conflict:
 
 1. `the_charter` wins for constitutional constraints, surface ownership, object ontology, and PM / system authority split.
-2. Use the question-specific T0 owner next: `the_task_routing` for user-intent routing, `the_timestamp_semantic` for time fields, `the_design_doc_management` for DesignDoc promotion, `the_software_delivery` for code changes and engineering review, and `the_agent_runtime` for Agent Module and Workflow execution.
+2. Use the question-specific T0 owner next: `the_task_routing` for user-intent routing, `the_timestamp_semantic` for time fields, `the_design_doc_management` for Design Doc authoring and review, `the_software_delivery` for code changes and engineering review, and `the_agent_runtime` for Agent Module and Workflow execution.
 3. T1 family docs may specialize domain workflows inside those T0 boundaries; they cannot override T0 contracts.
 
 ## Question Routing Shortcut
@@ -38,7 +34,7 @@ If the question is about:
 - broad system shape: read [ai_native_trading_operating_system.md](ai_native_trading_operating_system.md), then return to the T0 owner table above.
 - task intake, first authority, or skill-boundary routing: read [the_task_routing.md](the_task_routing.md).
 - timestamp / date field semantics or time comparisons: read [the_timestamp_semantic.md](the_timestamp_semantic.md).
-- DesignDoc drafting, writing philosophy, metadata / prose split, promotion, review, or Contract Capsule auditability: read [the_design_doc_management.md](the_design_doc_management.md).
+- Design Doc authoring, metadata, content structure, or review: read [the_design_doc_management.md](the_design_doc_management.md).
 - code changes, engineering plans, exact-commit engineering review, release, or deployment: read [the_software_delivery.md](the_software_delivery.md).
 - provider-neutral Agent Module or Workflow execution: read [the_agent_runtime.md](the_agent_runtime.md).
 - material object boundaries across Raw Data, Operating Cycle Artifact, Source Card, Expert Artifact, Evidence, Thesis, Scenario, Theme, or Technical Report: read [material_00_overview.md](material_00_overview.md). Material Catalog inherits Artifact Graph node handles; it owns material meaning, not global graph law.
