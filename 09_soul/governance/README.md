@@ -319,6 +319,12 @@ python -B 09_soul/governance/t0/validation/software_delivery/engineering_review.
 `--check-only` 不调用模型，也不需要 Runtime。该工具不内置数据库、模型或 Runtime 注册；缺少 `--root` 时停止，
 不能把检查通过说成外审通过。
 
+`--plan-review` 读取并冻结完整的计划审核原件，按原有规则全部核验通过后，模型只取得代码生成的校验后视图：
+原件 ref 与 hash、计划绑定、验收要求、执行状态、Runtime 身份字段和完整 output。视图的 ref 是原路径加
+`#validated-plan-review`，sha256 只覆盖视图本身；原件 hash 另记在视图的 `source_record` 和结果的 `source_sha256`。
+这个视图只用于本次 Reviewer 输入，再作为 `--plan-review` 或 `code_design_review` 提交时按输入闭包不完整拒绝；
+直接调用 API 的一方需自行保留完整原件。
+
 ## Three governed dimensions
 
 The Governance Release keeps three dimensions distinct:

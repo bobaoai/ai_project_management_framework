@@ -177,6 +177,36 @@ def command_plan(ref: str, commands: Sequence[Mapping[str, object]]) -> dict[str
     return {"ref": ref, "sha256": _sha256_bytes(encoded), "commands": rows}
 
 
+# Runtime identity scalars a reviewed plan record may carry; absent fields stay absent.
+_PLAN_REVIEW_RUNTIME_IDENTITY = (
+    "module_release_ref", "module_release_sha256", "workflow_release_ref", "workflow_release_sha256",
+    "execution_profile_ref", "execution_profile_sha256", "execution_variant_ref", "execution_variant_sha256",
+    "workflow_execution_id", "module_run_id", "attempt_id", "input_closure_sha256",
+    "runtime_version", "managed_runtime", "model", "effort",
+)
+
+
+def _validated_plan_review_view(wrapped, record):
+    """Project an already validated plan review; the complete record stays frozen by its caller."""
+    identity = {key: record[key] for key in _PLAN_REVIEW_RUNTIME_IDENTITY if key in record}
+    for key, value in identity.items():
+        scalar = type(value) is bool if key == "managed_runtime" else value is None or isinstance(value, str)
+        if not scalar:
+            raise ValueError(f"plan review runtime identity {key} is not a scalar identity value")
+    source = record["semantic_input"]
+    view = {
+        "source_record": {"ref": wrapped["ref"], "sha256": wrapped["sha256"]},
+        "code_design_basis": {key: source["code_design_basis"][key] for key in ("ref", "sha256")},
+        "acceptance_criteria": source["acceptance_criteria"],
+        "status": record["status"], "module_id": record["module_id"], "review_purpose": record["review_purpose"],
+        "semantic_validation": {"status": record["semantic_validation"]["status"]},
+        "runtime_identity": identity,
+        "output": record["output"],
+    }
+    body = json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashed_body(wrapped["ref"] + "#validated-plan-review", body)
+
+
 def _validate_plan_review(evidence, basis, criteria, schema_path):
     wrapped = _require_hashed_body(evidence, "code_design_review")
     try:
@@ -214,10 +244,11 @@ def _validate_plan_review(evidence, basis, criteria, schema_path):
         validate_engineering_review_output(record["output"], review_input=source, execution_record=record)
         if record["output"]["verdict"] != "passed":
             raise ValueError("engineering plan review has not passed")
+        # Only after every check on the complete record: the Reviewer receives the validated view.
+        return _validated_plan_review_view(wrapped, record)
     except (KeyError, TypeError, ValueError) as exc:
         raise EngineeringReviewInputError(ENGINEERING_REVIEW_INPUT_CLOSURE_INCOMPLETE,
                                           f"invalid code_design_review: {exc}") from exc
-    return wrapped
 
 
 def _finish_input(*, purpose, subject, code_design_basis, sandbox_command_plan, acceptance_criteria,

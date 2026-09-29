@@ -38,6 +38,11 @@ def plan_record():
             "semantic_input":plan_input(), "output":output(), "semantic_validation":{"status":"passed"}}
 
 
+def plan_review_evidence(record=None):
+    """The complete plan review a caller keeps; the input builder accepts only this form."""
+    return inputs.hashed_body("review", json.dumps(plan_record() if record is None else record))
+
+
 def implementation(tmp_path, **changes):
     def git(*args):
         return subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True).stdout.strip()
@@ -52,7 +57,7 @@ def implementation(tmp_path, **changes):
     git("commit", "-qm", "change")
     values = dict(repository_root=tmp_path, commit_ref="HEAD",
         code_design_basis=plan_input()["code_design_basis"],
-        code_design_review=inputs.hashed_body("review", json.dumps(plan_record())),
+        code_design_review=plan_review_evidence(),
         sandbox_command_plan=inputs.command_plan("commands", []), acceptance_criteria=["Expected result"])
     values.update(changes)
     return inputs.build_engineering_review_input(**values)
@@ -508,6 +513,172 @@ def test_unversioned_input_still_requires_executable_command_shape(tmp_path, wra
         implementation(tmp_path,code_design_review=inputs.hashed_body("review",json.dumps(record)))
 
 
+VIEW_KEYS = {"source_record", "code_design_basis", "acceptance_criteria", "status", "module_id",
+             "review_purpose", "semantic_validation", "runtime_identity", "output"}
+
+
+def traced_plan_record(calls=1):
+    """A complete plan review carrying Runtime identity and `calls` unrelated tool calls in its CLI log."""
+    record = plan_record() | {"managed_runtime": False, "model": "claude-opus-5-5", "effort": "xhigh",
+                              "module_release_ref": "runtime-module:engineering_change_reviewer@v1",
+                              "runtime_version": None, "usage": {"input_tokens": calls}}
+    record["execution_log"] = {"schema_version": "runtime_cli_log_v1", "complete": True, "tool_calls": [
+        {"tool_call_id": f"call_{i}", "tool_name": "read_file", "request": {"path": f"file_{i}"},
+         "response": {"text": "trace " * 50}} for i in range(calls)]}
+    record["provider_trace"] = [{"event": "delta", "text": "x" * 100} for _ in range(calls)]
+    return record
+
+
+@pytest.mark.deterministic
+def test_validated_plan_review_reaches_the_reviewer_as_a_compact_view(tmp_path):
+    record = traced_plan_record()
+    evidence = plan_review_evidence(record)
+    derived = implementation(tmp_path, code_design_review=evidence)["code_design_review"]
+    view = json.loads(derived["body"])
+    assert derived["ref"] == "review#validated-plan-review"
+    assert derived["sha256"] == hashlib.sha256(derived["body"].encode("utf-8")).hexdigest()
+    assert derived["sha256"] != evidence["sha256"]
+    assert derived["body"] == json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    assert set(view) == VIEW_KEYS
+    assert view["source_record"] == {"ref": "review", "sha256": evidence["sha256"]}
+    basis = record["semantic_input"]["code_design_basis"]
+    assert view["code_design_basis"] == {"ref": basis["ref"], "sha256": basis["sha256"]}
+    assert view["acceptance_criteria"] == record["semantic_input"]["acceptance_criteria"]
+    assert (view["status"], view["module_id"], view["review_purpose"], view["semantic_validation"]) == (
+        "completed", "engineering_change_reviewer", "code_design", {"status": "passed"})
+    assert view["runtime_identity"] == {
+        "managed_runtime": False, "model": "claude-opus-5-5", "effort": "xhigh",
+        "module_release_ref": "runtime-module:engineering_change_reviewer@v1", "runtime_version": None}
+    assert view["output"] == record["output"]
+    # A record without Runtime identity fields gets none invented.
+    bare = tmp_path/"bare"; bare.mkdir()
+    assert json.loads(implementation(bare)["code_design_review"]["body"])["runtime_identity"] == {}
+
+
+@pytest.mark.deterministic
+def test_plan_review_trace_growth_does_not_reach_the_reviewer(tmp_path):
+    views = {}
+    for calls in (1, 400):
+        repo = tmp_path/str(calls); repo.mkdir()
+        evidence = plan_review_evidence(traced_plan_record(calls))
+        derived = implementation(repo, code_design_review=evidence)["code_design_review"]
+        views[calls] = (len(evidence["body"].encode("utf-8")), derived["body"])
+    (small_source, small_body), (large_source, large_body) = views[1], views[400]
+    small, large = json.loads(small_body), json.loads(large_body)
+    assert large_source > 100 * len(large_body.encode("utf-8"))
+    assert len(large_body.encode("utf-8")) == len(small_body.encode("utf-8"))
+    assert small["source_record"]["sha256"] != large["source_record"]["sha256"]
+    assert {key: small[key] for key in VIEW_KEYS - {"source_record"}} == {
+        key: large[key] for key in VIEW_KEYS - {"source_record"}}
+    assert "trace" not in large_body
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("field,value", [("model", {"provider_trace": ["nested"]}), ("attempt_id", ["call_1"]),
+                                         ("effort", 3), ("managed_runtime", "false"), ("managed_runtime", None)])
+def test_plan_review_identity_fields_cannot_carry_trace(tmp_path, field, value):
+    record = plan_record() | {field: value}
+    with pytest.raises(inputs.EngineeringReviewInputError, match="scalar identity") as caught:
+        implementation(tmp_path, code_design_review=plan_review_evidence(record))
+    assert caught.value.error_code == inputs.ENGINEERING_REVIEW_INPUT_CLOSURE_INCOMPLETE
+
+
+@pytest.mark.deterministic
+def test_plan_review_checks_and_findings_survive_the_view(tmp_path):
+    result = with_finding(output(), severity="note", check="2")
+    second = copy.deepcopy(result["findings"][0]) | {"finding_id": "finding_2", "required_change": "Optional wording"}
+    second["evidence"]["observation"] = "The provider_trace field stays in the complete record"
+    result["findings"].append(second)
+    result["check_results"][6]["finding_ids"] = ["finding_2"]
+    result["check_results"][0]["assessment"] = "Code checked execution_log and semantic_input before the view"
+    result["safe_next_step"] = "Implement the reviewed plan; both notes are optional"
+    record = plan_record() | {"output": result}
+    payload = implementation(tmp_path, code_design_review=plan_review_evidence(record))
+    view = json.loads(payload["code_design_review"]["body"])
+    assert view["output"] == result
+    assert [row["finding_id"] for row in view["output"]["findings"]] == ["finding_1", "finding_2"]
+    # Prior plan notes stay inside the plan review result; they are not current findings.
+    assert payload["prior_findings"] == []
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("evidence", ["replayed_view", "forged_summary"])
+def test_validated_view_is_not_plan_review_evidence(tmp_path, evidence):
+    source = tmp_path/"plan-review.json"; source.write_text(json.dumps(plan_record()))
+    first = tmp_path/"first"; first.mkdir()
+    derived = implementation(first, code_design_review=inputs.hashed_body(str(source), source.read_text()))
+    submitted = derived["code_design_review"]
+    if evidence == "forged_summary":
+        view = json.loads(submitted["body"])
+        submitted = inputs.hashed_body(str(source), json.dumps({key: view[key] for key in VIEW_KEYS - {"source_record"}}))
+    second = tmp_path/"second"; second.mkdir()
+    # The complete record is readable at source_record.ref; the builder still does not open it.
+    with pytest.raises(inputs.EngineeringReviewInputError) as caught:
+        implementation(second, code_design_review=submitted)
+    assert caught.value.error_code == inputs.ENGINEERING_REVIEW_INPUT_CLOSURE_INCOMPLETE
+
+
+def full_plan_review_file(tmp_path, opts):
+    """A complete plan review from the real entry, with trace the Reviewer view leaves out."""
+    evidence = tmp_path/"plan-review.json"
+    evidence.write_text(json.dumps(review_engineering(executor=executor, **opts) | {"provider_trace": ["trace"] * 1000}))
+    repo = tmp_path/"repo"; repo.mkdir(); implementation(repo)
+    return evidence, repo
+
+
+@pytest.mark.deterministic
+def test_complete_plan_review_file_stays_frozen_and_unchanged(tmp_path):
+    opts = options(tmp_path)
+    evidence, repo = full_plan_review_file(tmp_path, opts)
+    original = evidence.read_bytes()
+    opts.update(repository_root=repo, commit_ref="HEAD", plan_review_path=evidence)
+    payload, frozen = prepare_review(**opts)
+    resolved = evidence.resolve()
+    assert frozen[evidence.absolute()] == (resolved, original)
+    derived = payload["code_design_review"]
+    assert derived["ref"] == f"{resolved}#validated-plan-review"
+    assert json.loads(derived["body"])["source_record"] == {"ref": str(resolved),
+                                                            "sha256": hashlib.sha256(original).hexdigest()}
+    record = review_engineering(executor=executor, **opts)
+    assert record["semantic_validation"]["status"] == "passed"
+    assert record["source_sha256"][str(evidence.absolute())] == hashlib.sha256(original).hexdigest()
+    assert derived["sha256"] not in record["source_sha256"].values()
+    assert evidence.read_bytes() == original
+    def rewrite(payload):
+        evidence.write_bytes(original + b"\n")
+        return executor(payload)
+    rejected = review_engineering(executor=rewrite, **opts)
+    assert rejected["semantic_validation"]["status"] == "failed"
+    assert "binding changed" in rejected["semantic_validation"]["message"]
+
+
+@pytest.mark.deterministic
+def test_check_only_sends_only_the_validated_view(tmp_path):
+    opts = options(tmp_path)
+    evidence, repo = full_plan_review_file(tmp_path, opts)
+    original, full = evidence.read_bytes(), json.loads(evidence.read_text())
+    cmd = [sys.executable, "-B", str(CLI), "--plan", str(opts["plan_path"]), "--goal", "Expected result",
+           "--change", "Bounded change", "--criterion", "Expected result", "--plan-review", str(evidence)]
+    env = {k:v for k,v in os.environ.items() if k not in ("ENGINEERING_REVIEW_EXECUTOR", "PYTHONPATH")}
+    checked = subprocess.run([*cmd, "--repository", str(repo), "--commit", "HEAD", "--check-only"],
+                             cwd=tmp_path, env=env, text=True, capture_output=True)
+    assert checked.returncode == 0, checked.stderr
+    payload = json.loads(checked.stdout)
+    view = json.loads(payload["code_design_review"]["body"])
+    assert set(view) == VIEW_KEYS and view["output"] == full["output"]
+    assert "provider_trace" not in checked.stdout and len(checked.stdout.encode("utf-8")) < len(original)
+    assert evidence.read_bytes() == original
+    # A plan review still consumes no historical review result.
+    plan_only = subprocess.run([*cmd, "--check-only"], cwd=tmp_path, env=env, text=True, capture_output=True)
+    assert plan_only.returncode == 2 and "future review result" in plan_only.stderr
+    # The output validator accepts the declared view ref; the source locator is not declared evidence.
+    cited = with_finding(output(), severity="note", source=payload["code_design_review"]["ref"])
+    validate_engineering_review_output(cited, review_input=payload, execution_record=executor(payload))
+    cited["findings"][0]["evidence"]["source_ref"] = view["source_record"]["ref"]
+    with pytest.raises(EngineeringReviewOutputError, match="undeclared evidence"):
+        validate_engineering_review_output(cited, review_input=payload, execution_record=executor(payload))
+
+
 def inaccessible_path(path, kind):
     prefix=path.parent/("traversal_"+kind)
     if kind=="file": prefix.write_text("Not a directory")
@@ -551,13 +722,17 @@ def test_disappearing_traversal_directory_invalidates_review(tmp_path, field, li
     assert rejected["semantic_validation"]["status"]=="failed"
 
 
+@pytest.mark.deterministic
 @pytest.mark.parametrize("kind", ["missing", "file", "link"])
 def test_repository_path_must_really_resolve(tmp_path, kind):
     repo=tmp_path/"repo";repo.mkdir();original=implementation(repo)
-    values={key:original[key] for key in ("code_design_basis","code_design_review","sandbox_command_plan","acceptance_criteria")}
+    # The payload carries a validated view; a direct caller passes its complete plan review again.
+    values={key:original[key] for key in ("code_design_basis","sandbox_command_plan","acceptance_criteria")}
+    values["code_design_review"]=plan_review_evidence()
     valid=repo/"traversal";valid.mkdir()
     control=inputs.build_engineering_review_input(repository_root=valid/"..",commit_ref="HEAD",**values)
     assert control["subject"]==original["subject"]
+    assert control["code_design_review"]==original["code_design_review"]
     # Produce an invalid path ending at the same repository after lexical normalization.
     prefix=repo/("traversal_"+kind)
     if kind=="file":prefix.write_text("Not a directory")
@@ -593,11 +768,14 @@ def test_original_path_search_permissions_are_required(tmp_path, field, during_r
         directory.chmod(0o700)
 
 
+@pytest.mark.deterministic
 @pytest.mark.skipif(os.name!="posix" or getattr(os,"geteuid",lambda:0)()==0,reason="Requires ordinary POSIX traversal permissions")
 def test_repository_original_path_search_permission_is_required(tmp_path):
     repo=tmp_path/"repo";repo.mkdir();source=implementation(repo)
-    values={key:source[key] for key in ("code_design_basis","code_design_review","sandbox_command_plan","acceptance_criteria")}
+    values={key:source[key] for key in ("code_design_basis","sandbox_command_plan","acceptance_criteria")}
+    values["code_design_review"]=plan_review_evidence()
     directory=repo/"traversal";directory.mkdir();requested=directory/".."
+    assert inputs.build_engineering_review_input(repository_root=repo,commit_ref="HEAD",**values)["subject"]==source["subject"]
     try:
         directory.chmod(0o600)
         with pytest.raises(PermissionError):requested.stat()
