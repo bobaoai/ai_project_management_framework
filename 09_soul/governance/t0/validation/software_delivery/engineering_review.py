@@ -2,24 +2,30 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
+from dataclasses import asdict
 import hashlib
 import importlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
+from threading import Event
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from software_delivery.engineering_review_input import (
     INPUT_SCHEMA_PATH, build_code_design_review_input, build_engineering_review_input,
-    command_plan, hashed_body,
+    _PLAN_REVIEW_RUNTIME_IDENTITY, command_plan, hashed_body,
 )
 from software_delivery.engineering_review_materials import write_review_resources
 from software_delivery.engineering_review_output import (
-    OUTPUT_SCHEMA_PATH, engineering_check_ids, validate_engineering_review_output, validate_engineering_reviewer_identity,
+    OUTPUT_SCHEMA_PATH, engineering_check_ids, engineering_command_evidence,
+    validate_engineering_review_output, validate_engineering_reviewer_identity,
 )
 
 
@@ -150,6 +156,93 @@ def review_engineering(*, executor, **kwargs):
     return record
 
 
+def _captured_byte_count(trace, stream):
+    raw = trace.get("raw_streams")
+    if not isinstance(raw, dict) or stream not in raw:
+        return None
+    entry = raw[stream]
+    if not isinstance(entry, dict) or entry.get("encoding") != "base64" or not isinstance(entry.get("data"), str):
+        raise ValueError("Runtime returned invalid encoded process stream metadata")
+    try:
+        return len(base64.b64decode(entry["data"], validate=True))
+    except (ValueError, binascii.Error) as exc:
+        raise ValueError("Runtime returned invalid encoded process stream metadata") from exc
+
+
+def project_engineering_review_record(record):
+    """Project a validated review without serializing its private process record.
+
+    The complete Runtime record is used by review_engineering and the owning
+    validator in this process. Only exact identity, frozen input, Reviewer
+    output and short code-derived terminal/command facts cross into the file.
+    Historical full records remain readable by the owning input validator.
+    """
+    keep = (*_PLAN_REVIEW_RUNTIME_IDENTITY, "status", "module_id", "review_purpose",
+            "semantic_validation", "semantic_input", "output", "failure_class", "execution_budget")
+    projected = {key: record[key] for key in keep if key in record}
+    detail = record.get("failure_detail")
+    projected["failure_code"] = detail.get("failure_code") if isinstance(detail, dict) else None
+    trace = record.get("provider_trace")
+    if isinstance(trace, dict):
+        exit_code = trace.get("exit_code")
+        if exit_code is None:
+            exit_code = trace.get("returncode")
+        projected["provider_process"] = {
+            "exit_code": exit_code,
+            "stop_reason": trace.get("stop_reason"),
+            "output_complete": trace.get("process_output_complete"),
+            "stdout_byte_count": _captured_byte_count(trace, "stdout"),
+            "stderr_byte_count": _captured_byte_count(trace, "stderr"),
+        }
+    else:
+        projected["provider_process"] = None
+    semantic_input = record.get("semantic_input")
+    validation = record.get("semantic_validation")
+    if (isinstance(semantic_input, dict) and isinstance(validation, dict)
+            and validation.get("status") == "passed"
+            and semantic_input["sandbox_command_plan"]["commands"]):
+        projected["command_evidence"] = engineering_command_evidence(semantic_input, record)
+    return projected
+
+
+_PROGRESS_FIELDS = frozenset({"update_trigger", "updates_dropped", "process_id", "process_running",
+                              "elapsed_seconds", "stdout_byte_count", "stderr_byte_count", "current_cli_event"})
+_EVENT_FIELDS = frozenset({"phase", "tool_category", "command_id"})
+
+
+class _ProgressPrinter:
+    """Emit one bounded JSON line without holding Python's buffered stderr lock."""
+
+    def __init__(self):
+        self.started = Event()
+        self.finished = Event()
+
+    def __call__(self, snapshot):
+        try:
+            body = asdict(snapshot)
+            if set(body) != _PROGRESS_FIELDS:
+                return
+            event = body["current_cli_event"]
+            if event is not None and (not isinstance(event, dict) or set(event) != _EVENT_FIELDS):
+                return
+            line = (json.dumps({"runtime_process_progress": body}, ensure_ascii=False,
+                               separators=(",", ":")) + "\n").encode("utf-8")
+            if len(line) > 4096 or os.write(2, line) != len(line):
+                return
+            if body["update_trigger"] == "process_started":
+                self.started.set()
+            elif body["update_trigger"] == "process_finished":
+                self.finished.set()
+        except Exception:
+            # Display failure never changes Runtime status or the review verdict.
+            return
+
+    def drain_after_review(self):
+        """Best-effort display drain only after Runtime and semantic checks return."""
+        if self.started.is_set() and not self.finished.is_set():
+            self.finished.wait(timeout=1)
+
+
 def _runtime_review():
     """Load the shared Runtime Test Run binding by path, so this file also runs as a script."""
     name = "portable_runtime_review"
@@ -162,7 +255,7 @@ def _runtime_review():
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="经 Agent Runtime Test Run 独立审核工程计划或 exact commit，不注册、不修改候选。")
+    parser = argparse.ArgumentParser(description="经 Agent Runtime Test Run 独立审核工程计划或 exact commit；运行中显示安全进度，最终只保存精简审核结果。")
     parser.add_argument("--plan", type=Path, required=True, help="CodeDesignBasis / plan doc")
     parser.add_argument("--commit", help="实现审核的 commit；省略时审计划")
     parser.add_argument("--repository", type=Path, help="--commit 所属仓库")
@@ -225,14 +318,17 @@ def main(argv=None):
                    INPUT_SCHEMA_PATH, OUTPUT_SCHEMA_PATH, *args.context]
         if args.output.resolve() in {path.resolve() for path in watched if path is not None}:
             parser.error("output cannot overwrite review input")
+        printer = _ProgressPrinter()
         def runtime_executor(payload):
             with tempfile.TemporaryDirectory(prefix="engineering-review-resources-") as directory:
                 path = resources(payload, directory)
                 selected = fields if path is None else {**fields, "resources_path": path}
-                return runtime.run_review_test(payload, runtime_kwargs=selected)
+                return runtime.run_review_test(payload, runtime_kwargs=selected, progress_observer=printer)
         record = review_engineering(executor=runtime_executor, **options)
+        printer.drain_after_review()
+        projected = project_engineering_review_record(record)
         with args.output.open("x", encoding="utf-8") as stream:
-            json.dump(record, stream, ensure_ascii=False, indent=2)
+            json.dump(projected, stream, ensure_ascii=False, indent=2)
             stream.write("\n")
         valid = record["semantic_validation"]["status"] == "passed"
         verdict = record.get("output", {}).get("verdict") if valid else None

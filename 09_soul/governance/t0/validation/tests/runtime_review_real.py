@@ -82,24 +82,34 @@ def run_cli_interrupted(script: Path, *arguments) -> subprocess.CompletedProcess
 
 
 def assert_real_review(record: dict, module_id: str, summary: dict, *, record_key: str = "semantic_validation",
-                       summary_key: str = "output_validation") -> str:
+                       summary_key: str = "output_validation", compact: bool = False) -> str:
     """Check that a saved record is a completed Runtime run of this Reviewer with a valid result.
 
     The owning validator must have accepted the output; the verdict may be any
-    valid passed, non_pass or blocked. Returns the verdict for the caller's
-    exit-code check. With PORTABLE_REVIEW_EVIDENCE_DIR set, the record is also
-    saved there under the current test's name for the evidence report.
+    valid passed, non_pass or blocked. Engineering's formal CLI writes a compact
+    projection, while other Reviewer CLIs still write complete records. The
+    compact flag checks that smaller contract without changing the default.
+    With PORTABLE_REVIEW_EVIDENCE_DIR set, only the actual saved record form is
+    copied there under the current test's name.
     """
+    if compact:
+        assert all(key not in record for key in ("execution", "execution_parameter_sources", "execution_log",
+                                                 "provider_trace", "source_sha256"))
     evidence = os.environ.get("PORTABLE_REVIEW_EVIDENCE_DIR")
     if evidence:
         test = os.environ["PYTEST_CURRENT_TEST"].split(" ")[0]
         name = re.sub(r"[^A-Za-z0-9_.-]+", "_", test.split("::", 1)[1]) + f".{module_id}.json"
         (Path(evidence) / name).write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
     assert record["status"] == "completed", record.get("failure_detail")
-    assert record["managed_runtime"] is True and record["execution"] == "run_workflow_module"
+    assert record["managed_runtime"] is True
     assert record["module_release_ref"].startswith(f"runtime-module:{module_id}@")
     assert record["workflow_release_ref"].startswith(f"runtime-workflow:{module_id}@")
-    assert {source["layer"] for source in record["execution_parameter_sources"].values()} == {"runtime_default"}
+    if compact:
+        assert record["module_id"] == module_id
+        assert all(isinstance(record[key], str) and record[key] for key in ("attempt_id", "module_run_id"))
+    else:
+        assert record["execution"] == "run_workflow_module"
+        assert {source["layer"] for source in record["execution_parameter_sources"].values()} == {"runtime_default"}
     validation = record[record_key]
     assert validation["status"] == "passed", validation
     assert summary[summary_key]["status"] == "passed"

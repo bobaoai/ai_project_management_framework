@@ -167,6 +167,60 @@ def test_run_fields_fix_the_reviewer_and_default_only_the_local_workflow(fields,
 
 
 @pytest.mark.deterministic
+def test_progress_observer_is_a_trusted_port_not_a_runtime_argument():
+    with pytest.raises(ValueError, match="trusted display port"):
+        runtime_review.review_run_fields(pd_input(), {"root": Path("r"), "progress_observer": object()})
+    with pytest.raises(TypeError, match="callable"):
+        runtime_review.run_review_test(pd_input(), runtime_kwargs={"root": Path("r")}, progress_observer=object())
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("transport", [None, "claude_cli", "codex_cli"])
+def test_observing_review_requires_runtime_progress_before_provider(monkeypatch, transport):
+    import agent_runtime
+    calls = []
+    version_names = []
+    def installed_version(name):
+        version_names.append(name)
+        return "0.2.0.dev9"
+    monkeypatch.setattr(runtime_review.metadata, "version", installed_version)
+    def old_runtime(*, input_payload, expected_module_id, **fields):
+        calls.append(fields)
+        return _record(expected_module_id, input_payload)
+    monkeypatch.setattr(agent_runtime, "run_local_workflow_test", old_runtime)
+    semantic_input = pd_input()
+    fields = {"root": Path("r")}
+    if transport is not None:
+        fields["transport_kind"] = transport
+    assert runtime_review.run_review_test(semantic_input, runtime_kwargs=fields)["module_id"] == PD
+    with pytest.raises(ValueError, match="installed agent_runtime 0[.]2[.]0[.]dev9 lacks progress_observer.*before this review entry"):
+        runtime_review.run_review_test(semantic_input, runtime_kwargs=fields,
+                                       progress_observer=lambda _: None)
+    assert len(calls) == 1
+    assert version_names == ["agent-runtime-core"]
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("transport", [None, "claude_cli", "codex_cli"])
+def test_observing_review_forwards_the_same_callback_to_runtime(monkeypatch, transport):
+    import agent_runtime
+    calls = []
+    def new_runtime(*, input_payload, expected_module_id, progress_observer=None, **fields):
+        calls.append((expected_module_id, input_payload, progress_observer, fields))
+        return _record(expected_module_id, input_payload)
+    monkeypatch.setattr(agent_runtime, "run_local_workflow_test", new_runtime)
+    observer = lambda _: None
+    semantic_input = pd_input()
+    fields = {"root": Path("r")}
+    if transport is not None:
+        fields["transport_kind"] = transport
+    record = runtime_review.run_review_test(semantic_input, runtime_kwargs=fields,
+                                            progress_observer=observer)
+    assert record["module_id"] == PD
+    assert calls == [(PD, semantic_input, observer, {**fields, "workflow_id": PD})]
+
+
+@pytest.mark.deterministic
 @pytest.mark.parametrize("reserved", ["expected_module_id", "input_payload"])
 def test_the_review_fixes_the_reviewer_and_its_input(reserved):
     with pytest.raises(ValueError, match="fixed by the review object"):
@@ -220,7 +274,8 @@ def test_executor_selection_is_gone_from_review_code(tmp_path, capsys):
             if token in text:
                 offenders.append(f"{relative}: {token}")
     assert offenders == []
-    assert list(inspect.signature(runtime_review.run_review_test).parameters) == ["semantic_input", "runtime_kwargs"]
+    assert list(inspect.signature(runtime_review.run_review_test).parameters) == [
+        "semantic_input", "runtime_kwargs", "progress_observer"]
     with pytest.raises(SystemExit) as error:
         runtime_review.main(["--input", "i.json", "--output", str(tmp_path / "r.json"), "--root", str(tmp_path),
                              "--executor", "module:function"])
