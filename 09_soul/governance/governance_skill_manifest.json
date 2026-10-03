@@ -824,7 +824,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/engineering-change-review/SKILL.md",
-          "sha256": "aba7b595d890390975a1b626cd383d9d6de438e98f9daade9a91954f5a36d835",
+          "sha256": "94d641d907bf73a37c412ea3c2f2fc707c864a6b41f8f9c5fe537378a90003aa",
           "embedded_resource_ids": [
             "t0:review_contract_universal_review_style"
           ],
@@ -1294,7 +1294,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/agent-work-coordination/SKILL.md",
-          "sha256": "0280c53ffc7fd43b852b704bf223647d087268e7f5b8d4e8e273ab676b2ec9c0",
+          "sha256": "f5e009de4ed2f332323f34d8d6c7c2c6e287080e30072dce387354ac8e61ad03",
           "embedded_resource_ids": [],
           "projections": [
             {

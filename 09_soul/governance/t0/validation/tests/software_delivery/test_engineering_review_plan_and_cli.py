@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+from dataclasses import dataclass
 import hashlib
 import copy
 import json
@@ -7,13 +9,19 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
+from types import SimpleNamespace
 
 import pytest
 from jsonschema import Draft202012Validator, ValidationError
 
 from software_delivery import engineering_review_input as inputs
-from software_delivery.engineering_review import prepare_review, review_engineering
-from software_delivery.engineering_review_output import EngineeringReviewOutputError, validate_engineering_review_output
+from software_delivery.engineering_review import (
+    _ProgressPrinter, prepare_review, project_engineering_review_record, review_engineering,
+)
+from software_delivery.engineering_review_output import (
+    EngineeringReviewOutputError, engineering_command_evidence, validate_engineering_review_output,
+)
 from tests.runtime_review_real import REAL_GATE, assert_real_review, run_cli
 
 CLI = Path(inputs.__file__).with_name("engineering_review.py")
@@ -272,6 +280,17 @@ def _cli_review(opts, target, root, *extra):
             "--criterion", "Expected result", "--output", target, "--root", root, *extra]
 
 
+@pytest.mark.deterministic
+def test_real_review_assertion_accepts_the_compact_engineering_record():
+    record = project_engineering_review_record(plan_record() | {
+        "managed_runtime": True, "module_release_ref": "runtime-module:engineering_change_reviewer@v1",
+        "workflow_release_ref": "runtime-workflow:engineering_change_reviewer@v1",
+        "attempt_id": "attempt_1", "module_run_id": "run_1",
+    })
+    summary = {"output_validation": {"status": "passed"}, "verdict": "passed"}
+    assert assert_real_review(record, "engineering_change_reviewer", summary, compact=True) == "passed"
+
+
 @pytest.mark.real_run
 @REAL_GATE
 def test_real_cli_plan_review_runs_through_runtime(tmp_path, reviewer_host):
@@ -283,7 +302,7 @@ def test_real_cli_plan_review_runs_through_runtime(tmp_path, reviewer_host):
     target = tmp_path / "result.json"
     result = run_cli(CLI, *_cli_review(opts, target, reviewer_host))
     record = json.loads(target.read_text())
-    verdict = assert_real_review(record, "engineering_change_reviewer", json.loads(result.stdout))
+    verdict = assert_real_review(record, "engineering_change_reviewer", json.loads(result.stdout), compact=True)
     assert result.returncode == (0 if verdict == "passed" else 1), result.stderr
     assert record["review_purpose"] == "code_design" and record["semantic_input"]["subject"] is None
 
@@ -310,24 +329,25 @@ def test_real_declared_command_evidence_reaches_the_validator_from_the_same_run(
                      "--change", "Plan for one unit check", "--criterion", "The declared unit_check command runs and exits 0",
                      "--commands", commands, "--output", target, "--root", reviewer_host)
     record = json.loads(target.read_text())
-    assert_real_review(record, "engineering_change_reviewer", json.loads(result.stdout))
-    attempt, = (row for row in record["execution_log"]["attempts"] if row["attempt_id"] == record["attempt_id"])
-    call, = (row for row in attempt["tool_calls"] if row["tool_name"] == "sandbox_command_execute")
-    assert call["request"] == {"command_id": "unit_check"} and call["status"] == "completed"
-    assert (call["response"]["returncode"], call["response"]["stdout"], call["response"]["declared_argv"]) == (
-        0, "evidence\n", argv)
+    assert_real_review(record, "engineering_change_reviewer", json.loads(result.stdout), compact=True)
+    assert record["command_evidence"] == {
+        "log_complete": True,
+        "commands": [{"command_id": "unit_check", "disposition": "completed_exit_zero"}],
+    }
     arguments = dict(review_input=record["semantic_input"], execution_record=record)
     validate_engineering_review_output(record["output"], **arguments)
     without_call = copy.deepcopy(record)
-    for row in without_call["execution_log"]["attempts"]:
-        row["tool_calls"] = [item for item in row["tool_calls"] if item["tool_name"] != "sandbox_command_execute"]
+    without_call["command_evidence"]["commands"][0]["disposition"] = "not_observed"
     with pytest.raises(EngineeringReviewOutputError, match="no actual execution evidence"):
         validate_engineering_review_output(record["output"], review_input=record["semantic_input"],
                                            execution_record=without_call)
-    other_attempt = copy.deepcopy(record) | {"attempt_id": "module_attempt_other"}
-    with pytest.raises(EngineeringReviewOutputError, match="another review Attempt"):
+    # The complete in-memory path checks exact Attempt equality before this
+    # projection is saved. A saved compact record requires a nonempty identity;
+    # it does not retain the full log needed to reselect another Attempt.
+    missing_attempt = copy.deepcopy(record) | {"attempt_id": ""}
+    with pytest.raises(EngineeringReviewOutputError, match="exact managed review Attempt"):
         validate_engineering_review_output(record["output"], review_input=record["semantic_input"],
-                                           execution_record=other_attempt)
+                                           execution_record=missing_attempt)
 
 
 def test_plan_self_check_template_and_validation(tmp_path):
@@ -1034,3 +1054,375 @@ def test_engineering_prompt_keeps_canonical_universal_and_checklist():
     prompt = (inputs.INPUT_SCHEMA_PATH.parent.parent / "prompt.md").read_bytes()
     assert release.compose_governance_skill_package_file(prompt, ids, selected) == prompt
     release.validate_reviewer_prompt_artifact(prompt, embedded_resource_ids=ids)
+
+
+def _managed_command_record(*, returncode=0, unavailable=False):
+    payload = plan_input(sandbox_command_plan=inputs.command_plan("commands", [command()]))
+    call = command_record(payload, returncode=returncode, unavailable=unavailable)["execution_log"]["tool_calls"][0]
+    record = plan_record() | {
+        "semantic_input": payload, "managed_runtime": True,
+        "workflow_execution_id": "execution_1", "module_run_id": "run_1", "attempt_id": "attempt_1",
+        "execution_log": {"schema_version": "runtime_execution_log_v1", "workflow_execution_id": "execution_1",
+                          "attempts": [{"module_run_id": "run_1", "attempt_id": "attempt_1", "status": "completed",
+                                        "complete": True, "tool_calls": [call]}]},
+    }
+    return payload, record
+
+
+@pytest.mark.deterministic
+def test_projection_keeps_short_terminal_facts_not_private_process_content():
+    sentinel = "RAW_PROCESS_SENTINEL"
+    record = plan_record() | {
+        "provider_trace": {"argv": [sentinel], "settings": {"secret": sentinel},
+                           "actual_prompt": sentinel, "error": sentinel,
+                           "exit_code": -9, "stop_reason": "timeout", "process_output_complete": False,
+                           "raw_streams": {"stdout": {"encoding": "base64", "data": base64.b64encode(sentinel.encode()).decode()},
+                                           "stderr": {"encoding": "base64", "data": ""}}},
+        "failure_detail": {"failure_code": "claude_cli_timeout", "provider_error_message": sentinel},
+        "execution_trace": {"private": sentinel}, "execution_log": {"private": sentinel},
+        "self_test_binding": {"private": sentinel}, "usage": {"private": sentinel},
+    }
+    projected = project_engineering_review_record(record)
+    assert set(projected) == {"status", "module_id", "review_purpose", "semantic_validation",
+                              "semantic_input", "output", "failure_code", "provider_process"}
+    assert projected["failure_code"] == "claude_cli_timeout"
+    assert projected["provider_process"] == {
+        "exit_code": -9, "stop_reason": "timeout", "output_complete": False,
+        "stdout_byte_count": len(sentinel.encode()), "stderr_byte_count": 0,
+    }
+    serialized = json.dumps(projected)
+    assert sentinel not in serialized
+    assert all(key not in projected for key in ("execution_log", "provider_trace", "execution_trace",
+                                                 "failure_detail", "self_test_binding", "usage"))
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("status,trace,detail,code,process", [
+    ("completed", {"exit_code": 0, "stop_reason": None, "process_output_complete": True},
+     None, None, {"exit_code": 0, "stop_reason": None, "output_complete": True}),
+    ("failed", {"exit_code": -9, "stop_reason": "timeout", "process_output_complete": False,
+                "raw_streams": {"stdout": {"encoding": "base64", "data": ""},
+                                "stderr": {"encoding": "base64", "data": ""}}},
+     {"failure_code": "claude_cli_timeout"}, "claude_cli_timeout",
+     {"exit_code": -9, "stop_reason": "timeout", "output_complete": False,
+      "stdout_byte_count": 0, "stderr_byte_count": 0}),
+    ("cancelled", {"exit_code": -2, "stop_reason": "cancelled", "process_output_complete": False},
+     {"failure_code": "claude_cli_interrupted"}, "claude_cli_interrupted",
+     {"exit_code": -2, "stop_reason": "cancelled", "output_complete": False}),
+    ("failed", None, {"failure_code": "claude_cli_spawn_failed"}, "claude_cli_spawn_failed", None),
+])
+def test_projection_reports_only_observed_terminal_facts(status, trace, detail, code, process):
+    record = plan_record() | {"status": status, "failure_detail": detail}
+    if trace is not None:
+        record["provider_trace"] = trace
+    projected = project_engineering_review_record(record)
+    assert projected["failure_code"] == code
+    if process is None:
+        assert projected["provider_process"] is None
+    else:
+        assert projected["provider_process"] == {
+            "stdout_byte_count": None, "stderr_byte_count": None, **process}
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("returncode,stop_reason,complete", [
+    (0, None, True),
+    (-9, "timeout", False),
+])
+def test_projection_keeps_codex_process_returncode(returncode, stop_reason, complete):
+    record = plan_record() | {
+        "provider_trace": {"returncode": returncode, "stop_reason": stop_reason,
+                           "process_output_complete": complete},
+    }
+    assert project_engineering_review_record(record)["provider_process"] == {
+        "exit_code": returncode, "stop_reason": stop_reason, "output_complete": complete,
+        "stdout_byte_count": None, "stderr_byte_count": None,
+    }
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("returncode,unavailable,disposition,verdict", [
+    (0, False, "completed_exit_zero", "passed"),
+    (3, False, "completed_exit_nonzero", "non_pass"),
+    (0, True, "reported_unavailable", "blocked"),
+])
+def test_compact_command_evidence_preserves_the_existing_verdict_rules(
+        returncode, unavailable, disposition, verdict):
+    payload, record = _managed_command_record(returncode=returncode, unavailable=unavailable)
+    result = (output() if verdict == "passed" else
+              with_finding(output(), severity="block" if verdict == "blocked" else "fix"))
+    record["output"] = result
+    validate_engineering_review_output(result, review_input=payload, execution_record=record)
+    assert engineering_command_evidence(payload, record) == {
+        "log_complete": True, "commands": [{"command_id": "unit", "disposition": disposition}]}
+    compact = project_engineering_review_record(record)
+    assert "execution_log" not in compact and "provider_trace" not in compact
+    validate_engineering_review_output(result, review_input=payload, execution_record=compact)
+    if verdict != "passed":
+        with pytest.raises(EngineeringReviewOutputError):
+            validate_engineering_review_output(output(), review_input=payload, execution_record=compact)
+
+
+@pytest.mark.deterministic
+def test_actual_runtime_nonzero_command_is_executed_not_unavailable():
+    payload, record = _managed_command_record(returncode=3)
+    call = record["execution_log"]["attempts"][0]["tool_calls"][0]
+    call["status"] = "failed"  # LocalCommandSession marks a nonzero exit failed.
+    call["response"].update(process_output_complete=True, failure=None)
+    result = with_finding(output(), severity="fix")
+    record["output"] = result
+    validate_engineering_review_output(result, review_input=payload, execution_record=record)
+    compact = project_engineering_review_record(record)
+    assert compact["command_evidence"]["commands"] == [
+        {"command_id": "unit", "disposition": "completed_exit_nonzero"}]
+    validate_engineering_review_output(result, review_input=payload, execution_record=compact)
+
+
+@pytest.mark.deterministic
+def test_compact_plan_review_is_reusable_without_raw_command_log(tmp_path):
+    payload, record = _managed_command_record()
+    compact = project_engineering_review_record(record)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    derived = implementation(repo, code_design_review=inputs.hashed_body("review", json.dumps(compact)))
+    assert json.loads(derived["code_design_review"]["body"])["output"]["verdict"] == "passed"
+    for mutation in ("missing", "unknown", "both", "other_attempt", "not_managed",
+                     "invalid_disposition", "incomplete_log", "duplicate", "other_input"):
+        bad = copy.deepcopy(compact)
+        if mutation == "missing":
+            bad["command_evidence"]["commands"][0]["disposition"] = "not_observed"
+        if mutation == "unknown":
+            bad["command_evidence"]["commands"][0]["command_id"] = "other"
+        if mutation == "both":
+            bad["execution_log"] = record["execution_log"]
+        if mutation == "other_attempt":
+            bad["attempt_id"] = ""
+        if mutation == "not_managed":
+            bad["managed_runtime"] = False
+        if mutation == "invalid_disposition":
+            bad["command_evidence"]["commands"][0]["disposition"] = "unknown"
+        if mutation == "incomplete_log":
+            bad["command_evidence"]["log_complete"] = False
+        if mutation == "duplicate":
+            bad["command_evidence"]["commands"] *= 2
+        if mutation == "other_input":
+            bad["semantic_input"]["acceptance_criteria"] = ["other"]
+        with pytest.raises(EngineeringReviewOutputError):
+            validate_engineering_review_output(output(), review_input=payload, execution_record=bad)
+
+
+@pytest.mark.deterministic
+def test_zero_command_projection_keeps_the_six_required_plan_review_fields():
+    compact = project_engineering_review_record(plan_record())
+    basis = plan_input()["code_design_basis"]
+    def readback(value):
+        return inputs._validate_plan_review(
+            inputs.hashed_body("review", json.dumps(value)), basis,
+            ["Expected result"], inputs.INPUT_SCHEMA_PATH)
+    assert readback(compact)["body"]
+    for field in ("status", "module_id", "review_purpose", "semantic_validation", "semantic_input", "output"):
+        altered = copy.deepcopy(compact)
+        del altered[field]
+        with pytest.raises(inputs.EngineeringReviewInputError):
+            readback(altered)
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("returncodes,unavailable,expected,verdict", [
+    ([0, 0], False, "completed_exit_zero", "passed"),
+    ([0, 2], False, "completed_exit_nonzero", "non_pass"),
+    ([2], True, "reported_unavailable", "blocked"),
+])
+def test_repeated_declared_command_keeps_the_full_log_decision(
+        returncodes, unavailable, expected, verdict):
+    payload, record = _managed_command_record(returncode=returncodes[0])
+    calls = record["execution_log"]["attempts"][0]["tool_calls"]
+    for index, code in enumerate(returncodes[1:], start=2):
+        repeated = copy.deepcopy(calls[0])
+        repeated["tool_call_id"] = f"call_{index}"
+        repeated["response"]["returncode"] = code
+        calls.append(repeated)
+    if unavailable:
+        unavailable_call = copy.deepcopy(calls[0])
+        unavailable_call.update(tool_call_id="call_unavailable", status="failed",
+                                response={"error_type": "PermissionError", "message": "Unavailable"})
+        calls.append(unavailable_call)
+    result = output() if verdict == "passed" else with_finding(
+        output(), severity="block" if verdict == "blocked" else "fix")
+    record["output"] = result
+    validate_engineering_review_output(result, review_input=payload, execution_record=record)
+    compact = project_engineering_review_record(record)
+    assert compact["command_evidence"]["commands"] == [
+        {"command_id": "unit", "disposition": expected}]
+    validate_engineering_review_output(result, review_input=payload, execution_record=compact)
+
+
+@pytest.mark.deterministic
+def test_optional_unobserved_command_survives_compact_review():
+    payload, record = _managed_command_record()
+    payload["sandbox_command_plan"]["commands"][0]["required"] = False
+    record["semantic_input"] = copy.deepcopy(payload)
+    attempt = record["execution_log"]["attempts"][0]
+    attempt["tool_calls"] = []
+    attempt["complete"] = False
+    validate_engineering_review_output(record["output"], review_input=payload, execution_record=record)
+    compact = project_engineering_review_record(record)
+    assert compact["command_evidence"] == {
+        "log_complete": False, "commands": [{"command_id": "unit", "disposition": "not_observed"}]}
+    validate_engineering_review_output(record["output"], review_input=payload, execution_record=compact)
+
+
+@dataclass(frozen=True)
+class _ProgressSnapshot:
+    update_trigger: str = "process_started"
+    updates_dropped: int = 0
+    process_id: int = 321
+    process_running: bool = True
+    elapsed_seconds: float = 0.1
+    stdout_byte_count: int = 0
+    stderr_byte_count: int = 0
+    current_cli_event: object = None
+
+
+@pytest.mark.deterministic
+def test_progress_printer_emits_only_one_closed_json_line(monkeypatch):
+    written = []
+    monkeypatch.setattr("software_delivery.engineering_review.os.write", lambda fd, body: written.append((fd, body)) or len(body))
+    printer = _ProgressPrinter()
+    printer(_ProgressSnapshot(current_cli_event={"phase": "tool_requested", "tool_category": "read", "command_id": None}))
+    assert printer.started.is_set()
+    assert len(written) == 1 and written[0][0] == 2
+    assert json.loads(written[0][1]) == {"runtime_process_progress": {
+        "update_trigger": "process_started", "updates_dropped": 0, "process_id": 321,
+        "process_running": True, "elapsed_seconds": 0.1, "stdout_byte_count": 0,
+        "stderr_byte_count": 0,
+        "current_cli_event": {"phase": "tool_requested", "tool_category": "read", "command_id": None},
+    }}
+    printer(_ProgressSnapshot(current_cli_event={"phase": "tool_requested", "tool_category": "read",
+                                                 "command_id": None, "raw": "SECRET"}))
+    assert len(written) == 1
+
+
+@pytest.mark.deterministic
+def test_default_printer_cannot_hold_buffered_stderr_lock_at_exit():
+    # The parent deliberately never drains stderr. A daemon using buffered
+    # sys.stderr.write could leave this interpreter hung at shutdown.
+    validation_root = str(CLI.resolve().parents[1])
+    child = "\n".join([
+        "import sys,threading,time",
+        "from dataclasses import dataclass",
+        f"sys.path.insert(0,{validation_root!r})",
+        "from software_delivery.engineering_review import _ProgressPrinter",
+        "@dataclass(frozen=True)",
+        "class Snapshot:",
+        "    update_trigger:str='heartbeat'",
+        "    updates_dropped:int=0",
+        "    process_id:int=321",
+        "    process_running:bool=True",
+        "    elapsed_seconds:float=0.1",
+        "    stdout_byte_count:int=0",
+        "    stderr_byte_count:int=0",
+        "    current_cli_event:object=None",
+        "printer=_ProgressPrinter()",
+        "def flood():",
+        "    for _ in range(100000): printer(Snapshot())",
+        "threading.Thread(target=flood,daemon=True).start()",
+        "time.sleep(0.2)",
+        "print('BODY_FINISHED',flush=True)",
+    ])
+    process = subprocess.Popen([sys.executable, "-B", "-c", child], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        process.wait(timeout=4)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=2)
+        pytest.fail("progress printer held interpreter exit on an unread stderr pipe")
+    assert process.returncode == 0
+    assert process.stdout.read().strip() == b"BODY_FINISHED"
+    process.stdout.close()
+    process.stderr.close()
+
+
+@pytest.mark.deterministic
+def test_post_review_display_drain_is_bounded_and_skips_unstarted_runs():
+    printer = _ProgressPrinter()
+    started = time.monotonic()
+    printer.drain_after_review()  # A Codex or pre-launch failure has no Claude progress.
+    assert time.monotonic() - started < 0.1
+    printer.started.set()
+    started = time.monotonic()
+    printer.drain_after_review()
+    assert 0.9 <= time.monotonic() - started < 1.5
+
+
+@pytest.mark.deterministic
+def test_formal_engineering_entry_validates_in_memory_and_writes_only_projection(tmp_path, monkeypatch, capsys):
+    from software_delivery import engineering_review as entry
+    opts = options(tmp_path)
+    target = tmp_path / "result.json"
+    sent = []
+    progress = []
+    monkeypatch.setattr(entry.os, "write", lambda fd, body: progress.append((fd, body)) or len(body))
+    def run(payload, *, runtime_kwargs, progress_observer):
+        sent.append((payload, runtime_kwargs))
+        progress_observer(_ProgressSnapshot())
+        progress_observer(_ProgressSnapshot(update_trigger="process_finished", process_running=False))
+        return executor(payload) | {
+            "provider_trace": {"actual_prompt": "RAW_PROCESS_SENTINEL", "exit_code": 0,
+                               "process_output_complete": True,
+                               "raw_streams": {"stdout": {"encoding": "base64", "data": ""},
+                                               "stderr": {"encoding": "base64", "data": ""}}},
+            "execution_trace": {"raw": "RAW_PROCESS_SENTINEL"},
+        }
+    host = SimpleNamespace(
+        add_runtime_arguments=lambda parser: (
+            parser.add_argument("--root", type=Path),
+            parser.add_argument("--resources", type=Path),
+        ),
+        runtime_kwargs=lambda args: {"root": args.root},
+        run_review_test=run,
+    )
+    monkeypatch.setattr(entry, "_runtime_review", lambda: host)
+    code = entry.main(["--plan", str(opts["plan_path"]), "--goal", opts["goal"],
+                       "--change", opts["change"], "--criterion", opts["acceptance_criteria"][0],
+                       "--output", str(target), "--root", str(tmp_path)])
+    saved = json.loads(target.read_text())
+    assert code == 0 and saved["output"]["verdict"] == "passed"
+    assert saved["semantic_validation"]["status"] == "passed"
+    assert "execution_log" not in saved and "provider_trace" not in saved
+    assert "RAW_PROCESS_SENTINEL" not in target.read_text()
+    assert sent[0][1] == {"root": tmp_path}
+    assert len(progress) == 2 and all(fd == 2 for fd, _ in progress)
+    assert all("runtime_process_progress" in json.loads(body) for _, body in progress)
+    assert json.loads(capsys.readouterr().out)["output_validation"]["status"] == "passed"
+
+
+@pytest.mark.deterministic
+def test_formal_entry_accepts_a_codex_result_without_claude_progress(tmp_path, monkeypatch, capsys):
+    from software_delivery import engineering_review as entry
+    opts = options(tmp_path)
+    target = tmp_path / "codex-result.json"
+    progress = []
+    monkeypatch.setattr(entry.os, "write", lambda fd, body: progress.append((fd, body)) or len(body))
+    def run(payload, *, runtime_kwargs, progress_observer):
+        assert callable(progress_observer)
+        assert runtime_kwargs == {"root": tmp_path, "transport_kind": "codex_cli"}
+        return executor(payload) | {"transport_kind": "codex_cli"}
+    host = SimpleNamespace(
+        add_runtime_arguments=lambda parser: (
+            parser.add_argument("--root", type=Path),
+            parser.add_argument("--transport", choices=["claude_cli", "codex_cli"]),
+            parser.add_argument("--resources", type=Path),
+        ),
+        runtime_kwargs=lambda args: {"root": args.root, "transport_kind": args.transport},
+        run_review_test=run,
+    )
+    monkeypatch.setattr(entry, "_runtime_review", lambda: host)
+    code = entry.main(["--plan", str(opts["plan_path"]), "--goal", opts["goal"],
+                       "--change", opts["change"], "--criterion", opts["acceptance_criteria"][0],
+                       "--output", str(target), "--root", str(tmp_path), "--transport", "codex_cli"])
+    saved = json.loads(target.read_text())
+    assert code == 0 and saved["output"]["verdict"] == "passed"
+    assert saved["semantic_validation"]["status"] == "passed"
+    assert progress == []
+    assert json.loads(capsys.readouterr().out)["verdict"] == "passed"

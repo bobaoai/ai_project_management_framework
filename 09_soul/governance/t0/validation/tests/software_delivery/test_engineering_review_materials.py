@@ -331,8 +331,9 @@ def test_real_implementation_review_reads_the_frozen_commit_and_runs_its_tests(t
                      "--repository", repo, "--commit", "HEAD", "--plan-review", review,
                      "--commands", commands, "--read", "test_calc.py", "--output", target, "--root", reviewer_host)
     record = json.loads(target.read_text())
-    assert_real_review(record, "engineering_change_reviewer", json.loads(result.stdout))
-    attempt, = (row for row in record["execution_log"]["attempts"] if row["attempt_id"] == record["attempt_id"])
-    call, = (row for row in attempt["tool_calls"] if row["tool_name"] == "sandbox_command_execute")
-    assert call["request"] == {"command_id": "unit_tests"} and call["status"] == "completed"
-    assert call["response"]["returncode"] == 0 and call["response"]["cwd"].endswith("materials/source/commit")
+    assert_real_review(record, "engineering_change_reviewer", json.loads(result.stdout), compact=True)
+    assert record["semantic_input"]["subject"]["commit_ref"] == _git(repo, "rev-parse", "HEAD")
+    assert record["command_evidence"] == {
+        "log_complete": True,
+        "commands": [{"command_id": "unit_tests", "disposition": "completed_exit_zero"}],
+    }

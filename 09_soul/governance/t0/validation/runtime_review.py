@@ -20,6 +20,8 @@ import argparse
 import copy
 import hashlib
 import importlib.util
+from importlib import metadata
+import inspect
 import json
 from pathlib import Path
 import re
@@ -142,6 +144,8 @@ def review_run_fields(semantic_input: Mapping[str, object],
     """
     module_id = reviewer_for_input(semantic_input)
     fields = dict(runtime_kwargs)
+    if "progress_observer" in fields:
+        raise ValueError("progress_observer is a trusted display port, not a Runtime argument")
     for reserved in ("input_payload", "expected_module_id"):
         if reserved in fields:
             raise ValueError(f"{reserved} is fixed by the review object, not by Runtime arguments")
@@ -173,11 +177,28 @@ def bind_review_record(record: Mapping[str, object], *, module_id: str,
     return record
 
 
-def run_review_test(semantic_input: Mapping[str, object], *, runtime_kwargs: Mapping[str, object]) -> dict:
-    """Run the Reviewer that the input's registered schema identifies through Runtime Test Run."""
+def run_review_test(semantic_input: Mapping[str, object], *, runtime_kwargs: Mapping[str, object],
+                    progress_observer: Callable | None = None) -> dict:
+    """Run the exact Reviewer; optionally forward an ephemeral Runtime observer.
+
+    The observer is a host display port, never part of the frozen review input
+    or execution-parameter files. Non-observing callers retain the existing
+    Runtime call. An observing caller requires a Runtime that implements this
+    public parameter; reject an older installation before it starts a Provider.
+    """
+    if progress_observer is not None and not callable(progress_observer):
+        raise TypeError("progress_observer must be callable or None")
     module_id, fields = review_run_fields(semantic_input, runtime_kwargs)
     frozen = copy.deepcopy(dict(semantic_input))
     from agent_runtime import run_local_workflow_test
+    if progress_observer is not None:
+        if "progress_observer" not in inspect.signature(run_local_workflow_test).parameters:
+            try:
+                version = metadata.version("agent-runtime-core")
+            except metadata.PackageNotFoundError:
+                version = "unknown"
+            raise ValueError(f"installed agent_runtime {version} lacks progress_observer; install Runtime Part A before this review entry")
+        fields["progress_observer"] = progress_observer
     record = run_local_workflow_test(input_payload=copy.deepcopy(frozen), expected_module_id=module_id, **fields)
     return bind_review_record(record, module_id=module_id, semantic_input=frozen)
 
