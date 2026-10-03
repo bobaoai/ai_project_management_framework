@@ -319,6 +319,19 @@ python -B 09_soul/governance/t0/validation/software_delivery/engineering_review.
 `--check-only` 不调用模型，也不需要 Runtime。该工具不内置数据库、模型或 Runtime 注册；缺少 `--root` 时停止，
 不能把检查通过说成外审通过。
 
+### 查看工程审核的运行中状态
+
+使用支持 `progress_observer` 的 Agent Runtime，实际执行选择 `claude_cli` 时，上述工程审核命令
+默认向 stderr 显示 `runtime_process_progress` JSON 行，无需添加进度开关。它报告进程存活、耗时、
+接收字节数和安全的当前事件摘要，例如模型活动、工具请求与返回、已声明命令的开始与结束。
+进度行不含模型正文、工具参数或工具输出。静默 10 秒后的心跳可能重复最后事件；零字节或暂时无变化
+不能用于判定执行失败。最终结果仍由所属 validator 核验，进度不替代完成或通过结论。
+
+这项自动显示属于工程审核 CLI；其他随包审核入口和通用 Test Run CLI 不因此自动开启显示。
+Runtime Python 调用者使用 `run_local_workflow_test` 的 `progress_observer` 参数，具体合同见所安装
+Runtime 的 API reference。过程摘要仅用于当前显示，无需额外保存 stderr；工程审核的 `--output`
+只保存精简结果，不保存原始过程流或进度历史。
+
 `--plan-review` 读取并冻结完整的计划审核原件，按原有规则全部核验通过后，模型只取得代码生成的校验后视图：
 原件 ref 与 hash、计划绑定、验收要求、执行状态、Runtime 身份字段和完整 output。视图的 ref 是原路径加
 `#validated-plan-review`，sha256 只覆盖视图本身；原件 hash 另记在视图的 `source_record`。正式 Engineering CLI

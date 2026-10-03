@@ -824,7 +824,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/engineering-change-review/SKILL.md",
-          "sha256": "aba7b595d890390975a1b626cd383d9d6de438e98f9daade9a91954f5a36d835",
+          "sha256": "94d641d907bf73a37c412ea3c2f2fc707c864a6b41f8f9c5fe537378a90003aa",
           "embedded_resource_ids": [
             "t0:review_contract_universal_review_style"
           ],
