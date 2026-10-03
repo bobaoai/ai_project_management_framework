@@ -154,6 +154,18 @@ check_id 覆盖与未解决问题。已有的人类计划可直接受审，不�
 模型或数据库连接，不临时注册 Module；未经 Runtime 的明确授权外审要如实记录实际执行方式。工具冻结
 输入、调用独立 Reviewer、检查完整输出与绑定，独占创建新结果文件，不覆盖源或既有结果。
 
+运行中观察使用支持 `progress_observer` 的 Runtime。上述工程审核 CLI 在实际 transport 为
+`claude_cli` 时自动向 stderr 输出 `runtime_process_progress` JSON 行，无需另加进度参数。
+它显示 PID、进程是否存活、耗时、接收字节数，以及初始化、模型活动、工具请求与返回、最终结果等
+安全事件摘要；Runtime 管理的已声明命令还带 `command_id` 和开始、结束状态。正文、工具参数和
+工具输出不进入这些进度行。其他 transport 不产生这类更新，通用 Test Run CLI 也没有同名进度开关；
+直接使用 Runtime Python API 的宿主通过 `run_local_workflow_test(..., progress_observer=...)` 接入。
+
+静默 10 秒后的心跳会重复最后事件；慢接收者可能丢失更新，`updates_dropped` 给出计数。
+字节数为零或状态暂时不变不能证明模型已停止。沿当前调用收回最终结果，以执行与语义校验判断完成，
+不根据进度行给出 verdict 或重复发起审核。此入口仅实时显示过程摘要，最终 `--output` 保存精简审核
+结果及必要身份、输入绑定和命令证据，不保存原始过程流或进度历史；无需为观察进度额外重定向 stderr。
+
 实现审核的测试证据按 deterministic 与 real_run 分别提供和核对：每个新增或行为被修改的测试只带其中一个
 marker，经过 Provider、Runtime 执行或数据库的测试必须是 real_run，不接受替身；real_run 写明实际入口、
 版本、输入和结果，未执行的标为未验证；已有 fake_run 测试不计为真实链路验收。各类结果不合并成一句
