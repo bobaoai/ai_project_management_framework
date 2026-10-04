@@ -200,3 +200,7 @@ After the core entry docs, branch by topic:
 - `ideas/`: future-facing design proposals and not-yet-implemented plans
   - `ideas/archive_library.md`: 5-family archive library plan (持仓 / theme / technical / recap / single_stock 跨制品归档统一根 `data/archive/`，latest singleton 不动；旁路写 immutable copies for replay / backtest)
 - `temp/`: handoff notes, migration notes, historical or temporary docs
+
+## Project Materials
+
+[Projects](projects/README.md) is the entry for numbered project folders and each project's `PROJECT.md` outline. Project-specific durable materials follow [Project Documentation](the_project_documentation.md) section 8.2.

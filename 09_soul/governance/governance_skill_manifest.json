@@ -1065,7 +1065,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/project-documentation-authoring/SKILL.md",
-          "sha256": "96a3bc6245680b3792ae5e30aedf6ddfe1959bf53bd1fe7494f41504e8e7c75b",
+          "sha256": "31efdb16d5fe0f47387f592f8d8b86c32df65b8183b9d805646243259979da6c",
           "embedded_resource_ids": [
             "soul:bestpractice_ai_facing_writing",
             "t0:skill_author_self_check",

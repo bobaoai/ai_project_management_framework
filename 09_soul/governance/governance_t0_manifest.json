@@ -92,7 +92,7 @@
       "t0_layer_id": "the_project_documentation",
       "source": "09_soul/governance/t0/the_project_documentation.md",
       "target": "designDoc/the_project_documentation.md",
-      "sha256": "412bd52efdfa4daa071007df6f188cce0d5f551db8cd592e6389b0a71e46ff6e"
+      "sha256": "25b8000f626f02323d3148317d3e35fcc7cc2650d8895db3a59391dd525c7fe1"
     }
   ],
   "artifact_contracts": [
