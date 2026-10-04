@@ -14,7 +14,7 @@ The numbered-folder rules were independently reviewed and accepted on 2026-10-04
 
 ## Next action
 
-Publish this candidate, then update consuming workspaces within their authorized scope. Existing project materials continue from their current locations until a bounded relocation updates their references.
+Update consuming workspaces within their authorized scope and continue this project for later revisions. Existing project materials continue from their current locations until a bounded relocation updates their references.
 
 ## Materials
 
