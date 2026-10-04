@@ -1,0 +1,94 @@
+{
+  "scope": "Accepted numbered project-folder and Project Outline rules",
+  "source_reviews": [
+    {
+      "kind": "design",
+      "result": "design_review_r2.compact.json",
+      "result_sha256": "0a644c38a56ed39a64b596a6a13c2d8633da83bc0929616334a685601aaffbc1",
+      "execution": "execution_2da42ee5d7a3fc383a1063f1",
+      "model": "claude-opus-5-5",
+      "effort": "xhigh",
+      "checks": 11,
+      "optional_notes": [
+        "owned_object_frontmatter_scope",
+        "collision_renumber_review_record_bytes"
+      ]
+    },
+    {
+      "kind": "skill",
+      "result": "skill_review_r2.compact.json",
+      "result_sha256": "52bb494009c31a061b0bf701a001b9c9b0465522ce16d545cfee5f354b44d274",
+      "execution": "execution_48d62df095d3d124cda63e3e",
+      "model": "claude-opus-5-5",
+      "effort": "xhigh",
+      "checks": 12,
+      "optional_notes": [
+        "note_outline_review_boundary_pointer"
+      ]
+    }
+  ],
+  "accepted_source_files": [
+    {
+      "path": "09_soul/governance/t0/the_project_documentation.md",
+      "sha256": "25b8000f626f02323d3148317d3e35fcc7cc2650d8895db3a59391dd525c7fe1"
+    },
+    {
+      "path": "09_soul/governance/skills/project-documentation-authoring/SKILL.md",
+      "sha256": "90d38524c18d950b8921b51f29d4c7beb704c835c0f8bfc596cc2c2680210c2a"
+    }
+  ],
+  "published_files": [
+    {
+      "path": "09_soul/governance/t0/the_project_documentation.md",
+      "sha256": "25b8000f626f02323d3148317d3e35fcc7cc2650d8895db3a59391dd525c7fe1"
+    },
+    {
+      "path": "09_soul/governance/skills/project-documentation-authoring/SKILL.md",
+      "sha256": "90d38524c18d950b8921b51f29d4c7beb704c835c0f8bfc596cc2c2680210c2a"
+    },
+    {
+      "path": "09_soul/governance/governance_t0_manifest.json",
+      "sha256": "4f0679d1dc1c40fbd612c8c6468bedf79e5876c5cb66a8590bfede08e15350c9"
+    },
+    {
+      "path": "09_soul/governance/governance_skill_manifest.json",
+      "sha256": "3a505cc647ab083e57b84329a89d09af3d7f3b9e91d803e7804fced3375840bb"
+    },
+    {
+      "path": "designDoc/the_project_documentation.md",
+      "sha256": "25b8000f626f02323d3148317d3e35fcc7cc2650d8895db3a59391dd525c7fe1"
+    },
+    {
+      "path": ".claude/skills/project-documentation-authoring/SKILL.md",
+      "sha256": "90d38524c18d950b8921b51f29d4c7beb704c835c0f8bfc596cc2c2680210c2a"
+    },
+    {
+      "path": ".agents/skills/project-documentation-authoring/SKILL.md",
+      "sha256": "90d38524c18d950b8921b51f29d4c7beb704c835c0f8bfc596cc2c2680210c2a"
+    },
+    {
+      "path": "designDoc/projects/README.md",
+      "sha256": "67fb03f79f8282cf81d77680c297dd6246c3ab1b01e4c03f9e663c5b2e1c3ee3"
+    },
+    {
+      "path": "designDoc/README.md",
+      "sha256": "3d257a1c873153eb10c38124166b9f5b37a09117e3d1e2165ce16b5b08ee398c"
+    }
+  ],
+  "skill_body_sha256_without_embedded_resources": "7edd9533c9194f050bdeb45ae0a1fd517bfcab6e3b609e6121580d83812b7313",
+  "accepted_skill_body_sha256_without_embedded_resources": "7edd9533c9194f050bdeb45ae0a1fd517bfcab6e3b609e6121580d83812b7313",
+  "embedded_resource_handling": "The target main independently adopted the reviewed shared writing resource before this merge. The merged source contract and Skill now match the accepted candidate hashes exactly.",
+  "checks": [
+    {
+      "exit_code": 0,
+      "output": "Hoveath T0 release: 14 portable contract(s); charter=designDoc/the_charter.md\nclean\n"
+    },
+    {
+      "exit_code": 0,
+      "output": "Hoveath Governance Skill release: 10 skill(s), 82 projection(s)\nclean\n"
+    }
+  ],
+  "runtime_registration_changed": false,
+  "process_logs_saved": false,
+  "merge_base": "a77c695bfdbf5c6228672eba2e983615ed6e9c23"
+}
