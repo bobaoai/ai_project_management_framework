@@ -3,15 +3,15 @@
     {
       "source": "09_soul/core/SOUL.md",
       "target": "09_claude/core/SOUL.md",
-      "source_hash": "sha256:6d0dd71ab9f417cde7672e639aa29425f4fe7bd67e55e880b5ea56bea5fc7942",
-      "last_synced": "2026-08-31",
+      "source_hash": "sha256:0f9e6f5c547f38372b7e3f88a4aee494d677e4921a6e8899110736a9ba48bc49",
+      "last_synced": "2026-10-19",
       "addendum_marker": null
     },
     {
       "source": "09_soul/core/COMMUNICATION.md",
       "target": "09_claude/core/COMMUNICATION.md",
-      "source_hash": "sha256:7439724fcbd8db1a234106e12ed9cd59bb86a8e54f207a94ee673ca61ef5025e",
-      "last_synced": "2026-09-28",
+      "source_hash": "sha256:e8969d993a239fc2ada3f4c338960eb5ee2f56d00228c7b400f281b13577c715",
+      "last_synced": "2026-10-19",
       "addendum_marker": "## Project-Specific Addendum"
     },
     {
@@ -24,8 +24,8 @@
     {
       "source": "09_soul/axioms/FP_first_principles.md",
       "target": "09_claude/axioms/FP_first_principles.md",
-      "source_hash": "sha256:5569d2caad343339f55728514152658d96ad932d8845a78f7758d412bf658709",
-      "last_synced": "2026-08-31",
+      "source_hash": "sha256:2b6d650f63594c2e47f9b76873e48e8e527baba0d643b4c3221b9d559d7f12a0",
+      "last_synced": "2026-10-19",
       "addendum_marker": null
     },
     {
@@ -381,15 +381,15 @@
     {
       "source": "09_soul/core/SOUL.md",
       "target": "09_codex/core/SOUL.md",
-      "source_hash": "sha256:6d0dd71ab9f417cde7672e639aa29425f4fe7bd67e55e880b5ea56bea5fc7942",
-      "last_synced": "2026-08-31",
+      "source_hash": "sha256:0f9e6f5c547f38372b7e3f88a4aee494d677e4921a6e8899110736a9ba48bc49",
+      "last_synced": "2026-10-19",
       "addendum_marker": null
     },
     {
       "source": "09_soul/core/COMMUNICATION.md",
       "target": "09_codex/core/COMMUNICATION.md",
-      "source_hash": "sha256:7439724fcbd8db1a234106e12ed9cd59bb86a8e54f207a94ee673ca61ef5025e",
-      "last_synced": "2026-09-28",
+      "source_hash": "sha256:e8969d993a239fc2ada3f4c338960eb5ee2f56d00228c7b400f281b13577c715",
+      "last_synced": "2026-10-19",
       "addendum_marker": "## Project-Specific Addendum"
     },
     {
@@ -402,8 +402,8 @@
     {
       "source": "09_soul/axioms/FP_first_principles.md",
       "target": "09_codex/axioms/FP_first_principles.md",
-      "source_hash": "sha256:5569d2caad343339f55728514152658d96ad932d8845a78f7758d412bf658709",
-      "last_synced": "2026-08-31",
+      "source_hash": "sha256:2b6d650f63594c2e47f9b76873e48e8e527baba0d643b4c3221b9d559d7f12a0",
+      "last_synced": "2026-10-19",
       "addendum_marker": null
     },
     {
@@ -824,6 +824,27 @@
       "target": "09_codex/axioms/m11_phase_gate_discipline.md",
       "source_hash": "sha256:57d3838057c8c578a64756a91401c0c4f57d644591ede04c25bc72cff40b9379",
       "last_synced": "2026-08-31",
+      "addendum_marker": null
+    },
+    {
+      "source": "09_soul/core/COMMUNICATION.md",
+      "target": "09_cursor/core/COMMUNICATION.md",
+      "source_hash": "sha256:e8969d993a239fc2ada3f4c338960eb5ee2f56d00228c7b400f281b13577c715",
+      "last_synced": "2026-10-19",
+      "addendum_marker": "## Project-Specific Addendum"
+    },
+    {
+      "source": "09_soul/core/SOUL.md",
+      "target": "09_cursor/core/SOUL.md",
+      "source_hash": "sha256:0f9e6f5c547f38372b7e3f88a4aee494d677e4921a6e8899110736a9ba48bc49",
+      "last_synced": "2026-10-19",
+      "addendum_marker": null
+    },
+    {
+      "source": "09_soul/axioms/FP_first_principles.md",
+      "target": "09_cursor/axioms/FP_first_principles.md",
+      "source_hash": "sha256:2b6d650f63594c2e47f9b76873e48e8e527baba0d643b4c3221b9d559d7f12a0",
+      "last_synced": "2026-10-19",
       "addendum_marker": null
     }
   ]

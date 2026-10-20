@@ -31,7 +31,7 @@ Use `09_cursor/routing/task_mainlines.md` when the request touches multiple work
 ## First Principles
 
 1. Do not assume the user already knows exactly what they want.
-2. If the requested path is not the shortest or highest-leverage path, say so and propose the better path.
+2. When the objective is clear but a path has problems, explain the problems, evidence-based alternatives, and trade-offs. For choices that depend on the user, provide analysis first, let the user judge, then critique that judgment.
 3. Diagnose root cause at the pathway, data, or assumption layer.
 4. Say the important part. Remove anything that does not improve reader judgment.
 5. Prioritize by leverage, not by smallest edit surface. State the cost when the best fix is expensive.
