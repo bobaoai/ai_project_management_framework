@@ -39,6 +39,7 @@ class AuthorSelfCheckValidationError(ValueError):
 @dataclass(frozen=True)
 class SkillArtifactValidationResult:
     subject_sha256: str
+    contract_version: str
     skill_id: str
     skill_class: str
     headings: tuple[str, ...]
@@ -76,6 +77,8 @@ def load_contract(path: Path = CONTRACT_PATH) -> dict[str, Any]:
             "artifact_contract_id",
             "owner_t0_layer_id",
             "artifact_kind",
+            "forbidden_headings",
+            "forbidden_top_level_headings",
             "frontmatter",
             "required_sections",
             "conditional_sections",
@@ -84,10 +87,19 @@ def load_contract(path: Path = CONTRACT_PATH) -> dict[str, Any]:
         },
         "contract",
     )
-    if contract["contract_version"] != "skill_artifact_contract_v3":
+    if contract["contract_version"] != "skill_artifact_contract_v6":
         raise SkillArtifactContractError("unsupported Skill artifact contract version")
     if contract["owner_t0_layer_id"] != "the_skill_management":
         raise SkillArtifactContractError("Skill artifact contract owner mismatch")
+    for field in ("forbidden_headings", "forbidden_top_level_headings"):
+        forbidden = contract[field]
+        if (
+            not isinstance(forbidden, list)
+            or not forbidden
+            or any(not isinstance(heading, str) or not heading for heading in forbidden)
+            or len(set(forbidden)) != len(forbidden)
+        ):
+            raise SkillArtifactContractError(f"Skill {field} must be unique non-empty strings")
     frontmatter = contract["frontmatter"]
     if not isinstance(frontmatter, dict):
         raise SkillArtifactContractError("frontmatter contract must be an object")
@@ -102,8 +114,8 @@ def load_contract(path: Path = CONTRACT_PATH) -> dict[str, Any]:
         "frontmatter",
     )
     sections = contract["required_sections"]
-    if not isinstance(sections, list) or len(sections) != 6:
-        raise SkillArtifactContractError("Skill contract must define exactly six required sections")
+    if not isinstance(sections, list) or len(sections) != 5:
+        raise SkillArtifactContractError("Skill contract must define exactly five required sections")
     for index, section in enumerate(sections, start=1):
         if not isinstance(section, dict):
             raise SkillArtifactContractError(f"required_sections[{index - 1}] must be an object")
@@ -113,6 +125,19 @@ def load_contract(path: Path = CONTRACT_PATH) -> dict[str, Any]:
         _require_exact_keys(section, expected, f"required_sections[{index - 1}]")
         if section["index"] != index or not isinstance(section["heading"], str) or not section["heading"]:
             raise SkillArtifactContractError("Skill required-section identity is invalid")
+    subsections = sections[3]["required_subsections"]
+    count = 3
+    if not isinstance(subsections, list) or len(subsections) != count:
+        raise SkillArtifactContractError("Skill contract has an invalid required-subsection count")
+    for index, subsection in enumerate(subsections, 1):
+        if not isinstance(subsection, dict):
+            raise SkillArtifactContractError("Skill required subsection must be an object")
+        _require_exact_keys(subsection, {"index", "heading"}, "required subsection")
+        if (subsection["index"] != f"4.{index}" or not isinstance(subsection["heading"], str)
+                or not subsection["heading"].strip()):
+            raise SkillArtifactContractError("Skill required-subsection identity is invalid")
+    if len({item["heading"] for item in subsections}) != count:
+        raise SkillArtifactContractError("Skill required-subsection headings must be unique")
     conditional_sections = contract["conditional_sections"]
     if not isinstance(conditional_sections, list) or len(conditional_sections) != 1:
         raise SkillArtifactContractError(
@@ -346,13 +371,37 @@ def _structural_text(text: str) -> str:
     return "".join(lines)
 
 
+def _has_content(body: str) -> bool:
+    """Ignore prose-only scaffolding while preserving literal code examples."""
+    prose: list[str] = []
+    examples: list[str] = []
+    fence: str | None = None
+    for line in body.splitlines():
+        if fence is not None:
+            if re.fullmatch(r" {0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}[ \t]*", line):
+                fence = None
+            else:
+                examples.append(line)
+            continue
+        opening = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
+        if opening and not (opening[1][0] == "`" and "`" in opening[2]):
+            fence = opening[1]
+        else:
+            prose.append(line)
+    visible = re.sub(r"<!--.*?-->", "", "\n".join(prose), flags=re.DOTALL)
+    visible = re.sub(r"^ {0,3}#{1,6}[ \t]+.*$", "", visible, flags=re.MULTILINE)
+    visible = (visible + "\n" + "\n".join(examples)).strip()
+    return bool(visible) and visible.casefold() not in _PLACEHOLDERS
+
+
 def validate_artifact(
     payload: bytes,
     *,
     embedded_resource_ids: tuple[str, ...] = (),
     checklist_resource_by_skill_id: Mapping[str, str] | None = None,
+    contract_path: Path = CONTRACT_PATH,
 ) -> SkillArtifactValidationResult:
-    contract = load_contract()
+    contract = load_contract(Path(contract_path))
     if any(not isinstance(item, str) or not item for item in embedded_resource_ids):
         raise SkillArtifactContractError(
             "embedded_resource_ids must contain non-empty strings"
@@ -391,6 +440,39 @@ def validate_artifact(
             raise SkillArtifactContractError(f"Skill frontmatter field is empty: {field}")
 
     structural_text = _structural_text(text)
+    # Resource content has its own headings; only the Skill owns this layout.
+    for identity in embedded_resource_ids:
+        pattern = re.compile(
+            r"^<!-- embedded-resource:" + re.escape(identity) + r":start -->\n(.*?)"
+            r"^<!-- embedded-resource:" + re.escape(identity) + r":end -->$",
+            re.MULTILINE | re.DOTALL,
+        )
+        for match in reversed(list(pattern.finditer(structural_text))):
+            start, end = match.span(1)
+            masked = "".join("\n" if char == "\n" else " " for char in structural_text[start:end])
+            structural_text = structural_text[:start] + masked + structural_text[end:]
+    for heading in contract["forbidden_headings"]:
+        pattern = (
+            r"^ {0,3}#{2,6}[ \t]+(?:\d+(?:\.\d+)*\.?[ \t]+)?"
+            + re.escape(heading)
+            + r"(?:[ \t]+#+)?[ \t]*$"
+        )
+        if re.search(pattern, structural_text, re.MULTILINE):
+            raise SkillArtifactContractError(f"forbidden Skill heading: {heading}")
+    for heading in contract["forbidden_top_level_headings"]:
+        pattern = (
+            r"^ {0,3}##[ \t]+(?:\d+(?:\.\d+)*\.?[ \t]+)?"
+            + re.escape(heading)
+            + r"(?:[ \t]+#+)?[ \t]*$"
+        )
+        if re.search(pattern, structural_text, re.MULTILINE):
+            raise SkillArtifactContractError(f"forbidden Skill top-level heading: {heading}")
+    for match in re.finditer(r"^##[ \t]+[^\n]+$", structural_text, re.MULTILINE):
+        if _H2_PATTERN.fullmatch(match.group(0)) is None:
+            raise SkillArtifactContractError(f"Skill section heading must use ## N. Title: {match.group(0)!r}")
+    for match in re.finditer(r"^###[ \t]+[^\n]+$", structural_text, re.MULTILINE):
+        if _H3_PATTERN.fullmatch(match.group(0)) is None:
+            raise SkillArtifactContractError(f"Skill subsection heading must use ### N.M Title: {match.group(0)!r}")
     matches = list(_H2_PATTERN.finditer(structural_text))
     if not matches:
         raise SkillArtifactContractError("Skill candidate has no numbered level-two sections")
@@ -403,6 +485,7 @@ def validate_artifact(
         start = "zero" if has_conditional_section else "one"
         raise SkillArtifactContractError(
             f"Skill section numbering must be continuous from {start}"
+            + (f"; expected {expected_numbers}, observed {numbers}")
         )
     headings = [match.group(2) for match in matches]
     required_headings = [section["heading"] for section in contract["required_sections"]]
@@ -412,14 +495,19 @@ def validate_artifact(
         else required_headings
     )
     if headings[:len(expected_headings)] != expected_headings:
-        raise SkillArtifactContractError("Skill required sections are missing, renamed, duplicated, or out of order")
+        position = next(i for i, expected in enumerate(expected_headings)
+                        if i >= len(headings) or headings[i] != expected)
+        actual = headings[position] if position < len(headings) else "<missing>"
+        detail = f"; position {position + first_number}: expected {expected_headings[position]!r}, observed {actual!r}"
+        raise SkillArtifactContractError("Skill required sections are missing, renamed, duplicated, or out of order" + detail)
     if len(set(headings)) != len(headings):
-        raise SkillArtifactContractError("Skill section headings must be unique")
+        detail = f"; duplicated: {sorted({heading for heading in headings if headings.count(heading) > 1})}"
+        raise SkillArtifactContractError("Skill section headings must be unique" + detail)
     for index, match in enumerate(matches):
         body_start = match.end()
         body_end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
         body = text[body_start:body_end].strip()
-        if not body or body.casefold() in _PLACEHOLDERS:
+        if not body or body.casefold() in _PLACEHOLDERS or not _has_content(body):
             raise SkillArtifactContractError(f"Skill section is empty or placeholder-only: {headings[index]}")
 
     required_subsections = contract["required_sections"][3]["required_subsections"]
@@ -431,7 +519,7 @@ def validate_artifact(
         expected = (subsection["index"], subsection["heading"])
         if observed_subsections.count(expected) != 1:
             raise SkillArtifactContractError(
-                "Execution Contract subsection must occur exactly once: "
+                "Inputs and Completion subsection must occur exactly once: "
                 f"{subsection['index']} {subsection['heading']}"
             )
     expected_order = [
@@ -439,7 +527,19 @@ def validate_artifact(
         for item in required_subsections
     ]
     if expected_order != sorted(expected_order):
-        raise SkillArtifactContractError("Execution Contract subsections are out of order")
+        expected = [(item["index"], item["heading"]) for item in required_subsections]
+        actual = [item for item in observed_subsections if item in expected]
+        detail = f"; expected {expected!r}, observed {actual!r}"
+        raise SkillArtifactContractError("Inputs and Completion subsections are out of order" + detail)
+    for index, match in enumerate(subsection_matches):
+        later = [item.start() for item in matches if item.start() > match.start()]
+        if index + 1 < len(subsection_matches):
+            later.append(subsection_matches[index + 1].start())
+        body_end = min(later, default=len(text))
+        if not _has_content(text[match.end():body_end]):
+            raise SkillArtifactContractError(
+                f"Skill subsection is empty or placeholder-only: {match.group(1)} {match.group(2)}"
+            )
     author_self_check = _validated_author_self_check(contract["author_self_check"])
     self_check_resource_id = author_self_check["resource_id"]
     checklist_by_skill_id = dict(author_self_check["checklist_resource_by_skill_id"])
@@ -470,10 +570,14 @@ def validate_artifact(
             raise SkillArtifactContractError(
                 "Author Self-Check checklist does not match the registered Skill binding"
             )
+        method_number = str(next(
+            section["index"] for section in contract["required_sections"]
+            if section["heading"] == "Method"
+        ))
         method_index = next(
             index
             for index, match in enumerate(matches)
-            if match.group(1) == "6" and match.group(2) == "Method"
+            if match.group(1) == method_number and match.group(2) == "Method"
         )
         method_start = matches[method_index].end()
         method_end = (
@@ -483,7 +587,7 @@ def validate_artifact(
         )
         self_check_match = observed_self_check_matches[0]
         if not (
-            self_check_match.group(1).startswith("6.")
+            self_check_match.group(1).startswith(f"{method_number}.")
             and method_start <= self_check_match.start() < method_end
         ):
             raise SkillArtifactContractError(
@@ -498,11 +602,13 @@ def validate_artifact(
         children = [match for match in subsection_matches if section.end() <= match.start() < section_end]
         expected_children = [f"{section.group(1)}.{child}" for child in range(1, len(children) + 1)]
         if [match.group(1) for match in children] != expected_children:
-            raise SkillArtifactContractError("Skill subsection numbering must match its parent and be continuous")
+            detail = f"; parent {section.group(1)} {section.group(2)!r}, expected {expected_children}, observed {[match.group(1) for match in children]}"
+            raise SkillArtifactContractError("Skill subsection numbering must match its parent and be continuous" + detail)
     if any(match.start() < matches[0].start() for match in subsection_matches):
         raise SkillArtifactContractError("Skill subsection has no parent section")
     return SkillArtifactValidationResult(
         subject_sha256=hashlib.sha256(payload).hexdigest(),
+        contract_version=contract["contract_version"],
         skill_id=top_level["name"],
         skill_class=skill_class,
         headings=tuple(headings),

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from portable_source_fixtures import valid_t0 as _valid_t0, add_design_contract
 
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
@@ -25,7 +26,7 @@ def _hash(payload: bytes) -> str:
 def _write_fixture_project(
     root: Path,
     *,
-    source_payload: bytes = b"# Portable T0\n",
+    source_payload: bytes = _valid_t0("the_example", b"# Portable T0\n"),
     target_payload: bytes | None = None,
     charter: bool = True,
     source: str = "09_soul/governance/t0/the_example.md",
@@ -60,6 +61,7 @@ def _write_fixture_project(
         ],
         "artifact_contracts": [],
     }
+    add_design_contract(root, manifest)
     manifest_path = root / "09_soul/governance/governance_t0_manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -151,7 +153,7 @@ def test_check_reports_projection_drift(tmp_path: Path) -> None:
 def test_check_reports_retired_t0_target(tmp_path: Path) -> None:
     manifest_path = _write_fixture_project(
         tmp_path,
-        target_payload=b"# Portable T0\n",
+        target_payload=_valid_t0("the_example", b"# Portable T0\n"),
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     retired_target = "designDoc/the_retired.md"
@@ -169,7 +171,7 @@ def test_check_reports_retired_t0_target(tmp_path: Path) -> None:
 def test_check_reports_undeclared_t0_like_target(tmp_path: Path) -> None:
     _write_fixture_project(
         tmp_path,
-        target_payload=b"# Portable T0\n",
+        target_payload=_valid_t0("the_example", b"# Portable T0\n"),
     )
     undeclared = tmp_path / "designDoc/the_shadow.md"
     undeclared.write_text("# Shadow\n", encoding="utf-8")
@@ -184,7 +186,7 @@ def test_check_reports_undeclared_t0_like_target(tmp_path: Path) -> None:
 def test_check_reports_undeclared_t0_source_member(tmp_path: Path) -> None:
     _write_fixture_project(
         tmp_path,
-        target_payload=b"# Portable T0\n",
+        target_payload=_valid_t0("the_example", b"# Portable T0\n"),
     )
     extra = tmp_path / "09_soul/governance/t0/the_shadow.md"
     extra.write_text("# Shadow\n", encoding="utf-8")
@@ -199,7 +201,7 @@ def test_check_reports_undeclared_t0_source_member(tmp_path: Path) -> None:
 def test_check_reports_undeclared_governance_package_root_member(
     tmp_path: Path,
 ) -> None:
-    _write_fixture_project(tmp_path, target_payload=b"# Portable T0\n")
+    _write_fixture_project(tmp_path, target_payload=_valid_t0("the_example", b"# Portable T0\n"))
     governance_root = tmp_path / "09_soul/governance"
     (governance_root / "README.md").write_text("# Governance\n", encoding="utf-8")
     (governance_root / "governance_skill_manifest.json").write_text("{}", encoding="utf-8")
@@ -214,7 +216,7 @@ def test_check_reports_undeclared_governance_package_root_member(
 
 
 def test_release_rejects_unknown_cited_t0_contract(tmp_path: Path) -> None:
-    payload = b"# Portable T0\n\nSee [Missing](the_missing.md).\n"
+    payload = _valid_t0("the_example", b"# Portable T0\n\nSee [Missing](the_missing.md).\n")
     _write_fixture_project(tmp_path, source_payload=payload)
 
     with pytest.raises(
@@ -254,7 +256,7 @@ def test_apply_requires_project_specific_charter_before_writing(
 def test_apply_refuses_to_replace_drifted_projection_without_override(
     tmp_path: Path,
 ) -> None:
-    payload = b"# Portable T0\n\nStable intent.\n"
+    payload = _valid_t0("the_example", b"# Portable T0\n\nStable intent.\n")
     _write_fixture_project(
         tmp_path,
         source_payload=payload,
@@ -273,7 +275,7 @@ def test_apply_refuses_to_replace_drifted_projection_without_override(
 def test_apply_replaces_reviewed_drift_with_explicit_override(
     tmp_path: Path,
 ) -> None:
-    payload = b"# Portable T0\n\nStable intent.\n"
+    payload = _valid_t0("the_example", b"# Portable T0\n\nStable intent.\n")
     _write_fixture_project(
         tmp_path,
         source_payload=payload,
@@ -321,7 +323,7 @@ def test_manifest_rejects_source_hash_drift(tmp_path: Path) -> None:
 def test_portable_source_rejects_project_local_implementation_path(
     tmp_path: Path,
 ) -> None:
-    payload = b"# Portable T0\n\ntruth: src/project/local_registry.py\n"
+    payload = _valid_t0("the_example", b"# Portable T0\n\ntruth: src/project/local_registry.py\n")
     _write_fixture_project(tmp_path, source_payload=payload)
 
     with pytest.raises(
@@ -334,7 +336,7 @@ def test_portable_source_rejects_project_local_implementation_path(
 def test_portable_source_rejects_virtual_environment_path(
     tmp_path: Path,
 ) -> None:
-    payload = b"# Portable T0\n\ncommand: .venv/bin/python\n"
+    payload = _valid_t0("the_example", b"# Portable T0\n\ncommand: .venv/bin/python\n")
     _write_fixture_project(tmp_path, source_payload=payload)
 
     with pytest.raises(
@@ -347,7 +349,7 @@ def test_portable_source_rejects_virtual_environment_path(
 def test_portable_source_rejects_upstream_distribution_path(
     tmp_path: Path,
 ) -> None:
-    payload = b"# Portable T0\n\nRead 09_soul/governance/t0/source.md.\n"
+    payload = _valid_t0("the_example", b"# Portable T0\n\nRead 09_soul/governance/t0/source.md.\n")
     _write_fixture_project(tmp_path, source_payload=payload)
 
     with pytest.raises(
@@ -360,7 +362,7 @@ def test_portable_source_rejects_upstream_distribution_path(
 def test_project_policy_rejects_declared_t0_local_identity(
     tmp_path: Path,
 ) -> None:
-    payload = b"# Portable T0\n\nlocal-product-identity\n"
+    payload = _valid_t0("the_example", b"# Portable T0\n\nlocal-product-identity\n")
     _write_fixture_project(tmp_path, source_payload=payload)
     policy_path = tmp_path / "governance_bindings/governance_release_policy.json"
     policy_path.parent.mkdir(parents=True)
@@ -386,7 +388,7 @@ def test_project_policy_rejects_declared_t0_local_identity(
 def test_project_policy_reports_retired_t0_target(tmp_path: Path) -> None:
     _write_fixture_project(
         tmp_path,
-        target_payload=b"# Portable T0\n",
+        target_payload=_valid_t0("the_example", b"# Portable T0\n"),
     )
     retired_target = "designDoc/the_project_retired.md"
     policy_path = tmp_path / "governance_bindings/governance_release_policy.json"
@@ -414,7 +416,7 @@ def test_project_policy_reports_retired_t0_target(tmp_path: Path) -> None:
 def test_project_policy_allows_registered_project_specific_t0_target(
     tmp_path: Path,
 ) -> None:
-    _write_fixture_project(tmp_path, target_payload=b"# Portable T0\n")
+    _write_fixture_project(tmp_path, target_payload=_valid_t0("the_example", b"# Portable T0\n"))
     project_specific_target = "designDoc/the_project_workflow.md"
     policy_path = tmp_path / "governance_bindings/governance_release_policy.json"
     policy_path.parent.mkdir(parents=True)
@@ -441,7 +443,7 @@ def test_project_policy_allows_registered_project_specific_t0_target(
 def test_project_policy_rejects_project_specific_target_overlap(
     tmp_path: Path,
 ) -> None:
-    _write_fixture_project(tmp_path, target_payload=b"# Portable T0\n")
+    _write_fixture_project(tmp_path, target_payload=_valid_t0("the_example", b"# Portable T0\n"))
     policy_path = tmp_path / "governance_bindings/governance_release_policy.json"
     policy_path.parent.mkdir(parents=True)
     policy_path.write_text(
@@ -466,7 +468,7 @@ def test_project_policy_rejects_project_specific_target_overlap(
 def test_project_policy_is_read_once_per_t0_check(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _write_fixture_project(tmp_path, target_payload=b"# Portable T0\n")
+    _write_fixture_project(tmp_path, target_payload=_valid_t0("the_example", b"# Portable T0\n"))
     policy_path = tmp_path / "governance_bindings/governance_release_policy.json"
     policy_path.parent.mkdir(parents=True)
     policy_path.write_text(

@@ -1,70 +1,14 @@
 ---
 title: 产品授权（Product Authorization）
-status: candidate
 layer: T0
 t0_layer_id: the_product_authorization
 canonical_owner: designDoc/the_product_authorization.md
 owned_system_object: user_key permission assignment
-language: zh-CN with exact English identifiers
-reader_persona:
-  - Product Owner
-  - Data Access Owner
-  - Client Developer
 ---
 
 # 产品授权（Product Authorization）
 
-本文只冻结 Product Authorization 的 T0 概念边界；adapter 与 database 的具体 implementation 留待后续
-T1/T2 Code Design 和 Software Delivery，不在本文实现。
-
-## 0. Intent Capsule
-
-```yaml
-layer: T0
-t0_layer_id: the_product_authorization
-status: candidate
-canonical_owner: designDoc/the_product_authorization.md
-owned_system_object: user_key permission assignment
-scope:
-  - client user_key 与 permission assignment
-  - database metadata visibility
-  - database read 与 write authorization
-  - permission activation 与 revocation
-  - default-deny 与 no-metadata-leakage
-non_goals:
-  - 区分 human、Agent、Module 或 Runtime caller
-  - user_key 的签发、保存、轮换或 credential custody
-  - database credential、DSN、connection pool 或 transaction management
-  - SQL、schema、migration、domain writer rule 或 data ownership
-  - Runtime admission、Module permission 或 Workflow execution
-inputs:
-  - data-access adapter 提交的 user_key
-  - requested database metadata 或 database operation
-  - Product Owner 提交的 permission assignment change
-  - current user_key permission assignment
-outputs:
-  - 该 user_key 可访问的 database_id 与 allowed operation
-  - database operation 的 allow 或 deny result
-  - permission assignment change 的 accepted 或 rejected result
-truth_surfaces:
-  - designDoc/the_product_authorization.md
-  - code-owned user_key permission store
-runtime_triggers:
-  - client 查询可访问 database metadata
-  - client 请求 database read 或 write
-  - permission assignment 创建、撤销或变更
-downstream_consumers:
-  - project data-access adapter
-  - database-owning service
-open_decisions:
-  - 无
-review_gate: material change 必须通过 design_contract_reviewer，并取得 accountable Product Authorization owner decision
-runtime_surface_ledger: 从 code-owned permission assignment 生成
-verification_hooks:
-  - unknown user_key、missing permission 与 revoked permission 均 fail closed
-  - 不可访问 database 的 identity、count、name、schema 与 metadata 均不可披露
-  - user_key 永远不能换取或暴露 database credential
-```
+Product Authorization 管理 `user_key` 的数据库权限分配，决定该 key 可以看见哪些数据库，以及是否允许对指定数据库执行 `read` 或 `write`。本 T0 统一权限含义、逻辑接口和拒绝行为；数据库访问的具体实现由项目 T1/T2 与代码承接。
 
 ## 1. Primary System Flow
 
@@ -98,165 +42,158 @@ flowchart LR
     AUTHORIZE -. invalid permission state .-> INVALID
 ```
 
-| `interface_id` | Owner | Input | Output | Effects | Error codes |
-| --- | --- | --- | --- | --- | --- |
-| `user_key_permission_assignment_administration` | Product Authorization | Product Owner 提交的 `user_key`、`database_id`、allowed operation 与 assign/change/revoke command | accepted 或 rejected result；assign/change accepted 后 assignment 为 active，revoke accepted 后为 revoked；invalid current state 时不改变现有 assignment | 只验证并改变 Product Authorization-owned assignment；不签发 user_key、不定义 database、不连接 database | `PERMISSION_ASSIGNMENT_REJECTED`, `PERMISSION_STATE_INVALID` |
-| `user_key_database_visibility_authorization` | Product Authorization | `user_key` 与 current permission assignments | 该 key 当前可访问的 `database_id` 与每个 database 的 allowed operations；没有权限时返回空集合 | 只计算 permission visibility；不定义或生成 metadata、不连接 database、不返回 credential | `PERMISSION_STATE_INVALID` |
-| `user_key_database_operation_authorization` | Product Authorization | `user_key`、`database_id`、requested operation 与 current permission assignment | 一个 allow 或 deny result；allow 只表示该 key 对该 `database_id` 有对应 permission | 提交 authorization result；不执行 SQL、不创建 connection、不扩大 permission | `DATABASE_ACCESS_DENIED`, `PERMISSION_STATE_INVALID` |
+流程中的接口见第 4 章，数据库访问组成见第 5 章，拒绝与失败见第 6 章。
 
-| `error_code` | Owner | Condition | Meaning | Caller action |
-| --- | --- | --- | --- | --- |
-| `PERMISSION_ASSIGNMENT_REJECTED` | Product Authorization | assignment change 使用未支持 operation | 请求没有形成或改变 permission assignment | 改为 `read` 或 `write` 后重试；不得把 rejected request 当作 current permission |
-| `DATABASE_ACCESS_DENIED` | Product Authorization | `user_key` 没有 active matching permission，或 assignment 已 revoked 或不覆盖 requested `database_id`/operation | 当前请求没有有效 database permission；不区分具体 denial 原因 | 不执行 database operation；由 Product Owner 检查或重新分配 permission |
-| `PERMISSION_STATE_INVALID` | Product Authorization | Permission assignment 无法通过 Product Authorization schema 或 current-state validation | 系统无法可信地计算权限，必须 fail closed；administration 调用不得改变现有 assignment | 不返回 visibility result、不执行 operation、不提交 assignment change；由 Product Authorization code owner 修复 permission-store 状态后重试 |
+## 2. Intended Outcomes
 
-`deny` 是 authorization 的正常结果，不是系统故障。没有权限的 database 不进入 visibility result；普通
-metadata 的内容与 schema 由 adapter 和 database owner 决定，不由 Product Authorization 特殊建模。
+Product Owner、Client 和数据库访问实现应取得一致、可使用的权限结果。
 
-## 2. User Intent
+1. **权限变更有准确结果。** 已确认具有 administration authority 的 Product Owner 可以分配、改变或撤销 `user_key` 对指定数据库的 `read`、`write` 权限。接受后形成相应 active 或 revoked assignment；拒绝和无效当前状态不会被当作变更已生效。
+2. **可见范围与当前权限一致。** 查询只返回该 key 可访问的 `database_id` 及允许操作，无权限时返回空集合。Adapter 提供的普通 metadata 不披露无权限数据库的 identity、count、name、schema 或其他 metadata，也不能作为后续操作的永久授权。
+3. **每次操作按当前权限判断。** 相同 key 的结果不依赖 Client 是人、Agent、Module 还是 Runtime。Unknown key、缺少匹配权限、撤销或不覆盖该数据库与操作时，不能获得 allow；每次操作重新检查。产品 allow 仍受独立的数据、领域和数据库条件约束。
+4. **凭据和职责保持隔离。** Client 不能凭 `user_key`、metadata 或操作结果取得数据库凭据。Adapter 不创建、扩大或推断权限。身份验证、凭据管理、连接、SQL 和 Runtime 执行仍由各自负责人承担，产品授权只给出自己的判断。
+5. **拒绝和故障有不同且可处理的含义。** 正常 deny 不被当成系统故障，拒绝原因不向 Client 细分。权限存储无效时 fail closed，不返回可见性、不执行操作、不提交权限变更；调用方能找到修复方并在条件恢复后重试。
+6. **下层能实现和验证同一套语义。** 逻辑接口、状态影响和失败含义足以指导项目访问实现；当前 assignment、schema、接口格式与检查视图由代码提供，文稿不维护动态权限清单。设计接受、工程验证和实际发布各有自己的依据，不互相替代。
 
-一个 Client 持有一个 `user_key`。Product owner 可以给这个 key 分配 database permission。Project
-data-access adapter 验证 key，并用同一个 key 查询可以访问哪些 database、返回这些 database 的普通
-metadata，以及判断能否执行 read 或 write。
-
-Product Authorization 不判断 Client 是人、Agent、Module 还是 Runtime。它只回答一个问题：
-
-> 这个 `user_key` 当前是否拥有 requested database permission？
-
-## 3. Reader Gain
-
-- Product Owner 可以给 `user_key` 分配、变更或撤销 database permission。
-- Client Developer 可以通过 adapter 取得该 key 可访问的 database metadata，再提交允许的 read/write request。
-- Data Access Owner 可以在后续设计 adapter：验证 `user_key`、调用 Product Authorization，再返回普通
-  metadata 或执行已允许的 operation；Client 永远拿不到实际 database credential。
-
-## 4. Owned System Object
-
-本 T0 只拥有 `user_key permission assignment` 的系统语义：一个 `user_key` 当前被允许访问哪些
-`database_id`、执行哪些 operation，以及该 permission 是 active 或 revoked。
-
-Exact record、field、schema、table、index、hash、store 和 generated inspection 由代码持有。T0 不新增
-Principal、Group、Runtime identity、Module permission、delegated grant 或 execution-specific
-authorization object。
-
-## 5. Authority
-
-Product Authorization 可以定义：
-
-1. 一个 `user_key` 如何绑定 database permission；
-2. permission 如何约束 `database_id` 与 `read`/`write` operation；
-3. assign/change 如何产生 active permission，revoke 如何产生 revoked permission；
-4. database visibility 与 database operation 如何 default-deny；以及
-5. allow/deny result 的稳定含义。
-
-Product Authorization 不拥有：
-
-- `user_key` 如何生成、保存、轮换或验证其 credential material；
-- Product Owner 或 administration caller 的 identity、authentication 与 administration authority；
-- database metadata 的内容与 schema；
-- database credential、secret resolution、connection pool、transaction、retry 或 SQL；
-- Runtime、Module、Workflow 或 caller-kind-specific permission；以及
-- data classification、tenant/Cell isolation、domain writer rule 或 database migration。
-
-项目 administration surface 负责确认 Product Owner authority 并把 command 交给 Product Authorization；
-它不能直接写 permission assignment 或改变本 T0 的 permission meaning。
-
-## 6. Permission and Database Visibility Rules
-
-Permission assignment 至少绑定：
+## 3. Owned System Object
 
 ```text
-user_key + database_id + allowed operation + active/revoked status
+user_key permission assignment
+    含义：一个 user_key 对指定 database_id 的当前操作权限。
+    至少绑定：user_key、database_id、allowed operation、active/revoked status。
+    负责人：Product Authorization。
+    用途：计算数据库可见范围，判断单次数据库操作是否具有产品权限。
+
+allowed operation
+    取值：read、write。
+    限制：schema、table、domain operation 和 metadata 内容不改变
+          database_id + operation 这一判断范围。
+    区别：describe 是 adapter 的查询入口，不是独立 permission operation。
+
+active
+    含义：已接受 assign/change 后形成的有效权限状态。
+    效力：可用于与该 assignment 的 user_key、database_id 和 operation 匹配的授权判断。
+
+revoked
+    含义：已接受 revoke 后形成的撤销状态。
+    后果：该 assignment 不再提供数据库可见性或操作权限。
 ```
 
-本 T0 的 database operation set 固定为 `read` 与 `write`。`user_key_permission_assignment_administration`
-只能接受这两个 operation，其他 operation 一律返回 `PERMISSION_ASSIGNMENT_REJECTED`。
-`user_key_database_visibility_authorization` 只返回
-该 key 当前可访问的 `database_id` 和 allowed operations；它不定义 metadata schema。Project data-access
-adapter 可以把这份 visibility result 转成普通 database metadata，但只能包含允许访问的 database，且不能
-返回 DSN、password、token、service credential 或其他 secret。`describe` 只是 adapter 的查询入口，不是
-独立 permission operation。
+上述定义固定权限含义，不规定实际记录格式。准确字段、schema、table、index、hash、store 和当前权限清单由代码持有。本文不引入 Principal、Group、Runtime identity、Module permission、delegated grant 或按执行实例产生的授权对象。
 
-Schema、table、domain operation 与 metadata 内容均不改变本 T0 的 `database_id + operation` 判断。
+`user_key` 的签发、保存、轮换和凭据验证由相应身份与访问实现负责。Product Authorization 接收 key 进行权限判断，不负责这些凭据操作。
 
-## 7. Adapter Delegation
+## 4. Public Interface and Effects
 
-Data Governance 定义 portable `DataAccessAdapter` mechanism boundary；domain owner 定义 Data Access
-Gateway boundary。Product Authorization 只提交 database visibility 或 operation permission result，不拥有
-credential resolution、connection、transaction、retry、domain SQL 或 execution mechanism。后续 adapter
-设计的最小职责是：
+### 4.1 权限分配与撤销
+
+Product Owner 通过项目 administration surface 提交权限命令。该入口负责确认调用方身份和 Product Owner authority，再把命令交给 Product Authorization；入口不能直接写 permission assignment 或改变其含义。Agency Platform 可以承载这一入口，保留宿主组合职责。
 
 ```text
-authenticate(user_key)
-  -> valid / invalid
-
-describe(user_key)
-  -> allowed database_id + allowed operations
-  -> ordinary database metadata
-
-execute(user_key, database_id, operation, request)
-  -> authorization allow
-  -> controlled database execution
-  -> operation result
+user_key_permission_assignment_administration
+    Owner：Product Authorization。
+    Input：Product Owner 提交的 user_key、database_id、allowed operation，
+           以及 assign/change/revoke command。
+    Output：accepted 或 rejected result。
+    Effects：只验证并改变 Product Authorization-owned assignment。
+             assign/change accepted 后为 active；revoke accepted 后为 revoked。
+    Errors：PERMISSION_ASSIGNMENT_REJECTED、PERMISSION_STATE_INVALID，见第 6 章。
+    边界：不签发 user_key，不定义数据库，不建立数据库连接。
 ```
 
-Adapter 在每次 database operation 前重新调用 Product Authorization；不能把一次 visibility 或 metadata
-result 当成后续 operation 的永久授权。Allow 后，adapter 使用项目受控 database credential 执行。
-`user_key` 既不是 database credential，也不能被兑换成 database credential。
+操作集合使用第 3 章的 `read` 和 `write`。接受结果表示对应权限变更已经形成；拒绝结果不能充当当前权限。权限存储无法通过有效性检查时，保留现有 assignment，不提交变更。
 
-Exact adapter implementation、database-specific connection、transaction、retry、buffer、SQL mapping、
-metadata 与 result schema 属于后续项目 data-access T1/T2 和代码，不属于本 T0。
+### 4.2 数据库可见性
 
-## 8. Code-as-Truth Boundary
+```text
+user_key_database_visibility_authorization
+    Owner：Product Authorization。
+    Input：user_key 和 current permission assignments。
+    Output：该 key 当前可访问的 database_id，以及每个数据库的 allowed operations。
+            没有权限时返回空集合。
+    Effects：只计算 permission visibility。
+    Errors：PERMISSION_STATE_INVALID，见第 6 章。
+    边界：不定义或生成 metadata，不连接数据库，不返回 credential。
+```
 
-本 T0 持有 user intent、permission meaning、default-deny 和 credential non-disclosure invariant。代码持有：
+可见范围由 active database operation permission 派生。无权限数据库的 identity、count、name、schema 和其他 metadata 均不得披露。
 
-- `user_key` permission assignment schema 与 current store；
-- Product Authorization interface input/output schema；
-- permission lookup、revocation 与 visibility validator；以及
-- deterministic allow、deny、visibility 与 credential-isolation tests。
+Adapter 和 database owner 定义普通 metadata 的内容与 schema，并由 adapter 把上述可见范围转换为 Client 可以读取的信息。这份信息只描述查询时的可访问范围，不构成后续操作的永久授权。
 
-Design 文档不手工维护 current key、permission、database、schema、table 或 connection status。
+### 4.3 单次操作
 
-## 9. Review and Admission
+```text
+user_key_database_operation_authorization
+    Owner：Product Authorization。
+    Input：user_key、database_id、requested operation，
+           以及 current permission assignment。
+    Output：一个 allow 或 deny result。
+    Effects：提交本次操作的授权结果，不执行 SQL，不建立连接，不扩大权限。
+    Errors：DATABASE_ACCESS_DENIED、PERMISSION_STATE_INVALID，见第 6 章。
+```
 
-Material Product Authorization Design candidate 在 implementation 前由 DDM 定义的
-`design_contract_reviewer` 审核 exact frozen candidate，并取得 accountable Product Authorization owner
-decision。`the-design-authoring` Skill Package 保存 Reviewer source；Review Contract 只注入通用审核规则；
-Agent Runtime 只执行 Reviewer。
+每次数据库操作前，adapter 都重新调用本接口检查当前权限。Unknown key、没有 active matching permission、已撤销权限或不匹配的数据库和操作均不能获得 `allow`。
 
-Adapter code、schema、permission store、migration 与 database implementation 进入 Software Delivery 的
-Code Design、implementation、deterministic test、`engineering_change_reviewer` 和 release admission。
+`allow` 只表示本次请求满足产品权限。Data Governance 的数据边界、domain rule 和 database enforcement 仍分别判断其条件，任一方拒绝都不得执行操作。`deny` 是正常授权结果，其拒绝原因不向 Client 细分披露。
 
-## 10. System-wide Invariants
+## 5. Capability and Operation
 
-1. Product Authorization 只按 `user_key` 的 current permission assignment 作出结果，不区分 human、Agent、Module 或 Runtime。
-2. Unknown key、没有 active matching permission、revoked 或 invalid state 全部 fail closed。
-3. Database visibility 由 active database operation permission 派生；没有 permission 的 `database_id` 不进入 visibility result。
-4. Adapter 返回的普通 metadata 不构成后续 operation 的永久授权。
-5. 每次 database operation 都重新检查 current permission。
-6. `user_key` 不是 database credential，Client 永远不接收 DSN、password、token 或 service credential。
-7. Product Authorization allow 只满足 product permission；Data Governance、domain rule 和 database enforcement 仍可独立 deny database operation。
-8. Adapter 不能创建、扩大或推断 permission。
+Data Governance 定义共享 `DataAccessAdapter` 的机制边界，domain owner 定义自己的 Data Access Gateway。项目 data-access 实现把权限检查与这些能力组成受控访问路径。
 
-## 11. Peer Boundaries
+| Adapter 逻辑入口 | 职责与接续 |
+| --- | --- |
+| `authenticate(user_key)` | 验证 key，返回 valid 或 invalid。Invalid 由 adapter 返回其拥有的认证失败结果。 |
+| `describe(user_key)` | 使用第 4.2 节的可见范围，返回允许访问数据库的普通 metadata。 |
+| `execute(user_key, database_id, operation, request)` | 使用第 4.3 节的当前授权结果，经适用数据和领域边界执行受控数据库访问，返回操作结果。 |
+
+
+数据库访问使用项目受控的 database credential。`user_key` 不能兑换、返回或暴露该凭据；Client 永远不能取得 DSN、password、token、service credential 或其他 secret。Adapter 也不能创建、扩大或推断权限。
+
+身份验证实现、metadata 和 result schema、credential resolution、connection、transaction、retry、buffer、SQL mapping 由项目 data-access T1/T2 与代码定义。Product Authorization 不接管这些机制，也不取得 tenant/Cell isolation、data classification、domain writer rule 或 database migration 的决定权。Runtime 作为普通 Client 使用本章访问约定，其 admission、Module/Workflow 执行和证据仍由 Runtime 负责。
+
+## 6. Completion, Failure, and Recovery
+
+| Result / error code | 触发条件 | 必须发生的结果 | 继续处理的责任 |
+| --- | --- | --- | --- |
+| `PERMISSION_ASSIGNMENT_REJECTED` | 权限变更使用未支持的 operation。 | 不形成或改变 permission assignment。 | 调用方改为 `read` 或 `write` 后重试。 |
+| `DATABASE_ACCESS_DENIED` | 没有 active matching permission，或已 revoked，或不覆盖请求的 `database_id` 和 operation。 | 不执行数据库操作；返回统一拒绝结果。 | Product Owner 检查或重新分配权限。 |
+| `PERMISSION_STATE_INVALID` | 权限 assignment 无法通过 Product Authorization schema 或 current-state validation。 | Fail closed：不返回 visibility result，不执行操作，不提交 assignment change。 | Product Authorization code owner 修复 permission-store 状态后重试。 |
+
+这三个结果的含义由 Product Authorization 持有。Adapter 认证失败、Data Governance 拒绝及数据库执行失败沿各自接口返回，由对应负责人处理，不能改写成 Product Authorization 已经授权。
+
+## 7. Dependencies and Verification
+
+本 T0 提供第 3 至 6 章的权限语义和跨组件约定。代码维护 permission assignment schema 与 current store、逻辑接口的准确输入输出 schema、权限查询和撤销实现、可见性校验，以及当前注册的检查视图。文档不手工维护 key、permission、database、schema、table 或 connection status 的当前清单。
+
+下层实现需要提供确定性证据，覆盖以下性质。具体测试组织和工具由 Software Delivery 承接。
+
+| 核对对象 | 需证明的性质 |
+| --- | --- |
+| 分配与撤销 | 接受、拒绝和 invalid state 对 assignment 的影响符合第 4、6 章。 |
+| 权限查询 | 相同 key 的判断不依赖 caller kind；unknown、missing、revoked 及 invalid state 均按相应条件关闭访问。 |
+| 可见性 | 返回集合与 active permission 对应，不泄露未授权数据库的存在信息或 metadata。 |
+| 操作检查 | 每次操作使用当前权限，旧 metadata 或其他层的允许结果不能替代本次产品授权。 |
+| 凭据隔离 | Client 无法由 key、metadata 或操作结果取得数据库凭据。 |
+| 组合边界 | 产品允许结果不绕过其他数据、领域和数据库条件；adapter 不自行生成权限。 |
+
+## 8. Peer Boundaries
 
 | Peer authority | Product Authorization handoff | Peer 保留的职责 |
 | --- | --- | --- |
 | Agency Platform | 承载 project administration surface，并把 Product Owner command 送入 `user_key_permission_assignment_administration` | Host composition；不决定 permission meaning，也不直接写 permission assignment |
 | Data Governance | 定义 portable data-access mechanism，并在 authorized operation 上继续执行 tenant、Cell、classification、residency 与 retention boundary | Data-access mechanism、data boundary 与 data lifecycle；可以独立 deny operation，但不能授予 Product permission |
 | Agent Runtime | 作为普通 Client 使用 `user_key` | Runtime admission、Module/Workflow execution 与 evidence；不改变 user_key permission |
-| Design Doc Management | 定义本 T0 Design candidate 的结构与 `design_contract_reviewer` contract | Design lifecycle、Design review 与 owner decision evidence |
+| Design Doc Management | 定义本 T0 Design candidate 的结构与 `design_contract_reviewer` contract | Design 结构、文稿审核与采用要求；产品设计接受仍由本规范的 owner 决定 |
 | Review Contract | 向 Design Reviewer source 注入通用审核规则 | Universal Reviewer instruction；不拥有 Product Authorization checklist 或 result |
 | Software Delivery | 准入 adapter、permission store、schema、migration 与 database implementation | Code Design、engineering review、release、deployment、rollback 与 retirement |
 
-项目 data-access T1 是本 T0 未来的主要 implementation consumer，但不是 portable peer T0。它将在后续
-Code Design 与 Software Delivery 中实现 adapter，并与项目内数据库、Ingestion、KG 或其他 domain-owned
-Data Access Gateway 对接。
+项目 data-access T1 是本规范的实现消费者，不是 Portable peer T0。它负责访问组件的具体设计，通过 Code Design 与 Software Delivery 实现，并与项目数据库和领域 Gateway 对接。
 
-## 12. References
+重要设计变更在实施前取得 DDM 所要求的独立审核，并取得 accountable Product Authorization owner decision。Adapter、permission store、schema、migration 和数据库实现另按 Software Delivery 完成工程计划、实现验证、独立工程审核及适用发布。文稿通过审核不证明代码或部署已经完成。
 
-- [Project Charter](the_charter.md)
+## 9. References
+
+- Project Charter：`designDoc/the_charter.md`，由消费项目提供。
 - [Agency Platform](the_agency_platform.md)
 - [Data Governance](the_data_governance.md)
 - [Agent Runtime](the_agent_runtime.md)

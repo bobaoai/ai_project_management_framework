@@ -15,6 +15,9 @@ import pytest
 from test_skill_release import _skill_payload, _write_fixture_project
 
 
+pytestmark = pytest.mark.deterministic
+
+
 MODULE_PATH = Path(__file__).resolve().parents[1] / "install.py"
 SPEC = importlib.util.spec_from_file_location("governance_install_test", MODULE_PATH)
 installer = importlib.util.module_from_spec(SPEC)
@@ -29,7 +32,7 @@ def source(tmp_path):
     package = root / "09_soul/governance"
     (package / "README.md").write_text("# Governance entry\n")
     validation = package / "t0/validation"
-    validation.mkdir()
+    validation.mkdir(exist_ok=True)
     for name in ("install.py", "t0_release.py", "skill_release.py"):
         shutil.copyfile(MODULE_PATH.with_name(name), validation / name)
     (root / ".env").write_text("NOT_A_REAL_SECRET=do_not_copy\n")
@@ -42,7 +45,8 @@ def test_install_copies_exact_package_and_declared_projections(source, tmp_path)
     original = (source / installer.skills.MANIFEST_RELATIVE_PATH).read_bytes()
     report = installer.install_governance(source, target)
     assert report["installed"] and report["package_checks_passed"]
-    assert report["t0_count"] == report["skill_count"] == 1
+    assert report["t0_count"] == 3
+    assert report["skill_count"] == 1
     assert [x["code"] for x in report["project_requirements"]] == ["project_charter_missing"]
     assert not (target / "designDoc/the_charter.md").exists()
     assert not (target / ".env").exists()
@@ -145,27 +149,28 @@ def test_declared_soul_dependency_is_copied_and_fingerprinted(source, tmp_path):
     assert first["source_sha256"] != second["source_sha256"]
 
 
-def test_stale_hash_is_reported_without_rewriting_source_or_copy(source, tmp_path, capsys):
-    path = source / installer.skills.MANIFEST_RELATIVE_PATH
-    manifest = json.loads(path.read_text())
-    manifest["portable_governance_skills"][0]["package_files"][0]["sha256"] = "0" * 64
-    path.write_text(json.dumps(manifest))
-    original = path.read_bytes()
-    target = tmp_path / "installed"
-    report = installer.install_governance(source, target)
-    assert report["installed"] and not report["package_checks_passed"]
-    assert report["checks"]["t0"]["passed"]
-    assert "source hash mismatch" in report["checks"]["skill"]["error"]
-    assert path.read_bytes() == (target / installer.skills.MANIFEST_RELATIVE_PATH).read_bytes() == original
-    assert installer.main(["--source-root", str(source), "--target-root", str(tmp_path / "cli_copy")]) == 1
-    assert json.loads(capsys.readouterr().out)["package_checks_passed"] is False
+def test_stale_hash_is_rejected_before_source_or_target_mutation(source, tmp_path, capsys):
+    path=source/installer.skills.MANIFEST_RELATIVE_PATH
+    manifest=json.loads(path.read_text());manifest["portable_governance_skills"][0]["package_files"][0]["sha256"]="0"*64
+    path.write_text(json.dumps(manifest));original=path.read_bytes();target=tmp_path/"installed"
+    with pytest.raises(ValueError,match="source hash mismatch"):
+        installer.install_governance(source,target)
+    assert not target.exists() and path.read_bytes()==original
+    cli_target=tmp_path/"cli_copy"
+    assert installer.main(["--source-root",str(source),"--target-root",str(cli_target)])==2
+    result=json.loads(capsys.readouterr().out)
+    assert result["installed"] is False and "source hash mismatch" in result["error"]
+    assert not cli_target.exists() and path.read_bytes()==original
 
 
-def test_undeclared_package_content_is_not_hidden_from_checker(source, tmp_path):
-    (source / "09_soul/governance/EXTRA.md").write_text("Undeclared package material.\n")
-    report = installer.install_governance(source, tmp_path / "installed")
-    assert not report["package_checks_passed"]
-    assert "governance_package_undeclared_root_member" in [x["code"] for x in report["checks"]["t0"]["issues"]]
+
+def test_undeclared_source_member_is_rejected_before_installation(source,tmp_path):
+    extra=source/"09_soul/governance/EXTRA.md";extra.write_text("Undeclared package material.\n")
+    target=tmp_path/"installed"
+    with pytest.raises(ValueError,match="governance_package_undeclared_root_member"):
+        installer.install_governance(source,target)
+    assert not target.exists() and extra.read_text()=="Undeclared package material.\n"
+
 
 
 def test_source_change_during_capture_stops_before_writing(source, tmp_path, monkeypatch):
@@ -540,3 +545,17 @@ def test_update_keeps_existing_entries_and_projects_orchestration_to_both_hosts(
     for host in (".claude", ".agents"):
         for relative, body in files.items():
             assert (target / host / "skills" / ORCHESTRATION / relative).read_bytes() == body
+
+
+def test_install_carries_one_current_skill_rule(source, tmp_path):
+    target = tmp_path / 'installed_current_rule'
+    installer.install_governance(source, target)
+    prefix = Path('09_soul/governance/t0/validation/artifact_contracts')
+    for name in ('skill_artifact_contract.json', 'skill_artifact_contract.py'):
+        assert (target / prefix / name).read_bytes() == (source / prefix / name).read_bytes()
+    spec = importlib.util.spec_from_file_location('installed_skill_adapter', target / prefix / 'skill_artifact_contract.py')
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    assert mod.load_contract()['contract_version'] == 'skill_artifact_contract_v6'
+    assert not (target / prefix / 'skill_artifact_contract_v6.json').exists()

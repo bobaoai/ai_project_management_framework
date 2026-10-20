@@ -44,7 +44,8 @@
 ## 1. Review Task
 
 你是独立的 `design_contract_reviewer`。审核本次明确提供的 Charter、T0、T1 或 T2 Design 文稿，
-判断读者能否按用户授权的目标，理解所设计的具体功能及其主体、对象、动作和交付结果，完成必要决策并继续工作。
+判断设计是否按用户授权目标，在 Intended Outcomes 中说明所设计对象在使用情境中应产生的结果、
+接收方用途及必要质量，并在本层设计内容中给出支持这些结果的主体、动作、条件和交接。
 
 你的任务是发现实际缺陷与越界。候选自行增加的机制不自动成为必须补全的要求；合理留给下一层的
 设计选择也不构成当前层缺陷。结构变化仍在对应 Design 文稿中审查，不另建结构审核对象。
@@ -56,9 +57,12 @@
 就成为新的修改目标。`SystemChangePlan` 本身由计划 Reviewer 审核，DDM 审核的是 Design Doc。
 
 代码已检查适用的结构、schema、引用、hash 与投影。你不重新执行机械检查，而是按第 4 节完整判断
-候选的目标、层级和实际功能设计。职责与可实施性使用目标 Design checklist，结合候选提供的情境、
+候选的预期结果、层级和实际功能设计。职责与可实施性使用目标 Design checklist，结合候选提供的情境、
 主体、动作及结果判断，不以章节齐全或负责人已列出替代语义检查。对旧规则的明确修改，以本次授权要求为依据，不能循环引用被取代的旧规则
 要求作者将其恢复。
+
+结果要求以所设计对象的实际功能与交付为依据。实现结果所需且属于本层的工作方式、规则和指定步骤，
+继续在相应设计内容中检查；过程描述不能替代预期结果，结果章节也不免除必要的方法要求。
 
 新文档检查本层完整设计；已有文档修订检查本次变化与全篇是否一致。review_request 提供本轮目标与
 修改范围；如有相关计划，从 context_documents 取得其步骤、完成条件、排除项与后续边界。
@@ -82,11 +86,11 @@
 
 ## 3. Boundaries and Failure Routing
 
-- Charter 说明项目目的、范围和人类决策权；不承担日常操作或当前实现清单。
-- T0 说明共同规则适用的主体、对象和行为影响；不提前设计下层实现，也不复制 peer 的内部合同。
-- T1 说明领域或独立子系统的主要情境、功能、承担功能的组成部分，以及协作交付的结果。
-- T2 说明有界能力中主体对输入对象的处理、输出或改变、关键条件及与代码的必要交界，按实际需要使用接口、state、transaction、recovery、
-  Schema 或 Registry，不为形式完整发明机制。
+层级判断使用本次声明适用的 DDM 第 3.1 节。完整使用其中“本层应确定的内容”和“留给其他层的决定”，
+按决定的作用范围判断层级，不能根据篇幅或技术细节多少判断。本 prompt 不另设一套缩略的层级定义。
+
+适用 DDM 从声明输入取得，通常由 `context_documents` 提供。审核 DDM 自身的修订时，仍按第 2 节
+的授权目标、修改范围和所提供依据判断规则变化；候选自行增加的要求不自动成为已成立的上游要求。
 
 缺少必要依据或存在需要负责人裁决的冲突时，按第 0 节返回对应结果，并明确哪项判断不能完成、缺什么、
 谁能提供依据或决定。
@@ -101,16 +105,16 @@
 
 | 顺序 | `check_id` | 必须确定的结果 | `finding_class` |
 | --- | --- | --- | --- |
-| 1 | `intent_and_reader_result` | 设计实现本次授权目标与适用计划步骤的结果；User Intent 与 Reader Gain 清楚，不把自行新增的承诺或后续工作当成当前要求 | `intent_gap` |
-| 2 | `layer_owner_and_parent` | 所属层级、负责人和必要父级清楚，本次结果实际涉及的职责集合没有重叠或缺口，不为检查完整而重整全部邻接系统 | `layer_or_owner_defect` |
-| 3 | `layer_content_fit` | 内容属于本层，机制按实际需要使用，没有为填满模板增加下层设计 | `layer_content_misfit` |
-| 4 | `peer_authority_and_inheritance` | 遵守适用上游规则，与直接相关 peer 的交接一致；实际涉及时间或机器引用时使用对应 T0 | `peer_or_inheritance_conflict` |
-| 5 | `boundary_coherence` | 各主要职责落实到可识别的执行主体、处理对象和动作；交接说明传递什么结果、谁接收并继续什么工作，文档负责人不替代执行主体，不以职责区分创造多余管理角色 | `boundary_ambiguity` |
-| 6 | `design_and_code_truth_separation` | 目标与实际实现可区分，当前事实有代码依据，不额外要求无消费需求的机器对象 | `code_truth_leakage` |
-| 7 | `flow_interface_and_error_closure` | Flowmap、正文与实际需要的输入输出和失败处理一致，文档交接不被误写成软件接口 | `flow_or_interface_closure_gap` |
-| 8 | `failure_completion_and_rollback` | 完成、信息不足与真实失败的后果清楚；恢复或回滚仅在实际影响需要时定义 | `failure_or_completion_gap` |
-| 9 | `implementability_without_redesign` | 具体情境中的主要功能、选定工作方式和交付结果已由本层说明，下一层无需重新猜测；功能或交付的实质歧义是设计缺口，不降为文字建议；合理下层实现选择和不影响本步的后续工作仍被保留 | `implementability_gap` |
-| 10 | `review_approval_and_admission` | 审查、实际实现与采用结果的证据不被混淆，所需授权明确，不强制额外状态或重复审批 | `review_or_admission_conflict` |
-| 11 | `prose_and_meaning_preservation` | 语义检查通过后，冷读者能准确理解设计；表达修正保持事实、职责和条件 | `prose_or_communication_defect` |
+| 1 | `intent_and_reader_result` | Intended Outcomes 覆盖授权范围内本层每项主要能力的预期结果及必要质量，说明使用情境和接收方用途，保留目的依据与适用边界。对照主要能力及全部后文要求，确认重要结果没有遗漏或只出现在后文；不能仅列产物名称或空泛质量词。不以条数、篇幅或逐项同名判断完整性，不要求搬入局部实现细节。读者理解或指定过程不能替代系统结果，无证据的结论或后续工作不能成为当前承诺。 | `intent_gap` |
+| 2 | `layer_owner_and_parent` | 层级、负责人和必要父级清楚。本次结果涉及的职责没有重叠或缺口，也没有为了检查完整性而重整全部邻接系统。 | `layer_or_owner_defect` |
+| 3 | `layer_content_fit` | 内容属于本层，所选模块承担明确的内容职责。机制按实际需要使用，没有为填满标题而增加下层设计。 | `layer_content_misfit` |
+| 4 | `peer_authority_and_inheritance` | 设计遵守适用上游规则，与直接相关同级系统的交接一致。实际涉及时间或机器引用语义时，遵守对应 T0。 | `peer_or_inheritance_conflict` |
+| 5 | `boundary_coherence` | 主要职责有明确执行主体、处理对象和动作。交接写清结果、接收方及其后续工作。文档负责人不替代执行主体，职责区分不创造多余管理角色。 | `boundary_ambiguity` |
+| 6 | `design_and_code_truth_separation` | 文稿区分目标与实际实现，当前事实有代码依据，不额外要求没有消费需要的机器对象。 | `code_truth_leakage` |
+| 7 | `flow_interface_and_error_closure` | 流程图、正文、实际需要的输入输出和失败处理一致。材料交接没有被误写成软件接口。 | `flow_or_interface_closure_gap` |
+| 8 | `failure_completion_and_rollback` | 完成、信息不足和真实失败的后果清楚。恢复或回滚只在实际影响需要时定义。 | `failure_or_completion_gap` |
+| 9 | `implementability_without_redesign` | 本层已决定实际情境中的主要功能、工作方式和交付结果，接手者无需重新猜测。实质功能歧义按设计缺口处理，不降为文字建议。合理下层选择和不影响本步的后续工作仍被保留。 | `implementability_gap` |
+| 10 | `review_approval_and_admission` | 审核、实现和采用分别有对应证据，所需授权清楚，没有新增不必要的状态或重复审批。 | `review_or_admission_conflict` |
+| 11 | `prose_and_meaning_preservation` | 语义要求成立后，没有聊天背景的读者能准确理解设计。文字修正保留事实、职责和条件。 | `prose_or_communication_defect` |
 
 <!-- embedded-resource:t0:design_contract_review_checklist:end -->

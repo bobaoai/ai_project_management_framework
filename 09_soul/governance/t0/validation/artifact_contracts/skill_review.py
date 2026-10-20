@@ -74,7 +74,7 @@ def _instruction_payloads(project_root, resource_ids, read, resource_bindings=()
     return result
 
 
-def check_skill(candidate_path, *, project_root=PROJECT_ROOT, checklist_resource=None, resource_bindings=(), read=None):
+def check_skill(candidate_path, *, project_root=PROJECT_ROOT, checklist_resource=None, resource_bindings=(), read=None, contract_path=None):
     """Validate exact candidate bytes against current sources under project_root.
 
     Manifest entries locate canonical resources; their published text digests
@@ -82,6 +82,8 @@ def check_skill(candidate_path, *, project_root=PROJECT_ROOT, checklist_resource
     checked. Extra resources cannot replace existing canonical resources.
     """
     read = read or (lambda path: Path(path).read_bytes())
+    selected_contract = Path(contract_path) if contract_path is not None else artifact.CONTRACT_PATH
+    contract_bytes = read(selected_contract)
     payload = read(Path(candidate_path))
     identities = tuple(item.decode("utf-8") for item in re.findall(
         rb"^<!-- embedded-resource:([^\n]+):start -->$", payload, re.MULTILINE,
@@ -100,10 +102,14 @@ def check_skill(candidate_path, *, project_root=PROJECT_ROOT, checklist_resource
         bindings = {name: checklist_resource}
     result = artifact.validate_artifact(
         payload, embedded_resource_ids=identities, checklist_resource_by_skill_id=bindings,
+        contract_path=selected_contract,
     )
+    if read(selected_contract) != contract_bytes:
+        raise ValueError("Skill artifact contract changed during checking")
     report = asdict(result)
+    report["artifact_contract_sha256"] = hashlib.sha256(contract_bytes).hexdigest()
     report["resource_sha256"] = {key: hashlib.sha256(value).hexdigest() for key, value in resources.items()}
-    report["review_required_check_ids"] = [item["check_id"] for item in artifact.load_contract()["reviewer_checklist"]["checks"]]
+    report["review_required_check_ids"] = [item["check_id"] for item in artifact.load_contract(selected_contract)["reviewer_checklist"]["checks"]]
     return report
 
 
@@ -119,7 +125,7 @@ def _assert_frozen(frozen):
 
 
 def _prepare(*, candidate_path, goal, change, self_check_path, design_paths=(), context_bindings=(), prompt_bindings=(),
-             prior_findings=(), project_root=PROJECT_ROOT, checklist_resource=None, resource_bindings=()):
+             prior_findings=(), project_root=PROJECT_ROOT, checklist_resource=None, resource_bindings=(), contract_path=None):
     if not goal.strip() or not change.strip():
         raise ValueError("Skill review requires a non-empty authorized goal and change scope")
     project_root = Path(project_root)
@@ -136,10 +142,11 @@ def _prepare(*, candidate_path, goal, change, self_check_path, design_paths=(), 
             raise ValueError("Skill input changed during preparation")
         frozen[path] = state
         return data
-    read(artifact.CONTRACT_PATH)
+    selected_contract = Path(contract_path) if contract_path is not None else artifact.CONTRACT_PATH
+    read(selected_contract)
     read(output_contract.OUTPUT_SCHEMA_PATH)
     report = check_skill(candidate_path, project_root=project_root, checklist_resource=checklist_resource,
-                         resource_bindings=resource_bindings, read=read)
+                         resource_bindings=resource_bindings, read=read, contract_path=selected_contract)
     body = read(candidate_path).decode("utf-8")
     check_ids = report["review_required_check_ids"]
     self_check = json.loads(read(self_check_path))
@@ -174,7 +181,7 @@ def _prepare(*, candidate_path, goal, change, self_check_path, design_paths=(), 
     }
     Draft202012Validator(schema).validate(payload)
     # These code-owned contracts also belong to the stable input used by this call.
-    read(artifact.CONTRACT_PATH)
+    read(selected_contract)
     read(output_contract.OUTPUT_SCHEMA_PATH)
     _assert_frozen(frozen)
     return payload, frozen
@@ -238,6 +245,8 @@ def main(argv=None):
                "不会更新 manifest 或安装投影。发布校验另行执行，来源、adapter 和输入冻结检查仍保留。",
     )
     parser.add_argument("--candidate", type=Path, required=True)
+    parser.add_argument("--contract", type=Path, help="Path to the current Skill contract; defaults to the packaged current contract. Earlier contract versions are not supported.")
+    parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT, help="Root for declared Skill resources; separate from Runtime --root")
     parser.add_argument("--check-only", action="store_true", help="只检查候选及其声明资源，不调用 Reviewer")
     parser.add_argument("--self-check-template", type=Path, help="随 --check-only 生成临时自检表；hash 和 check_id 由代码填写")
     parser.add_argument("--checklist-resource", help="新 Skill 明确使用的 canonical checklist resource_id")
@@ -255,7 +264,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.check_only:
-            report = check_skill(args.candidate, checklist_resource=args.checklist_resource, resource_bindings=args.resource)
+            report = check_skill(args.candidate, project_root=args.project_root, contract_path=args.contract, checklist_resource=args.checklist_resource, resource_bindings=args.resource)
             if args.self_check_template is not None:
                 target = args.self_check_template
                 if target.exists() or target.is_symlink() or not target.parent.is_dir():
@@ -290,6 +299,7 @@ def main(argv=None):
         prior = [] if args.prior_findings is None else json.loads(args.prior_findings.read_text(encoding="utf-8"))
         record = review_skill(
             executor=executor, candidate_path=args.candidate, goal=args.goal, change=args.change,
+            project_root=args.project_root, contract_path=args.contract,
             self_check_path=args.self_check, design_paths=args.design, context_bindings=args.context,
             prompt_bindings=args.prompt, prior_findings=prior, checklist_resource=args.checklist_resource,
             resource_bindings=args.resource,

@@ -1,6 +1,6 @@
 {
-  "$id": "hoveath://governance/skill-artifact-contract/v3",
-  "contract_version": "skill_artifact_contract_v3",
+  "$id": "hoveath://governance/skill-artifact-contract/v6",
+  "contract_version": "skill_artifact_contract_v6",
   "artifact_contract_id": "skill_definition_artifact_contract",
   "owner_t0_layer_id": "the_skill_management",
   "artifact_kind": "skill_definition",
@@ -28,36 +28,36 @@
   "required_sections": [
     {
       "index": 1,
-      "heading": "Task"
+      "heading": "Task Summary"
     },
     {
       "index": 2,
-      "heading": "Reader Gain"
+      "heading": "Intended Outcomes"
     },
     {
       "index": 3,
-      "heading": "Entry and Exit"
+      "heading": "Boundaries"
     },
     {
       "index": 4,
-      "heading": "Execution Contract",
+      "heading": "Inputs and Completion",
       "required_subsections": [
         {
           "index": "4.1",
-          "heading": "Inputs and Authority"
+          "heading": "Inputs"
         },
         {
           "index": "4.2",
-          "heading": "Output and Completion"
+          "heading": "Output"
+        },
+        {
+          "index": "4.3",
+          "heading": "Completion Contract"
         }
       ]
     },
     {
       "index": 5,
-      "heading": "Boundaries"
-    },
-    {
-      "index": 6,
       "heading": "Method"
     }
   ],
@@ -109,7 +109,7 @@
       {
         "order": 2,
         "check_id": "task_and_reader_gain",
-        "required_result": "Task 是否明确重复任务，Reader Gain 是否说明读者新增的判断或执行能力，且与实际产出一致。"
+        "required_result": "Task Summary 明确重复任务。Intended Outcomes 说明任务应交付的结果、接收者的使用情境与用途，以及每项结果的必要质量要求，覆盖各项主要任务能力，保留目的依据和必要边界。对照任务及其余各章，确认主要结果没有遗漏或只藏在后文；不能仅列产物名称或空泛质量词。不以条数、篇幅或逐项同名判断完整性，不要求搬入局部执行细节。结果要求不以读者理解代替任务交付，不保证无证据结论，也不强制统一执行路径。"
       },
       {
         "order": 3,
@@ -163,5 +163,12 @@
       "共同表达项 `prose_and_meaning_preservation` 置于这十一项之后；语义未通过时为 `not_run`，通过后再检查表达。",
       "`finding` 必须关联至少一项 `block` 或 `fix`；`note` 可以关联 `passed` 项，不使检查失败。"
     ]
-  }
+  },
+  "forbidden_headings": [
+    "Reader Gain"
+  ],
+  "forbidden_top_level_headings": [
+    "Entry and Exit",
+    "Execution Contract"
+  ]
 }

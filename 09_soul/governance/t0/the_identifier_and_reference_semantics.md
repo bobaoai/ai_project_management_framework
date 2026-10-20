@@ -1,283 +1,185 @@
 ---
 title: 标识符与引用语义合同（Identifier and Reference Semantics Contract）
-status: candidate
 layer: T0
 t0_layer_id: the_identifier_and_reference_semantics
 canonical_owner: designDoc/the_identifier_and_reference_semantics.md
 owned_system_object: machine-facing identifier and reference semantics
-language: zh-CN with exact English identifiers
-reader_persona:
-  - Domain Architect
-  - Schema Owner
-  - Runtime Maintainer
-  - Distributed Systems Engineer
 ---
 
 # 标识符与引用语义合同（Identifier and Reference Semantics Contract）
 
-本文统一两个概念：`Identifier` 说明这是哪个对象，`Reference` 说明另一处怎样指向这个对象。
-`version`、`content hash`、`pointer` 和 `locator` 只补充引用的精确程度、当前选择或读取位置，
-不形成新的通用对象体系。
+`Identifier` 说明这是哪个对象，`Reference` 说明另一处怎样指向这个对象。版本、内容指纹、当前选择和读取位置各有不同用途。本合同统一这些含义，各业务负责人继续决定对象本身、具体格式和实现。
 
-## 0. Intent Capsule
+## 1. Intended Outcomes
 
-```yaml
-layer: T0
-t0_layer_id: the_identifier_and_reference_semantics
-status: candidate
-canonical_owner: designDoc/the_identifier_and_reference_semantics.md
-owned_system_object: machine-facing identifier and reference semantics
-scope:
-  - Identifier 与 Reference 的稳定含义和边界
-  - version 与 content hash 作为可选精确限定信息的含义
-  - pointer 作为可变选择、locator 作为物理位置的边界
-  - 命名、比较、冲突和非破坏性迁移规则
-non_goals:
-  - 统一所有业务对象的 ID 格式或 reference scheme
-  - 建立中央 identifier Registry、统一 resolver 或通用 validation service
-  - 要求每个 class、DTO 或 nested record 注册新的 identification object
-  - 定义业务对象、Principal、Workflow、Module、Skill、Design 或 Data Asset 的含义
-  - 定义 authentication、permission、Entitlement、credential、timestamp 或 lifecycle
-  - 选择 database、repository、URL、object store、provider 或 transport
-inputs:
-  - 授权的新建或修改 system-wide identifier and reference semantics 目标与现有依据；已有已审计划时附对应步骤
-outputs:
-  - Identifier 与 Reference 的通用语义边界
-  - version、content hash、pointer 与 locator 的从属角色
-  - subject owner 必须在自己的 machine contract 和 code 中闭合的最低要求
-truth_surfaces:
-  - designDoc/the_identifier_and_reference_semantics.md
-runtime_triggers: []
-downstream_consumers:
-  - 包含 identifier、reference、version、content hash、pointer 或 locator 的 Design、schema、API、event、Artifact 与 Runtime record
-open_decisions:
-  - existing projects 的 adoption order 和 compatibility window
-review_gate: Design Doc Management 所属 design_contract_reviewer 对 exact candidate 的独立 Design review；Identifier and Reference Semantics owner 单独作出 owner decision
-runtime_surface_ledger: current field、schema、binding、pointer、locator 和 migration truth 由各 subject owner 的 code、persistent state 与 generated inspection 保存
-verification_hooks:
-  - 每个 machine-facing Identifier 和 Reference 都能解析到唯一 subject meaning 和 owner
-  - version、content hash、pointer 与 locator 不被误当成 stable identity
+领域设计者、schema 负责人和 Runtime 维护者应能准确使用对象身份与引用，保持跨系统比较和迁移的含义一致。
+
+1. **身份与引用可以唯一解释。** 实际机器边界能确定 subject、meaning、scope、encoding、target 和负责人。Identifier 稳定识别对象，Reference 说明另一处指向哪个目标及所需精确程度，不靠 prefix、目录、字段名习惯或调用位置猜测。
+2. **精确限定按真实需要使用。** version 限定版本，content hash 证明相同 algorithm 和 coverage 下的内容一致性；它们不自动成为稳定身份，也不被强制加入所有引用或不可变记录。确需把某项属性纳入身份时，由业务对象合同明确决定。
+3. **当前选择、位置和权限各自成立。** pointer 改变选择，不重写目标或改变其 Identifier；locator 变化不改变身份，位置相等不证明引用相等。引用、授权、访问、业务接受和 pointer update 分别判断，不能凭一个引用取得读写或执行权限。
+4. **比较与失败有确定含义。** Identifier 按对象种类、scope 和身份字段比较，Reference 按目标含义及适用限定比较。无法安全解释、解析或比较时 fail closed，由实际接口负责人提供错误和后续动作，不以局部猜测继续。
+5. **兼容和迁移保留原义。** 既有 ID、版本、引用和内容指纹不会因采用本规范被原地改义。可唯一恢复含义的旧字段有明确兼容 mapping；无法消除歧义时使用新名称或引用。后续迁移、切换、回滚和退役有实际负责人及项目决定，不冒充已经完成。
+6. **共同语义不增加无用机制。** 业务对象、具体格式和存储由所属方决定，未使用的概念不增加字段、占位值或空合同。各 owner 的代码验证本地机器合同并提供当前事实，不为统一含义创建中央 Registry、通用 resolver、统一错误体系或第二份人工清单。
+
+## 2. Owned System Object
+
+本合同管理 `machine-facing identifier and reference semantics`：Identifier 与 Reference 的关系，以及 `version`、`content hash`、`pointer`、`locator` 的从属作用。它规定命名、比较和非破坏性迁移的共同要求。
+
+业务负责人决定具体对象是否存在、含义是什么、由谁创建，以及具体 Identifier、Reference format、version rule、是否需要 content hash、pointer 和 locator。对象的当前版本选择、存储位置、权限和生命周期也由所属方决定。
+
+本合同不统一所有业务 ID 的字符串格式或 reference scheme，不要求每个 class、DTO 或 nested record 注册新的 identification object。它不建立中央 Identifier Registry、统一 resolver、通用 validation service 或 pointer update interface。数据库、repository、URL、object store、provider 和 transport 的选用继续归实际负责人。
+
+### 2.1 Identifier
+
+```text
+Identifier
+    含义：在声明的 object kind 和 scope 内，稳定标识一个逻辑对象。
+    必要结果：调用方可以唯一判断“这是哪个对象”。
+    表示：可以使用单一字段或组合字段；不要求统一字符串格式或 kind + scope + id envelope。
+    负责人：业务对象负责人定义 identity fields 及其含义。
+    边界：version、status、environment、storage path 和 content hash 不自动成为 stable identity。
+    例外：某个业务对象确实把上述信息作为 identity 的组成部分时，必须在所属 contract 中明确规定。
 ```
 
-## 1. Primary System Flow
+Identifier 的含义由对象合同决定。字段名称或本合同的一般规则不能替代上述明确的业务决定。
+
+### 2.2 Reference、version 与 content hash
+
+```text
+Reference
+    含义：在另一处机器边界中，明确指向一个对象。
+    必要结果：接收方知道 target subject 和所需精确程度。
+    仅指向逻辑对象：可以只携带该对象的 Identifier。
+    锁定某个版本：增加适用的 version。
+    锁定不可变内容：可以增加 content hash，以证明内容一致。
+    边界：Reference 与 Identifier 不能相互替代；使用引用不产生读取、写入或执行权限。
+
+version
+    含义：在需要时，将 Reference 限定到对象的某个版本。
+    适用：调用方需要锁定版本。
+    负责人：对象负责人定义 version rule。
+    边界：可选的精确限定信息，不自动成为 stable identity。
+
+content hash
+    含义：内容指纹，例如 SHA-256，用于证明指定内容保持一致。
+    适用：需要证明内容完全一致时，可以作为 Reference 的限定信息。
+    比较条件：algorithm 和 coverage 都相同。
+    边界：不能单独证明业务对象 identity；不是所有 Reference 或 immutable record 的必填字段。
+```
+
+Reference 可以指向稳定逻辑对象、特定版本或特定不可变内容。所需精确程度决定实际使用哪些限定信息；不要求所有引用同时携带整个字段集合。
+
+### 2.3 Pointer 与 Locator
+
+```text
+pointer
+    含义：由 owner 控制的可变选择，表示当前使用哪个 Reference。
+    修改影响：选择可以改变，但不重写目标对象，也不改变目标 Identifier。
+    更新要求：是否需要 compare-and-set、revision 或 rollback，由 pointer update interface 的 owner 定义并验证。
+
+locator
+    含义：Reference 经权限检查和解析后得到的物理读取位置。
+    示例：repository path、database key、URL 或 object-store key。
+    修改影响：位置可以改变，而 Identifier 与 Reference 保持不变。
+    边界：位置或位置相等都不能证明对象身份；读取继续遵守所属 authorization 和 data-access boundary。
+```
+
+`version`、`content hash`、`pointer` 和 `locator` 只提供相应限定信息或角色，不构成另一套通用对象体系。未使用的概念不要求字段、占位值或空 contract；实际使用时，遵守相应结构与语义要求。
+
+引用、授权、目标访问、业务接受和 pointer update 是不同决定。下面的关系图只展示概念与访问之间的关系，具体解析、权限检查和读取由所属方实现。
 
 ```mermaid
 flowchart LR
-    I["Identifier<br/>这是哪个对象"] --> R["Reference<br/>怎样指向该对象"]
-    V["optional version<br/>限定某个版本"] -.-> R
-    H["optional content hash<br/>证明内容一致"] -.-> R
-    P["pointer<br/>选择当前 Reference"] --> R
-    R --> A["peer-owned access gate"]
-    A --> L["locator<br/>读取位置"]
-
-    O["Subject owner"] --> C["owner-local machine contract"]
-    C --> Q["owner-local deterministic validation"]
-    Q --> I
-    Q --> R
+    I["Identifier<br/>对象身份"] --> R["Reference<br/>指向对象"]
+    V["version<br/>可选版本限定"] -.-> R
+    H["content hash<br/>可选内容一致性证据"] -.-> R
+    P["pointer<br/>当前选择"] --> R
+    R --> A["所属方的 access gate"]
+    A --> L["locator<br/>物理读取位置"]
 ```
 
-`Identifier` 和 `Reference` 是本 T0 统一的概念。对象 owner 决定具体字段、格式和验证方式。
-`version` 与 `content hash` 在需要精确锁定内容时使用；`pointer` 只负责当前选择；`locator` 只回答
-内容在哪里。权限检查、解析实现和读取行为仍由对应 peer 或 subject owner 负责。
+## 3. System-wide Invariants
 
-| Owner-local public operation | Disposition |
+### 3.1 机器合同必须交代的内容
+
+在 persistence、public DTO、event 或跨系统边界中使用 Identifier 或 Reference 的负责人，必须在自己的 machine contract 中说明适用字段的 `subject`、`meaning`、`scope`、`encoding` 和 `target`。调用方必须能确定字段指向的对象及其负责人。
+
+Public machine boundary 的字段名或 enclosing typed class 必须使 subject 和 meaning 明确。例如，`module_id`、`module_release_version`、`module_release_ref`、`module_release_sha256` 与 `module_store_locator` 可以表达不同用途，但这些名称不构成所有对象必须复制的字段模板。
+
+### 3.2 相等判断
+
+| 比较对象 | 相等所需条件 |
 | --- | --- |
-| none | 本 T0 定义语义；各 subject owner 的 code 提供自己的 validation、resolution 和 update operation。 |
+| Identifier | subject kind、scope 和 owner-defined identity fields 均相同。 |
+| Reference | target meaning 及全部适用的限定信息均相同。 |
+| Content hash | 仅在 algorithm 和 coverage 相同的前提下，比较内容指纹。 |
+| Locator | 位置相等只能用于位置判断，不能推出 Identifier 或 Reference 相等。 |
 
-| Caller-visible error | Disposition |
+具体 comparison、normalization 和 encoding 由 subject owner 的 code 定义。无法确定字段的 subject、meaning、scope 或 target 时必须 fail closed，不能依赖 prefix、目录或调用方猜测继续。
+
+## 4. Capability and Operation
+
+本合同成为 Current 不会原地改写既有 ID、version、Reference 或 content hash。每个 consuming project 先检查现有使用面，由实际负责人决定保留、临时兼容、生成 successor 或退役。
+
+| 既有内容的情况 | 处理规则 |
 | --- | --- |
-| none | 各 owner-local interface 保留自己的 stable error code 和 caller action；本 T0 不复制或统一这些错误。 |
+| 可以从 exact context 唯一恢复含义的 legacy field | 可以临时保留 compatibility mapping。 |
+| 仍有不可消除的歧义 | 使用新名称或新 Reference。 |
+| Compatibility 或 successor | 保留明确 mapping，既有 Identifier 与 Reference 不原地改义。 |
 
-## 2. User Intent
+Persistence migration、backfill、cutover、rollback 和 retirement 由 domain owner、Data Governance 与 Software Delivery 决定。既有项目的 adoption order 和 compatibility window 仍待各项目决定，本合同不声称已经完成迁移。
 
-平台里的 `id`、`version`、`ref` 和 `hash` 不能继续依赖字段名习惯、字符串 prefix、当前目录或调用
-位置猜含义。调用方应能直接判断：这是哪个对象、另一处指向哪个对象、是否锁定了某个版本、是否带有
-内容一致性证据，以及最后去哪里读取。
+## 5. Dependencies and Verification
 
-统一的是这些词的关系，不是所有对象的 ID 格式。Company、Source、Module、Workflow 和 Data Asset
-仍由各自 owner 定义。
+各 subject owner 的代码确定性验证自己的 machine contract，提供实际 validation、resolution 和 update operation，并保留 owner-local stable error code 与 caller action。机器验证失败不能改由语义 Reviewer 重新判定为合规。本合同不复制或统一这些接口和错误分类。
 
-## 3. Reader Gain
+当前 field、schema、binding、pointer、locator 和 migration facts 由各 owner 的代码、持久化状态及生成视图保存；Design 不维护第二份 current inventory。一般语义正确不代表某个接口已经实现，也不证明当前引用已经成功解析。
 
-- Domain Architect 能继续定义业务对象，同时明确对象的 stable Identifier 和 Reference boundary。
-- Schema Owner 能判断一个字段是在标识对象、引用对象、限定版本、证明内容，还是保存物理位置。
-- Runtime Maintainer 能一致处理 Module、Workflow 和 release 的 Identifier 与 Reference，而不复制一套
-  局部术语。
-- Distributed Systems Engineer 能判断 equality、current selection 和跨系统引用是否安全，并把失败返回
-  实际拥有该 interface 的 owner。
+### 5.1 使用共同语义时的符合性要求
 
-## 4. Owned System Object
+使用本合同的 Design 和 machine contract 应能证明：
 
-本 T0 只拥有 `machine-facing identifier and reference semantics`。
-
-| 核心概念 | 含义 |
+| 判断事项 | 依据 |
 | --- | --- |
-| `Identifier` | 在声明的 object kind 和 scope 内，稳定说明“这是哪个对象” |
-| `Reference` | 在另一个 machine boundary 中，明确说明“这里指向哪个对象” |
+| 身份与引用明确 | 每个实际使用的 Identifier 和 Reference 对应唯一 subject meaning 和 owner；适用字段满足第 3.1 节。 |
+| 概念未混用 | Identifier、Reference 和四类附属信息按第 2 章分别承担身份、引用、限定、选择或位置的作用。 |
+| 比较与失败有确定解释 | 对应类型使用第 3.2 节的相等条件；无法确定含义时，由实际接口拒绝并处理。 |
+| 未扩大职责 | 业务对象、authorization、data、time、Runtime execution 和 delivery 的决定仍由所属方承担。 |
+| 兼容含义保留 | 修改未原地改变既有身份与引用；适用 mapping 和后续迁移责任明确。 |
 
-以下信息不成为新的通用对象：
+本合同的专业内容审查判断上述定义是否足以避免概念混用、支持下一层设计，以及相关依据是否充分。表达审查针对同一准确候选，确认读者能够区分 Identifier、Reference 及四类附属信息；润色保留 authority、compatibility 与 migration 含义。
 
-| 信息或角色 | 与 Reference 的关系 |
-| --- | --- |
-| `version` | 可选；当调用方需要锁定对象的某个版本时，限定 Reference |
-| `content hash` | 可选；内容指纹，例如 SHA-256，用于证明指定内容保持一致，不证明业务对象是谁 |
-| `pointer` | 一个 owner-controlled mutable selection，选择当前使用的 Reference |
-| `locator` | Reference 经过权限检查和解析后得到的物理读取位置 |
+## 6. Peer Boundaries
 
-业务 owner 决定对象含义、具体 Identifier、Reference format、version rule、是否需要 content hash，
-以及 pointer 和 locator 是否存在。本 T0 不保存 current inventory。
+Project Charter 决定本 authority 是否进入项目的 T0 topology。本合同向各方提供共同机器语义；各方继续定义自己的对象、实际操作和生命周期。
 
-## 5. Authority
+| 相关方 | 使用共同语义表示什么 | 对方继续负责 |
+| --- | --- | --- |
+| Agency Platform | product、service、session、workload。 | host、composition、placement 和 authentication。 |
+| Agent Runtime | Module、Workflow、Execution、Artifact、release。 | Runtime admission、execution 和 recovery。 |
+| Product Authorization | user_key、database permission assignment。 | database visibility、database operation 的 allow/deny，以及 assignment activation/revocation。 |
+| Task Routing | request、logical owner、RoutingDecision。 | requested-result classification 和 owner selection。 |
+| System Change Governance | plan、step、candidate。 | affected scope、dependency order 和 SystemChangePlan 含义。 |
+| Data Governance | Data Asset、physical binding、migration Reference。 | data meaning、placement、retention 和 migration。 |
+| Timestamp and Clock Semantics | 时间规则涉及的对象引用。 | time role、clock、calendar 和 comparison meaning；timestamp 不能替代 Identifier 或 Reference。 |
+| Design Doc Management | Design candidate、parent、dependency。 | Design Intent、层级、文稿审核与采用。 |
+| Skill Management | Skill、prompt source、Module export。 | Skill Definition、review 和 delivery。 |
+| Review Contract | subject、context、finding、Reviewer source。 | 通用 Reviewer instruction 与 finding discipline。 |
+| Software Delivery | software asset、commit、release、deployment record。 | implementation 与 release admission。 |
 
-只有 Identifier and Reference Semantics 可以定义：
+各 peer 的完整流程、字段清单、错误表和 implementation binding 保留在其所属定义中。
 
-1. `Identifier` 与 `Reference` 不能互相替代；
-2. `version` 和 `content hash` 只在需要时增加引用精度，不自动成为 stable identity；
-3. `pointer` 的可变选择与被选择对象的 identity 分离；
-4. `locator` 的变化不改变或证明对象 identity；
-5. machine-facing 字段必须让调用方确定 subject、meaning 和 owner；
-6. existing Identifier 或 Reference 不得原地改义。
+### 6.1 本规范的修改与采用
 
-本 T0 不决定具体对象是否存在、如何编码、由谁创建、当前选择哪个版本、存放在哪里、谁有权限，
-也不决定其 lifecycle。下游 owner 可以定义自己的 ID、version、Reference 和 validation，但必须保持上述
-语义边界。
+本合同文稿的结构和确定性检查、完整候选与背景要求、先语义后表达的独立审查，以及审核结果的有效性，采用 [Design Doc Management](the_design_doc_management.md) 和 [Review Contract](the_review_contract.md)。检查所要求的身份、来源、准确内容、schema、hash 和背景对应由 DDM 所属工具验证，不在本文复制工具流程。
 
-## 6. 标识符与引用语义（Identifier and Reference Semantics）
+明确授权的请求不要求先取得 `SystemChangePlan`；已有已审计划时附对应步骤。职责划分发生改变时审查完整受影响集合，局部修订仅提供判断本次变化所需的上游、同级、依赖背景和适用的 frozen current-state evidence。
 
-### 6.1 Identifier
+Material T0 candidate 进入 Charter amendment、peer migration、implementation 或 portable release 之前，DDM 所属 schema 和 semantic validator 必须接受准确的 `design_contract_reviewer` output，registered verdict 必须为 `passed`，并由 Identifier and Reference Semantics owner 作出明确 Design decision。Review、owner decision、Design admission、implementation authorization 和 Software Delivery admission 分别保留实际结果；其中一项不替代另一项。
 
-`Identifier` 必须结合对象种类和适用 scope，使调用方能够唯一判断它标识哪个逻辑对象。具体对象可以
-使用一个字段或组合字段；本 T0 不规定统一字符串格式，也不要求所有系统增加 `kind + scope + id`
-envelope。
+## 7. References
 
-Version、status、environment、storage path 和 content hash 不自动进入 stable Identifier。某个业务对象
-确实把其中一项作为 identity 的组成部分时，其 owner 必须在自己的 contract 中明确说明，而不能由字段名
-或本 T0 推断。
-
-### 6.2 Reference 与精确程度
-
-`Reference` 可以指向一个稳定逻辑对象，也可以锁定该对象的某个版本或某份不可变内容。Reference 必须
-让接收方知道 target subject 和所需精确程度。
-
-- 只需要指向逻辑对象时，Reference 可以只携带该对象的 Identifier。
-- 需要锁定某个版本时，Reference 增加适用的 `version`。
-- 需要证明内容完全一致时，Reference 可以再携带 `content hash`。
-
-`content hash` 是内容指纹。它只在 algorithm 和 coverage 相同的情况下可比较。它不能单独证明业务对象
-identity，也不是所有 Reference 或 immutable record 的必填字段。
-
-### 6.3 Pointer 与 Locator
-
-`pointer` 只表示 owner 当前选择哪个 Reference。它可以改变，但 pointer 的变化不重写目标对象，也不改变
-目标 Identifier。是否需要 compare-and-set、revision 或 rollback，由拥有该 pointer update interface 的
-owner 定义和验证。
-
-`locator` 只表示目标目前存在哪里，例如 repository path、database key、URL 或 object-store key。
-Locator 可以变化，而不改变 Identifier 或 Reference。Reference 也不授予读取、写入或执行权限；实际
-访问继续通过对应 owner 的 authorization 和 data-access boundary。
-
-### 6.4 命名与比较
-
-Public machine boundary 的字段名称或 enclosing typed class 必须让调用方确定 subject 和 meaning。
-`module_id`、`module_release_version`、`module_release_ref`、`module_release_sha256` 和
-`module_store_locator` 是一种可读写法，但不是所有对象必须复制的字段模板。
-
-两个 Identifier 只有在 subject kind、scope 和 owner-defined identity fields 都相同时才相等。两个
-Reference 只有在 target meaning 和全部适用限定信息都相同时才相等。Locator equality 不产生 identity
-或 Reference equality。具体 comparison、normalization 和 encoding 由 subject owner 的 code 定义。
-
-### 6.5 Machine Contract 与 Code
-
-凡是把 Identifier 或 Reference 写入 persistence、public DTO、event 或跨系统 boundary 的 subject owner，
-必须在自己的 machine contract 中说明适用字段的 subject、meaning、scope、encoding 和 target。只有实际
-使用的 `version`、`content hash`、`pointer` 或 `locator` 才需要相应规则。
-
-任何 contract 都不要求使用完整集合。未使用的概念不需要字段、占位值或空 contract；一旦实际使用，
-才必须遵守本 T0 对该概念的结构和语义要求。
-
-各 owner 的 code 负责确定性验证自己的 machine contract，并返回 owner-local error。本 T0 不建立中央
-Registry、统一 validation service、通用 resolver、通用 pointer interface 或统一 error taxonomy。
-
-### 6.6 Compatibility and Migration
-
-本 T0 成为 Current 不会原地改写既有 ID、version、Reference 或 content hash。每个 consuming project
-先检查现有 surface，再由真实 owner 决定保留、临时兼容、生成 successor 或退役。
-
-能够从 exact context 唯一恢复含义的 legacy field 可以临时保留 compatibility mapping；无法消除歧义的
-字段使用新名称或新 Reference。具体 persistence migration、backfill、cutover、rollback 和 retirement
-仍由 domain owner、Data Governance 与 Software Delivery 决定。
-
-## 7. 审查与完成
-
-### 7.1 确定性检查
-
-进入 `design_contract_reviewer` 前，Design Doc Management-owned validator 验证 required sections、
-identity、owner、exact bytes、schema、hash 和完整 same-level peer context。未来 implementation 由各
-subject owner 的 code 验证自己的 Identifier 和 Reference contract；这些 machine failures 不交给
-semantic Reviewer 重新判断。
-
-### 7.2 语义审查
-
-`design_contract_reviewer` 只审 exact frozen T0 candidate 及其 Charter、完整 peer set、授权目标
-和适用的 frozen current-state evidence；已有已审 `SystemChangePlan` 时附对应步骤，直接授权请求
-不要求前置计划。它判断两个核心概念是否足以消除
-ID、Reference、version、content hash 和 locator 混用，是否可以直接指导下一层，以及是否侵入业务对象、
-authorization、data、time、Runtime execution 或 delivery authority。
-
-### 7.3 表达审查
-
-全部 Design semantic checks 通过后，Reviewer 对同一 candidate bytes 判断冷读者能否准确复述
-Identifier、Reference 及四类从属信息的关系。表达修改不能改变 authority、compatibility 或 migration
-meaning。
-
-### 7.4 完成条件
-
-Material T0 candidate 只有在 DDM-owned schema 和 semantic validator 接受 exact
-`design_contract_reviewer` output、registered verdict 为 `passed`，且 Identifier and Reference Semantics
-owner 作出明确 Design decision 后，才能进入 Charter amendment、peer migration、implementation 或
-portable release。Review、owner decision、Design admission、implementation authorization 与 Software
-Delivery admission 保持为不同结果。
-
-## 8. System-wide Invariants
-
-1. 业务 owner 定义对象含义；本 T0 只定义对象进入 machine boundary 后的 Identifier 和 Reference 关系。
-2. `Identifier` 稳定说明这是哪个对象；`Reference` 明确说明这里指向哪个对象。
-3. Reference 可以只指向逻辑对象，也可以按需要增加 version 或 content hash 以锁定具体内容。
-4. Version 与 content hash 都是可选限定信息，不自动成为 stable identity。
-5. 未使用的概念不需要字段、占位值或空 contract；实际使用的概念必须由所属 owner 明确定义并验证。
-6. Pointer 只选择当前 Reference；pointer update 不重写目标对象。
-7. Locator 只回答在哪里读取；locator change 或 equality 都不改变或证明 identity。
-8. Reference、authorization、target access、business acceptance 和 pointer update 是不同决定。
-9. 无法确定字段的 subject、meaning、scope 或 target 时 fail closed，不靠 prefix、目录或 caller-local
-   猜测继续。
-10. Existing Identifier 和 Reference 不原地改义；compatibility 和 successor 保留明确 mapping。
-11. Current schema、binding、pointer、locator 和 migration truth 只来自各 owner 的 code、persistent state
-    与 generated inspection。
-
-## 9. Peer Boundaries
-
-Project Charter 决定本 authority 是否进入 project T0 topology。各 peer 继续拥有自己的对象和决定；本 T0
-只向其 machine-facing Identifier 与 Reference 提供共同语义。
-
-| Peer T0 | Boundary |
-| --- | --- |
-| Agency Platform | 使用共同语义表示 product、service、session 和 workload；继续拥有 host、composition、placement 与 authentication |
-| Agent Runtime | 使用共同语义表示 Module、Workflow、Execution、Artifact 和 release；继续拥有 Runtime admission、execution 与 recovery |
-| Product Authorization | 使用共同语义表示 Principal、permission assignment 与 decision；继续拥有 Entitlement、allow/deny 与 revocation |
-| Task Routing | 使用共同语义表示 request、logical owner 与 RoutingDecision；继续拥有 requested-result classification 与 owner selection |
-| System Change Governance | 使用共同语义表示 plan、step 和 candidate；继续拥有 affected scope、dependency order 与 SystemChangePlan meaning |
-| Data Governance | 使用共同语义表示 Data Asset、physical binding 与 migration Reference；继续拥有 data meaning、placement、retention 与 migration |
-| Timestamp and Clock Semantics | Timestamp 不代替 Identifier 或 Reference；继续拥有 time role、clock、calendar 与 comparison meaning |
-| Design Doc Management | 使用共同语义表示 Design candidate、parent 与 dependency；继续拥有 Design Intent、layer、review 与 lifecycle |
-| Skill Management | 使用共同语义表示 Skill、prompt source 与 Module export；继续拥有 Skill Definition、review 与 delivery |
-| Review Contract | 使用共同语义表示 subject、context、finding 与 Reviewer source；继续拥有 universal review instruction 与 finding discipline |
-| Software Delivery | 使用共同语义表示 software asset、commit、release 与 deployment record；继续拥有 implementation 与 release admission |
-
-任何 peer 的完整 Flowmap、field inventory、error table 或 implementation binding 都不复制进本 T0。
-
-## 10. References
-
-- [Project Charter](the_charter.md)
+- Project Charter：`designDoc/the_charter.md`，由消费项目提供。
 - [Agency Platform](the_agency_platform.md)
 - [Agent Runtime](the_agent_runtime.md)
 - [Product Authorization](the_product_authorization.md)

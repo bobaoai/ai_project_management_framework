@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
+import sys
 import json
 import os
 import re
@@ -505,6 +507,7 @@ def _validated_source_payloads(
     manifest: GovernanceT0Manifest,
     project_forbidden_fragments: tuple[bytes, ...],
 ) -> tuple[tuple[PortableT0Contract, bytes], ...]:
+    _validate_artifact_contract_payloads(project_root, manifest)
     payloads: list[tuple[PortableT0Contract, bytes]] = []
     allowed_t0_references = {
         contract.target for contract in manifest.portable_t0_contracts
@@ -556,6 +559,7 @@ def _validated_source_payloads(
                 f"{contract.source}: {unknown_t0_references}"
             )
         payloads.append((contract, payload))
+    _validate_design_source_structure(project_root, manifest, payloads)
     return tuple(payloads)
 
 
@@ -583,6 +587,54 @@ def _validate_artifact_contract_payloads(
                 )
 
 
+def _validate_design_source_structure(project_root, manifest, payloads):
+    binding = next((x for x in manifest.artifact_contracts if x.artifact_contract_id == "design_document_artifact_contract"), None)
+    if binding is None:
+        raise GovernanceT0ReleaseError("DDM artifact contract binding is required")
+    path = _resolve_without_symlink_escape(project_root, binding.adapter)
+    name = "portable_ddm_release_adapter_" + binding.adapter_sha256
+    spec = importlib.util.spec_from_file_location(name, path)
+    adapter = importlib.util.module_from_spec(spec)
+    sys.modules[name] = adapter
+    spec.loader.exec_module(adapter)
+    resolver = adapter.local_file_resolver(project_root, overrides={x.target:x.source for x in manifest.portable_t0_contracts})
+    for contract, payload in payloads:
+        try:
+            result = adapter.validate_artifact(payload, layer="T0", reference_resolver=resolver)
+            if result.contract_sha256 != binding.source_sha256:
+                raise ValueError("DDM adapter used a different machine contract")
+            identity = adapter.parse_frontmatter(payload.decode("utf-8"))
+            if identity["canonical_owner"] != contract.target:
+                raise ValueError("canonical_owner differs from the declared target")
+            if "t0_layer_id" in identity and identity["t0_layer_id"] != contract.t0_layer_id:
+                raise ValueError("t0_layer_id differs from the manifest")
+        except (ValueError, OSError, TypeError, KeyError) as exc:
+            raise GovernanceT0ReleaseError(f"DDM source check failed: {contract.source}: {exc}") from exc
+
+
+def _source_membership_issues(root, manifest):
+    issues = []
+    declared = {x.source for x in manifest.portable_t0_contracts}
+    source_root = _resolve_without_symlink_escape(root, SOURCE_PREFIX.as_posix())
+    for path in sorted(source_root.glob("the_*.md")):
+        relative = path.relative_to(root).as_posix()
+        if (path.is_file() or path.is_symlink()) and relative not in declared:
+            issues.append(GovernanceT0ReleaseIssue(code="portable_t0_undeclared_source_member", path=relative, detail="portable source root contains an undeclared member"))
+    package = _resolve_without_symlink_escape(root, GOVERNANCE_PACKAGE_ROOT.as_posix())
+    for path in sorted(package.iterdir()):
+        if path.name != "__pycache__" and path.name not in GOVERNANCE_PACKAGE_ROOT_MEMBERS:
+            issues.append(GovernanceT0ReleaseIssue(code="governance_package_undeclared_root_member", path=path.relative_to(root).as_posix(), detail="Governance package root contains an undeclared member"))
+    return issues
+
+
+def check_governance_t0_sources(project_root: Path, manifest_path: Path | None = None):
+    """Validate Portable source only; no host Charter, policy or projection gate."""
+    root = Path(project_root).resolve()
+    manifest = load_governance_t0_manifest(root, manifest_path)
+    payloads = _validated_source_payloads(root, manifest, ())
+    return GovernanceT0ReleaseReport(charter_target=manifest.charter_target, contract_count=len(payloads), issues=tuple(_source_membership_issues(root, manifest)))
+
+
 def check_governance_t0_release(
     project_root: Path,
     manifest_path: Path | None = None,
@@ -595,8 +647,7 @@ def check_governance_t0_release(
     payloads = _validated_source_payloads(
         root, manifest, project_policy.forbidden_source_fragments
     )
-    _validate_artifact_contract_payloads(root, manifest)
-    issues: list[GovernanceT0ReleaseIssue] = []
+    issues: list[GovernanceT0ReleaseIssue] = _source_membership_issues(root, manifest)
 
     charter_path = _resolve_without_symlink_escape(root, manifest.charter_target)
     if not charter_path.is_file():
@@ -706,41 +757,6 @@ def check_governance_t0_release(
                 detail="undeclared T0-like Design target remains discoverable",
             )
         )
-    declared_sources = {
-        contract.source for contract in manifest.portable_t0_contracts
-    }
-    source_root = _resolve_without_symlink_escape(
-        root, SOURCE_PREFIX.as_posix()
-    )
-    discovered_sources = {
-        path.relative_to(root).as_posix()
-        for path in source_root.glob("the_*.md")
-        if path.is_file() or path.is_symlink()
-    }
-    for undeclared_source in sorted(discovered_sources - declared_sources):
-        issues.append(
-            GovernanceT0ReleaseIssue(
-                code="portable_t0_undeclared_source_member",
-                path=undeclared_source,
-                detail="portable T0 source root contains an undeclared member",
-            )
-        )
-
-    package_root = _resolve_without_symlink_escape(
-        root, GOVERNANCE_PACKAGE_ROOT.as_posix()
-    )
-    for entry in sorted(package_root.iterdir(), key=lambda item: item.name):
-        if entry.name == "__pycache__":
-            continue
-        if entry.name not in GOVERNANCE_PACKAGE_ROOT_MEMBERS:
-            issues.append(
-                GovernanceT0ReleaseIssue(
-                    code="governance_package_undeclared_root_member",
-                    path=entry.relative_to(root).as_posix(),
-                    detail="Governance package root contains an undeclared member",
-                )
-            )
-
     return GovernanceT0ReleaseReport(
         charter_target=manifest.charter_target,
         contract_count=len(payloads),
@@ -789,6 +805,9 @@ def apply_governance_t0_release(
             f"{manifest.charter_target}"
         )
     preflight = check_governance_t0_release(root, manifest_path)
+    source_issues = [x for x in preflight.issues if x.code in {"portable_t0_undeclared_source_member", "governance_package_undeclared_root_member"}]
+    if source_issues:
+        raise GovernanceT0ReleaseError("portable source closure is invalid: " + "; ".join(f"{x.code}: {x.path}" for x in source_issues))
     drifted_targets = [
         issue.path
         for issue in preflight.issues

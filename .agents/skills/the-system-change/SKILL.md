@@ -21,7 +21,7 @@ AI 开始写作前，应明确文稿要完成什么、服务什么读者，以�
 
 写作任务至少应明确四件事：
 
-1. **目标**：文稿用于什么，读者需要从中获得什么理解、判断或执行能力。
+1. **目标**：谁在什么情境下需要所设计的能力或任务产物，以及应获得什么实际结果。
 2. **验收依据**：哪些要求决定文稿是否正确、充分并符合用途，如何核对这些要求。
 3. **依据与方法**：使用哪些材料、知识和工具，哪些步骤或先后关系会影响结果。
 4. **交付要求**：文稿需要达到什么深度，采用什么形式；已有明确的格式、路径或 schema 要求时，遵守相应要求。
@@ -29,6 +29,22 @@ AI 开始写作前，应明确文稿要完成什么、服务什么读者，以�
 凡步骤、顺序、工具或执行身份会影响正确性、授权边界或证据有效性的要求，应明确规定。例如，独立审核需要针对准确候选执行，审核结论需要与该候选对应。
 
 其余方法由 AI 根据任务选择。步骤式指导、例子和经验，只要能帮助完成任务，就可以保留；避免强制执行与结果无关的过程，也避免只给目标而缺少必要方法。
+
+#### Intended Outcomes：统一表达预期结果
+
+Design 和 Skill 用一个 `Intended Outcomes` 章节集中表达主要结果要求。每项主要能力应有对应的实质结果，并说明接收者用途和决定结果能否使用的必要质量。不能只列产物名称，或用“完整、可靠、可实施”等词代替具体要求。目的、范围和适用条件以解释结果所需的深度保留。
+
+作者先从授权目标和主要能力确定结果，再逐章反向核对全部正文；对象定义、职责边界和共同约束等位置也可能含有重要结果要求。重要结果或必要质量若只在后文出现，应补入结果章节；局部字段、操作步骤和检查命令仍放在所属位置。多项能力可以共享一个结果，一项能力也可以产生多个结果。不设固定条数、篇幅或逐项同名的要求，不为凑全内容增加未经授权的能力。
+
+同一结果可以在不同章节出现：结果章节定义要达到什么，方法说明怎样达到，完成与验证说明凭什么确认。各处履行不同职责，不算重复定义；重复整项要求时才合并。修订先保留有效含义，再组织表达，不只更换标题或拼接旧段落。
+
+Design 描述所设计系统或能力的功能与作用。Skill 描述执行任务的交付、接收者用途和必要质量。专业知识文稿需要说明其提供哪些专业认识，以及这些认识支持何种判断；是否使用固定章节沿其所属文稿规则确定。
+
+“读者能找到入口、理解职责”等要求用于作者和 Reviewer 的冷读检查，正文直接把入口和职责讲清楚。教学、培训等任务以读者能力变化为实际产出时，可以将具体可验证的能力写成预期结果。
+
+结果章节说明要做成什么，后续对应章节说明如何实现。Skill 在 `Method` 中写判断方法和操作过程，在 `Inputs and Completion` 的三个子节中分别明确输入、输出规格和完成条件；Design 按所属层级在功能、流程、架构和接口章节中明确必要工作方式。影响正确性、权限或证据有效性的指定方法必须写清楚，不能仅凭执行过方法就判定结果已经成立。
+
+结果确定性要求目标和判断依据明确，并给执行者保留方法选择空间。信息不足时准确交付未知及其影响也可以符合结果要求，不承诺每次得到同一个结论或必须填满所有字段。当前进度、阶段安排和运行记录保留在对应项目或交付记录中。
 
 ### 原则二：支持 AI 自主判断，排斥 SOP
 
@@ -62,7 +78,7 @@ Skill 是 AI 执行任务时使用的契约文档。写作应先保证执行所�
 1. **这一层负责什么？** 说明这一层的用途。
 2. **什么时候进入这一层？** 说明进入条件和触发信号。
 3. **进入后先读什么？** 明确应优先遵循的权威依据（first authority），以及承载当前事实的来源（truth surface）。
-4. **应该产出什么？** 说明输出形式，以及读者读完后应能理解、判断或完成什么（reader-end-state）。
+4. **应该产出什么？** 说明预期的功能、产物或状态变化、接收者用途和必要质量；输出形式按实际交付需要确定。
 5. **怎样与相邻层交接？** 说明上游期望什么、下游使用什么，以及失败时如何回退。
 6. **哪些相邻概念容易混淆？** 说明它们的区别，以及什么时候应使用其他概念或入口。
 
@@ -183,181 +199,105 @@ Schema、协议对象或法律术语可以先定义，以保证精确。定义�
 
 <!-- embedded-resource:soul:bestpractice_ai_facing_writing:end -->
 
-## 1. Task
+## 1. Task Summary
 
-本 Skill 接收授权目标和现有依据，编写一份完整、顺序正确且可执行的普通 Markdown 变更计划，
-沿用 `SystemChangePlan` 名称。计划是本 Skill 的产出，不是进入它的前提。它只负责规划和路由，不编写、审核、批准、准入、执行或跟踪
-Design、Skill、Code、Runtime、Data 和 Release 的下游工作。
+使用本 Skill，把授权修改目标和现有依据写成一份完整、顺序可执行的统一变更计划，名称为 `SystemChangePlan`。作者准备准确候选并组织独立审核，随后将计划和实际结果交给 Primary Agent。
 
-System Change Governance 拥有计划含义。本 Skill folder 同时保存独立
-`system_change_plan_reviewer` 的 Prompt、Schema、Fixture 和注册源，但计划作者不会加载该
-Reviewer 自审。Reviewer 由独立执行身份运行，并直接返回 System Change Governance 定义的
-审核结果。冻结计划必须使用已注册的 `system_change_plan_reviewer` Runtime Module；Module
-route 不可用时返回 `blocked_binding` 和 Runtime owner evidence，Primary Agent 不直审也不换用相似 Reviewer。
+用户明确要求统一规划，或者未指定起点且修改需要跨层统筹范围、职责和依赖时使用。Task Routing 可以用 `system_change_intake` 交接这项请求；该名称不要求作者先运行机器路由器。计划是本 Skill 的产出，进入时无需另一份父计划。
 
-## 2. Reader Gain
+## 2. Intended Outcomes
 
-Primary Agent 使用本 Skill 后可以一次判断：
+向 Primary Agent 交付一份覆盖本次有限授权结果的 SystemChangePlan，以及准确对应的检查和审核材料。
 
-- 哪些文件或受治理面需要修改，哪些明确不改，以及各自原因；
-- 每项修改属于 Design、Skill、Code、Runtime 还是 Release；
-- 每项工作真正需要的前置结果，以及满足这些依赖的执行顺序；
-- 每步的唯一责任人、authoring 或 implementation method、产出对象类型、审核门和完成条件；
-- 何时可以执行计划，何时必须把待决事项或错误路由返回真实所有者。
+1. **修改范围完整且有依据。** 计划从目标和实际来源推导必要修改，说明纳入、排除及其理由。必要依赖没有遗漏，排除项不使结果落空，邻接改进和未来收益不被自动纳入。
+2. **各步可以由明确负责人接手。** 对象、层级、修改目标和理由具体，最终负责人、真实方法、产出类型、审核门及完成条件齐全。目标、输入、产出、相关排除项和后续边界可以一起交接，不让接手者补猜关键决定。
+3. **执行顺序基于实际输入。** 依赖及其提供路径清楚，必要决定、检查和授权能在使用前取得，无循环等待。已有适用依据直接复用；设计含义、接口材料与运行条件的需要分别判断，不为所有任务套固定阶段。
+4. **整体验收足以判断目标成立。** 各步骤的结果合起来覆盖本次目标，检查和审核由正确对象的所属方法承担。计划在安排工作处结束，不承诺下游已经实现、批准或部署，也不维护执行状态。
+5. **交付判断与缺口准确。** 自检、适用检查和独立审核对应同一完整候选，问题处理有依据。必要决定或输入不足时，已有草稿、具体缺口、影响和提供方明确；可执行交接与尚待修订、补件或排障分别说明。后续真实变化需要重新规划时，保留原目标和授权边界。
 
-## 3. Entry and Exit
+## 3. Boundaries
 
-### 3.1 Entry
+`designDoc/the_system_change_governance.md` 决定计划内容和完成要求。各受影响 Design 的负责人决定其专业含义，用户授权决定本次目标和范围。代码与工具提供实际实现和检查事实。历史 finding、旧计划、文件名、失败测试、模型或附近 Skill 都不能代替这些依据。
 
-用户明确要求统一规划，或没有指定起点且修改需要跨层统筹范围、职责和依赖时进入。
-Task Routing 可以把该请求交为 `system_change_intake`，它是交接名称，不要求先调用机器路由器。
-用户指定从文档、Skill 或代码开始时，使用对应方法，不要求先通过本 Skill。
+作者负责计划写作、自检和审核组织。独立 `system_change_plan_reviewer` 判断计划；同包携带其指令不产生作者自审资格。用户指定从文档、Skill 或代码开始时，直接使用对应方法。范围、负责人和起点明确的单层修改也直接进入对应方法；入口不清时交回 Task Routing。
 
-起点是变更目标、已有授权和现有依据。先查项目入口、相关 Design、当前源文件和实际工具说明，
-确认本次需要哪些材料。没有父计划、计划 Schema、构建器或 Registry 不妨碍起草；缺少真实目标、
-产品决定或必要依据时，说明具体缺件和提供方，保留已形成的草稿。
-
-### 3.2 Exit
-
-- `ready_for_execution`：计划没有阻止执行的待决事项，完成适用检查并通过
-  `system_change_plan_reviewer`，交给 Primary Agent 执行第一步。
-- `revision_required`：确定性检查或有效审核结果指出计划未闭合，返回计划作者；或计划包含
-  `unresolved_decisions`，把每项待决事项返回该项声明的 accountable decision owner。当前调用随后
-  停止，相关事项解决后重新进入本 Skill。
-- `blocked_owner_or_layer`：无法确定本次目标、负责人或层级时，说明依据冲突或缺少的决定，返回
-  用户或有权决定的 Design owner；不把缺少项目 Registry 当成缺少产品决定。
-- `blocked_binding`：现有 Reviewer 或审核接口不可用，返回实际接口或执行负责人；保留文稿，
-  不要求先建立计划基础设施。
-- `blocked_review`：Reviewer 已返回有效 `blocked` disposition，但 blocker 不属于上述两类；把 exact
-  blocker 返回 Reviewer output 指定的 accountable owner。
-
-上述名称用于说明交接结果，不要求新增状态记录。执行失败或无效输出不是 Reviewer verdict。
-本 Skill 在交出结果后结束。它不维护 Case、`ScopeAssessment`、`WorkPackage`、
-`CandidateSet`、`ClosureRecord`、执行状态、生命周期或进度页面。
-
-## 4. Execution Contract
-
-### 4.1 Inputs and Authority
-
-按以下 authority 形成计划：
-
-1. 已授权的目标结果；
-2. Task Routing 的交接或用户明确的规划请求；
-3. 当前文件、代码、索引与工具给出的对象、负责人、层级及依赖依据；
-4. Project Charter、本 T0 和实际涉及的 Design；
-5. 所属 authority 提供的编写方法、产出类型、Reviewer 与检查入口。
-
-从项目入口和已有索引定位当前 Portable T0 与相关项目 Design、工程架构、公开接口和来源关系，
-阅读实际相关正文，再按第 6.1 节推导改动。本次已完整读过且未变化的依据可以复用。索引用于定位，
-不能用摘要或文件名代替正文判断；不存在索引时直接核对准确文件，不为写计划先造一个 Registry。
-读取范围不等于修改范围，各合同义务按本次变更的适用条件判断。
-
-前序 finding 只作为证据。文件名、失败测试、模型、模型提供方、附近 Skill、旧计划或当前实现
-都不能覆盖上述 authority，也不能代替 owner 或 layer 判断。
-
-### 4.2 Output and Completion
-
-计划使用普通 Markdown，内容可以组织成自然段或表格，不要求使用下列名称作为字段或固定标题：
-
-- `requested_result`：目标、授权范围和现有依据；
-- `affected_surfaces`：本次有限授权结果实际需要的完整受影响范围；其中需要修改的文件或受治理面带有 subject kind、layer、
-  owner 和 required change；
-- `excluded_surfaces`：从完整受影响范围中明确不改的面及其原因；
-- `ordered_steps`：每步对象、唯一最终负责人、所需输入、编写或实施方法、产出、检查或审核、完成条件与依赖提供路径；交接时连同该步目标、相关排除项与后续边界提供，不另建范围记录；
-- 验收：哪些实际检查、独立审核或操作结果能证明整个授权目标成立；
-- `unresolved_decisions`：使计划暂时不能执行的待决事项；每项都写明 decision 和 accountable
-  decision owner。
-
-没有阻止执行的待决事项、适用检查完成，且同一份准确文稿取得独立 `system_change_plan_reviewer`
-的有效 `passed` 时，计划才完成。冻结表示审核输入中保留准确正文，不要求作者创建计划 ID、版本、
-时间字段或 Registry。审核接口已有的请求标识与内容校验由现有工具处理。
-`passed` 只支持在既有授权内使用计划，不批准下游候选，也不增加授权。
-
-自检发现内容缺口时先修订；有效 `non_pass` 按 findings 修订，`blocked` 返回具体依据或决定的提供方。
-接口、执行、输入输出格式或候选对应关系出错时，报告工具实际错误并保留材料，不伪装成 Reviewer
-结论；不要求作者为这些情况先搭建计划服务或编造错误码。
-
-下游发现真实依赖缺失、负责人错误、适用规则冲突，或新证据、原处理失败影响计划成立时，先说明
-当前后果并返回真实负责人重新判断；确需改计划时再冻结完整新计划。建议和未来收益本身不使旧计划
-失效，也不授予扩展工作权限；本 Skill 不修改已冻结计划或接管执行。
-
-## 5. Boundaries
-
-| Boundary | 本 Skill 保留的职责 | Observable violation |
+| 分工 | 本 Skill 可以做到哪里 | 可观察的越界 |
 | --- | --- | --- |
-| 计划与执行 | 只形成可执行计划和路由 | 输出包含候选产物状态、执行进度、准入汇总或闭包状态 |
-| 完整范围 | 本次结果必需的受影响面纳入，相关排除项说明原因 | 漏掉使当前结果不能成立的依赖，或为完整性要求整理全部邻接系统 |
-| 单步路由 | 每步的负责人、方法、产出、检查或审核与完成条件清楚 | 步骤缺少上述含义、存在并列最终负责人，或要求执行者自行补决定 |
-| 实际依赖 | 依据每步所需输入、决定、检查和授权安排顺序 | 必需前置未具备就启动，或仅按产物类别要求无依赖的工作互相等待 |
-| Authoring authority | 只指定下游 authoring method | 计划直接编写 Design、Skill、Code、Runtime 注册或 Release 内容 |
-| Reviewer routing | subject kind 是路由键，owning Design 登记该路由 | 文件名、T0 名、provider、model 或附近 Skill 决定 Reviewer |
-| Reviewer independence | 计划作者与 Reviewer 使用不同的执行身份 | 审核证据缺少独立执行身份，或显示计划作者执行了自己的 Reviewer |
-| Input provenance | 引用准确的当前依据，区分目标规则、代码能力和真实检查结果 | 从目录相似性猜 owner，或把格式通过、调用成功当作计划内容已检查 |
-| 生命周期 | 交接后结束 | Skill 继续维护 WorkPackage、candidate、lifecycle 或进度记录 |
+| 规划与下游执行 | 确定本次范围、步骤和交接；整体任务责任仍由 Primary Agent 承担。 | 计划写入候选状态、执行进度、批准或准入汇总，或本 Skill 开始监督下游。 |
+| 专业修改 | 为各步骤定位真实负责人和已有编写或实施方法。 | 作者在计划里代写或批准下游 Design、Skill、Code、Runtime、Data 或 Release 候选。 |
+| 必要范围 | 纳入使当前授权结果成立的修改和依赖，明确合理排除项。 | 将邻接改进或未来收益自动变成本次任务，或者漏掉必要依赖。 |
+| 审核路由与独立性 | 按受审对象类型使用所属 Design 指定的审核入口。 | 仅凭名称选择相似 Reviewer，或作者给自己的计划写独立 passed。 |
+| 生命周期与结构决定 | 将真实产品或结构决定交回有权负责人，交出计划后结束本次方法执行。 | 自建 Case、ScopeAssessment、WorkPackage、CandidateSet、ClosureRecord、结构审查对象或进度服务。 |
 
-## 6. Method
+## 4. Inputs and Completion
 
-### 6.1 从设计含义推导具体改动
+### 4.1 Inputs
 
-先理解当前项目怎样工作，再把同一条变更要求映射到 Design、Skill 和 Code。以下三项判断依次
-使用前面取得的依据；发现缺口时返回对应判断，具体对象与顺序由每次请求推导。
+开始时取得以下材料，并明确它们各自用于判断什么：
 
-1. **核对设计含义。** 对照 Portable T0 与项目 Design，判断请求是否改变已有职责、行为或交付
-   要求。需要改变时，指出哪份 Design 的哪项含义需要修订，并使用 DDM 所规定的 Design 编写
-   方法；已有设计足够时直接引用。纵向核对 T0、项目 Design 与工程实现分别决定什么，横向核对
-   DDM、Skill、Code 及本次涉及的审核、Runtime、Release 怎样交接。合同与实现有差异时分别
-   记录目标和当前状态；无法确定适用含义时返回对应 authority，不把冲突版本合成新规则。
-2. **翻译成各处的具体改动。** 对同一条要求分别判断：Agent 需要改变哪个判断或动作，由哪份
-   Skill 的哪段方法承载；确定性代码与公开接口是否已经支持，实际缺的是哪项实现或校验；沿
-   已声明的来源和消费关系，哪些对象确实需要跟随变化。文件格式不决定职责，JSON 中的指令
-   文字与字段或 validator 行为分别按改变的含义判断。Reviewer、生成投影与注册也按实际影响
-   和授权范围处理，不能因同包或相邻而自动安排改动。计划写出各项具体任务，专业候选由相应
-   authoring 方法形成。
-3. **按真实输入安排工作。** 逐项说明这步需要已审的设计含义、准确的指令材料，还是可调用的
-   接口或已注册版本；已有输入直接引用，缺失输入指出由哪项前置工作提供。依此排列步骤，再
-   按执行顺序走读：接手方能否找到对象、开始本步，并将结果交给下一方。将“完善、对齐、闭合”
-   展开为对准确对象的具体修改和可判断结果；实现细节留给已明确任务的后续 Design 或 Code
-   Design。第 6.2 节处理实际依赖，类别本身不构成固定阶段。
+- 本次授权目标、范围和需要交付的结果；Task Routing 的交接或用户明确的规划请求。
+- `designDoc/the_system_change_governance.md`：第 3 章定义计划内容，第 4 章定义形成方法，第 5、6 章规定审核和完成。
+- Project Charter、实际相关的 Portable T0、项目 Design，以及当前文件、代码、索引和工具说明。它们用于核对对象、负责人、层级、接口和依赖。
+- 各负责人提供的编写方法、产出类型、检查和 Reviewer 入口；修订时还需准确旧计划、既有审核结果和需要重新判断的 finding。
+- 请求已指定的候选交付位置，以及审核执行所需的实际资源入口。
 
-例如，一次请求只增强 System Change 的计划推导方法，先核对其职权与输出要求是否变化；保持原有
-设计含义时，将改动落在 `the-system-change` 的 Method。现有入口能否提供方法所需的架构依据，
-决定是否存在需要另行处理的工程缺口。这个例子说明判断过程，其对象和处理路径不固化为其他请求
-的必经步骤。
+从项目入口和已有索引定位材料，再阅读相关正文。本次已完整读过且未变化的依据可以复用。没有索引时核对准确文件，不为写计划先造 Registry。读取范围与修改范围分别判断，各规范按实际适用条件消费。
 
-```mermaid
-flowchart LR
-    R["授权目标与现有依据"] --> T["用户明确要求或 Task Routing 交接"]
-    T --> C["判断 Design / Skill / Code / Runtime / Release 影响面"]
-    C --> I["列全纳入与排除项，并写明原因"]
-    I --> O["识别实际前置<br/>按依赖排列步骤"]
-    O --> K["Author Self-Check"]
-    K -->|"未解决的必修问题"| I
-    K -->|"locally closed"| D["现有工具检查审核输入格式与准确文稿"]
-    D -->|"实际接口错误"| X["保留文稿并返回实际错误"]
-    D -->|"通过"| P["固定本次完整 Markdown 候选"]
-    P --> V["system_change_plan_reviewer<br/>语义检查后再做表达检查"]
-    V -->|"passed"| H["交给 Primary Agent 执行第一步"]
-    V -->|"non_pass"| E["按 findings 修订完整计划"]
-    V -->|"blocked"| B["把缺少的依据或决定<br/>交给对应提供方"]
-```
+本包的 `runtime_modules/system_change_plan_reviewer/` 提供独立审核所需的 prompt、schema、样例和 registration source；实际执行使用已注册 Module。文件存在不表示 Module 已注册或可用。执行入口缺失按第 4.3 节交给负责人。
 
-### 6.2 Dependency Order
+缺少真实目标、产品决定或必要依据时，保留草稿，说明缺什么、影响哪项判断以及由谁提供。缺少父计划、计划 Schema、构建器或 Registry 本身不阻止起草。
 
-对每一步说明它使用什么输入、需要谁先作决定，以及开始前必须具备哪些检查结果与授权。
-Design、Skill、Code、Runtime 和 Release 用于找负责人及方法，不规定所有任务的时间顺序。
-`ordered_steps` 给出一种满足依赖的可执行安排；相邻步骤不自动互为前置。按用户要求逐项处理即可，
-没有依赖不代表必须并行或已获得并行操作权限。
+### 4.2 Output
 
-目标、职责与接口含义须先明确。已有 Design 足以规定工具行为时，可以先按工程方法准备并验证工具，
-再把实际接口用于 Skill 或 prompt；代码计划外审和其他所属方法的必要检查仍保留。
-只有当前步骤确实需要的材料才构成前置，不等待无关产物完成，也不把投入运行的全部条件提前要求于起草。
+向 Primary Agent 交出完整 Markdown 计划，以及本次实际产生的自检、确定性检查和独立审核材料。计划包含 System Change Governance 第 3 章规定的六类内容，具体质量沿用本 Skill 第 2 章。
 
-出现循环依赖时，核对哪些是真实输入，哪些只是按类别添加的等待。所属规则确实冲突或缺少必要决定时，
-返回相应 authority；不能用占位材料或未经审核的结果解除前置。结构决定仍归适用的上级 authority，
-本 Skill 不拥有 `StructureChangeProposal` 或 `structure_change_reviewer`。复用既有依据时准确引用，
-不为无需修改的对象制造空候选。
+请求已指定候选位置时使用该位置；未指定时，作者在项目适用的文稿位置保存候选，并在交付说明中给出准确入口。修订使用新的完整候选，保留原文和原审核证据。候选交付不等于已经达到执行条件。
 
-### 6.3 Author Self-Check
+交付说明指出本次完成程度、对应的检查与审核结果、未完成事项及其影响、接手负责人和继续工作所需条件。配套材料均提供可定位入口。交给步骤负责人的内容须包含该步目标、输入、产出、完成依据、相关排除项和后续边界。
+
+### 4.3 Completion Contract
+
+具备送审条件时，按第 5 章完成自检、适用检查和独立审核。本次完成程度按实际证据区分：
+
+| 交接结果 | 条件与处理 |
+| --- | --- |
+| `ready_for_execution` | 计划没有阻止执行的待决事项；适用检查通过，且 `system_change_plan_reviewer` 对同一准确完整候选给出有效独立 passed。交给 Primary Agent 在既有授权内执行第一步。 |
+| `revision_required` | 确定性检查或有效审核指出计划存在必修缺口，交回作者；计划含待决事项时，将各项决定交给其负责人。当前调用结束，必要条件补齐后重新进入。 |
+| `blocked_owner_or_layer` | 目标、负责人或层级无法确定。说明缺少的决定或依据冲突，交给用户或有权决定的 Design 负责人。缺少项目 Registry 不归为缺少产品决定。 |
+| `blocked_binding` | Reviewer 或审核接口不可用。保留文稿和实际错误，交给接口、注册或执行负责人。 |
+| `blocked_review` | Reviewer 返回有效 blocked，且不属于 `blocked_owner_or_layer` 或 `blocked_binding`。将准确 blocker 和已有材料交给审核输出指定的负责人。 |
+
+这些名称说明交接结果，不要求新增状态记录。有效结果须通过共同格式与 System Change 专用校验，并对应本次准确文稿。冻结只要求审核输入保留准确正文，已有请求标识、内容哈希与其他机器元数据由工具处理。作者不另建计划 ID、版本、时间字段或 Registry。
+
+输入输出格式、执行或候选对应关系出错时，保留原始材料和工具实际错误，返回相应负责人。这些故障不产生 Reviewer verdict，也不要求作者先搭建计划服务。passed 仅支持在已有授权内使用计划，不批准下游候选或增加权限。
+
+本 Skill 在交出结果后结束。下游出现真实依赖缺失、负责人错误、规则冲突，或新证据、原处理失败使计划无法成立时，由 Primary Agent 按 System Change Governance 第 6.3 节返回负责人重新判断。确需改计划时再形成完整新候选。建议或未来收益本身不使计划失效，也不授予扩展范围的权限。
+
+## 5. Method
+
+### 5.1 从真实要求推导具体修改
+
+先查项目入口、相关 Design、当前源文件和实际工具说明，理解本次对象怎样工作。然后沿同一条授权要求完成以下判断，避免仅按文件类别列任务：
+
+1. **找出需要改变的设计含义。** 对照 Portable T0 和项目 Design，判断职责、行为或交付要求是否需要改变。需要改变时，指出准确文档和具体要求，使用 Design Doc Management（DDM）规定的方法；已有设计足够时直接引用。纵向分清 T0、项目 Design 与工程实现各自决定什么，横向核对相关审核、Runtime 和交付怎样接手。合同与实现不一致时，分别记录目标与实际状态；适用规则不清时交给其负责人，不把冲突版本合成新规则。
+2. **把同一要求落实到各处。** 说明 Agent 要改变哪个判断或动作、由哪份 Skill 的哪段方法承载；核对现有工具和公开接口已经支持什么、实际缺哪项实现或校验。沿声明的来源和消费关系，确定哪些对象确实需要跟随修改。文件格式不决定职责：JSON 中的指令文字与字段或 validator 行为，按各自改变的含义处理。Reviewer、生成投影与注册也按真实影响和授权纳入，不能仅因同包或相邻就安排改动。
+3. **形成可交接的任务。** 为每项必要修改找到唯一负责人、现有方法、产出类型及检查或审核入口。把“完善、对齐、闭合”改写成对准确对象的动作和可判断结果。具体候选由下游编写方法形成；不影响约定结果的实现选择留给相应 Design 或 Code Design。
+
+例如，请求只增强统一变更计划的推导方法时，先核对 System Change Governance 的职责与结果要求是否变化。若原有设计仍然适用，就把方法改进落实到 the-system-change 的 Method。现有入口能否提供所需的架构依据，再决定是否存在必须处理的工程缺口。这个例子只说明判断方式，不规定其他请求的修改对象。
+
+遇到 Skill 退役或整体删除时，使用 System Change Governance 第 4.3 节：分别列出实际涉及的 Design 引用、源文件、Runtime 注册、宿主投影、路由与代码。继续存在的 Skill 修改才使用 the-skill-authoring；实际删除按各面的已有方法和验收安排。
+
+### 5.2 检查依赖，并走读整份计划
+
+逐步写明需要什么输入、谁先作决定、开始前必须有哪些检查结果和授权。已有依据直接引用；缺失输入说明由哪项前置工作提供。根据真实输入排列步骤，再按这个顺序走读：接手者能否找到对象、开始工作，并把可用结果交给下一方。
+
+区分已审的设计含义、准确指令材料、可调用接口和已注册版本。已有 Design 足够规定工具行为时，可以先按工程方法准备并验证工具，再将接口用于 Skill 或 prompt；代码计划审核等必要要求仍保留。起草不应等待它尚未消费的运行条件。
+
+出现循环时，检查等待是否来自真实输入，还是只因对象被归为 Design、Skill、Code、Runtime 或 Release。移除没有依据的等待，保留所属方法要求的审核与授权。真实规则冲突或必要决定缺失时，交回有权负责人；占位材料和未经审核结果不能解除前置。
+
+最后核对范围与整体验收：每项纳入都为本次结果所需，排除项不会造成缺口。相邻步骤不自动互为前置；没有依赖不等于必须并行或已获并行权限。复用的依据须准确且仍适用，无需修改的对象不制造空候选。
+
+### 5.3 Author Self-Check
 
 <!-- embedded-resource:t0:skill_author_self_check:start -->
 调用外部 Reviewer 前，author 必须直接消费本 Skill 声明的、由 subject authority 拥有的 canonical checklist，不能手抄第二份 checklist。每次调用只形成临时结果表：
@@ -385,53 +325,34 @@ Canonical subject checklist：
 8. 计划在规划和路由处结束，不包含执行状态、生命周期、`CandidateSet`、闭包、批准或准入汇总。
 <!-- embedded-resource:t0:system_change_plan_review_checklist:end -->
 
-### 6.4 Deterministic and Independent Review
+### 5.4 检查并组织独立审核
 
-作者按第 6.3 节自检范围、负责人、方法和实际依赖。现有工具检查审核输入 Schema、明确引用和
-准确文稿；项目有其他可用检查时报告实际执行结果。格式通过不证明计划充分，调用成功也不证明
-做过范围、负责人或依赖检查。
+作者按第 5.3 节完成自检。现有工具核对审核输入格式、明确引用和准确文稿。项目有其他可用检查时，报告实际执行结果；格式通过和成功调用不能代替计划内容判断。
 
-独立执行身份调用 `system_change_plan_reviewer`。Reviewer 只审同一份 exact frozen
-plan：先逐项判断 System Change Governance 的八项语义检查，再在语义全部通过后做 prose check。
-Review Contract 提供通用审核规则、共同结果结构与标签含义。System Change Governance 拥有专用
-checklist、专用校验和计划交接的完成语义；Agent Runtime 提供共同格式及机械校验，并独立执行 Module，
-不取得专业判断的语义所有权。
+独立执行者使用 `system_change_plan_reviewer`，只审核同一份准确冻结的完整计划。它先按 System Change Governance 第 5.3 节判断八项语义要求，全部通过后再检查表达。通用规则和结果含义沿用 Review Contract；执行证据和共同机械校验由 Agent Runtime 提供。
 
-现有输入入口是本包 `runtime_modules/system_change_plan_reviewer/schemas/input.schema.json`：
-`system_change_plan` 中的 `body` 放完整 Markdown，`document_id`、`owner_ref`、`title` 标识本次
-受审文稿；`governing_contract_closure` 提供授权目标和必要依据，`required_check_ids` 从同一 Schema
-读取，`prior_findings` 在首次审核时为空。该接口没有父计划或计划构建器字段。
-准备好的输入经随包 `09_soul/governance/t0/validation/runtime_review.py` 送审（`--input`、新的 `--output`
-与 `--root`，参数见 Portable README“独立审核的执行”）。该入口经 Agent Runtime Test Run 执行，核对返回记录的
-Module 身份与本次输入，并用 `09_soul/governance/t0/validation/system_change/model_output_validation.py` 的
-`validate_system_change_review_output` 校验输出。注册缺失交给 `agent-runtime-registration`，不在写计划时手动拼装 Module。
+按本包 `runtime_modules/system_change_plan_reviewer/schemas/input.schema.json` 准备输入：`system_change_plan.body` 放完整 Markdown，`document_id`、`owner_ref`、`title` 标识受审文稿；`governing_contract_closure` 提供授权目标和必要依据；`required_check_ids` 从同一 schema 读取；首次审核的 `prior_findings` 为空。该接口没有父计划或计划构建器字段。
 
-### 6.5 Findings
+使用随包 `09_soul/governance/t0/validation/runtime_review.py` 送审，提供 `--input`、新的 `--output` 和 `--root`。完整参数见 `09_soul/governance/README.md` 的“独立审核的执行”。该入口经 Agent Runtime Test Run 执行，核对返回记录的 Module 身份和本次输入，再用 `09_soul/governance/t0/validation/system_change/model_output_validation.py` 的 `validate_system_change_review_output` 检查结果。
 
-Reviewer 不编辑计划。作者先核对 evidence、owner、scope、intended result 和本步必要性，再修订
-成立的必修问题；note 默认不实施。对证据错误或越界意见写明理由，保留原结果并交回独立 Reviewer
-按同一依据重判，不能自己把 non_pass 改成 passed。实际修订形成完整新计划，由代码生成新 hash，
-重新检查和独立审核。多轮保持相同授权目标与完成条件，重开已处理问题说明新依据；真实遗漏仍须处理。
+Module 未注册时，将准确注册缺口交给 `agent-runtime-registration`；其他接口或执行问题交给其实际负责人。写计划时不手动拼装 Module，也不换用相似 Reviewer。处理结果按第 4.3 节交付。
 
-### 6.6 Fixed Authoring Instructions
+### 5.5 处理发现并形成新候选
 
-第 0 节和本节以下的文字属于本 Primary Agent Skill 的固定静态指令面。它不授予独立 Module 身份或执行
-权责。它消费两段 registered canonical instruction：
+Reviewer 不编辑计划。作者逐项核对发现所引证据、负责人、范围、目标结果和当前必要性。成立的必修问题在完整新候选中修正；note 默认不实施。对证据错误或越界意见，写明理由并保留原结果，交回独立 Reviewer 按同一依据重新判断，不能自行把 non_pass 改成 passed。
 
-- `soul:communication_authoring_prose`，从父来源 `soul:communication` 选取，范围从
-  `## 语言风格` 起，到 `## 冷读者与语义保护契约` 末尾；
-- `soul:bestpractice_ai_facing_writing`，从父来源 `soul:bestpractice_skill_writing` 选取，
-  范围从 `## 核心原则` 起，到 `### 原则六：按冷读者的理解顺序组织概念` 末尾。
+修订后由代码取得新内容哈希，重新检查并独立审核。多轮保持相同授权目标与完成条件。重开已处理决定须说明新依据、候选变化或原处理失败；真实遗漏和本轮回归仍要处理。
 
-`soul:communication_authoring_prose` 的源文件继续拥有其沟通规则。Skill Management 拥有
-`soul:bestpractice_ai_facing_writing` 作为 authoring Skill 共同规则的语义、适用范围、登记的 exact
-bytes 和变更决定；父来源文件不形成平行 authority。该 selection 或登记字节的变化先作为
-Skill Management change 处理，再通过受影响 Skill 的新 candidate 进入。Manifest 和 candidate hash
-固定当前所选字节，不会静默修改已接受 Skill。
+### 5.6 固定写作规则的来源与用法
 
-在本 Skill 中，这两段文字只约束 `SystemChangePlan` 的沟通、结果闭包、冷读者可执行性和含义
-保持。其中以 Skill writing 为对象的例子只提供 AI-facing 写作方法，不要求计划增加 Skill 字段、
-路径、Schema、资源或 Runtime 产物，也不能扩大 System Change Governance 的 authority。
+第 0 章和本节嵌入的内容是本 Skill 的固定写作指令，不授予独立 Module 身份或执行权限：
+
+- `soul:bestpractice_ai_facing_writing` 从父来源 `soul:bestpractice_skill_writing` 选取核心原则，到“原则六：按陌生读者的理解顺序组织概念”结束，嵌入第 0 章。
+- `soul:communication_authoring_prose` 从父来源 `soul:communication` 选取“语言风格”至“冷读者与语义保护契约”结束，嵌入下方。
+
+`soul:communication` 的源文件管理其沟通规则。Skill Management 管理 `soul:bestpractice_ai_facing_writing` 的语义、适用范围、已登记选择和准确字节；其父来源 `soul:bestpractice_skill_writing` 不另行决定另一套规则。需要改变共同指令时，先由 Skill Management 处理，再形成受影响 Skill 的新候选。Manifest 和内容哈希固定当前选择，不静默修改已接受的 Skill。
+
+这些规则在本 Skill 中只用于计划的沟通、结果完整性、独立可执行性和含义保持。以 Skill 写作为对象的例子提供表达方法，不要求计划增加 Skill 字段、路径、Schema、资源或 Runtime 产物，也不扩大 System Change Governance 的职责。
 
 <!-- embedded-resource:soul:communication_authoring_prose:start -->
 ## 语言风格
@@ -471,6 +392,7 @@ Applicability: `always_on_surface`
 读者是人。写作为阅读优化，不为压缩优化：读者的效率是理解速度，不是字数。机器格式（JSON 字段、代码、表格列）要求紧凑；给人读的散文遵守本节。
 
 - **每句话有完整的主语和谓语**。电报体、名词短语堆叠、自造行话动词都算病句。"方向判断挂周期叙事"这种写法要求读者自己解压；应写成"方向判断什么时候允许修改，取决于周期叙事有没有触发登记的阈值"。
+- **中文正文优先使用简单句**。先写清“谁做什么”，一句话表达一个主要动作或判断。不同事项、长定语和多层条件应分句说明。拆句须保留条件、例外、职责和因果关系，不能为缩短句子删内容，也不能把“只有……才……”改成“如果……就……”。字段、枚举、表格和代码按实际需要保留结构。
 - **括号最多一层，只放次要补充**。条件、结论、出处这类主干信息写进正句。括号强迫读者把主句挂起、读完插入语再接回来；主句十五个字、括号六十个字，是典型病句。
 - **散文里禁用符号连接词**：斜杠串、加号串、箭头链、等号都属于笔记压缩符号，不是给人读的语言。用"和""或""先……然后……""也就是说"把关系说出来。上一节的破折号禁令与本条同族。
 - **句子要有节奏**。重点句配过渡句，长短错落；每句都满载，等于全文没有重点。允许一句话只说一件小事。

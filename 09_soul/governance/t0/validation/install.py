@@ -4,20 +4,26 @@ This is a filesystem installation, not release admission or project bootstrap.
 Only trusted local source checkouts are supported: existing validators may load
 the package's registered Python adapters. Invalid packages remain inspectable.
 """
+
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 import hashlib
 import importlib.util
 import json
 from pathlib import Path
 import sys
+import tempfile
+from types import MappingProxyType
+from typing import Mapping
 
 
 def _load(stem):
     name = f"{__name__}_{stem}"
-    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(stem + ".py"))
+    spec = importlib.util.spec_from_file_location(
+        name, Path(__file__).with_name(stem + ".py")
+    )
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
@@ -44,7 +50,9 @@ def _package_files(root):
         if path.is_file():
             paths.add(relative.as_posix())
         elif not path.is_dir():
-            raise ValueError(f"package member is not a regular file or directory: {relative}")
+            raise ValueError(
+                f"package member is not a regular file or directory: {relative}"
+            )
     return paths
 
 
@@ -61,23 +69,24 @@ def _check_update_targets(target: Path, paths) -> None:
                 raise ValueError(f"copy target parent is not a directory: {relative}")
 
 
-def install_governance(source_root: Path, target_root: Path, *, update: bool = False) -> dict:
-    """Copy the captured package, declared dependencies and projections.
+@dataclass(frozen=True)
+class PreparedGovernanceInstall:
+    """Exact in-process file inputs; contains no Runtime or project admission."""
 
-    source_root supplies trusted local Portable files and their existing manifests.
-    target_root must be new by default; update=True requires an existing directory.
-    Update replaces only selected Portable files, preserves host entry/configuration
-    files, and uses the existing Skill projector to retain registered local addenda.
-    Selected target paths are checked before overwrite; individual file replacement
-    is atomic, but a later failure may leave a partially updated installation.
-    Fix the reported problem and repeat with the same source to finish copying.
+    source_root: Path
+    target_root: Path
+    update: bool
+    payloads: Mapping[str, bytes]
+    source_sha256: str
+    t0_count: int
+    skill_count: int
+    binding_guard: Mapping[str, bytes | None]
 
-    Returns the existing installation/check report. file_count counts selected copy
-    and projection paths, excluding preserved host entries during update. Raises
-    ValueError or OSError for invalid inputs, paths, copying or projection failures.
-    Never repairs manifests, deletes stale files, registers Runtime objects or
-    accesses a database/provider. Package check failures remain visible in the report.
-    """
+
+def prepare_governance_install(
+    source_root: Path, target_root: Path, *, update: bool = False
+) -> PreparedGovernanceInstall:
+    """Capture and validate source and target-local addenda without writing files."""
     source = Path(source_root).resolve()
     target = Path(target_root)
     if update:
@@ -92,13 +101,14 @@ def install_governance(source_root: Path, target_root: Path, *, update: bool = F
         raise ValueError("target must not modify the source package")
 
     manifest_bytes = {
-        p.as_posix(): t0._resolve_without_symlink_escape(source, p.as_posix()).read_bytes()
+        p.as_posix(): t0._resolve_without_symlink_escape(
+            source, p.as_posix()
+        ).read_bytes()
         for p in MANIFESTS
     }
     tm = t0.load_governance_t0_manifest(source)
     sm = skills.load_governance_skill_manifest(source)
     projections = [(row.source, row.target) for row in tm.portable_t0_contracts]
-    skill_targets = set()
     dependencies = {r.source for r in sm.instruction_resources}
     for skill in sm.portable_governance_skills:
         for identity in skill.required_soul_resource_ids:
@@ -106,7 +116,6 @@ def install_governance(source_root: Path, target_root: Path, *, update: bool = F
         for item in skill.package_files:
             dependencies.add(item.source)
             projections.extend((item.source, p.target) for p in item.projections)
-            skill_targets.update(p.target for p in item.projections)
     dependencies.update(row.source for row in tm.portable_t0_contracts)
     for row in tm.artifact_contracts:
         dependencies.update((row.source, row.adapter))
@@ -125,21 +134,71 @@ def install_governance(source_root: Path, target_root: Path, *, update: bool = F
     ):
         raise ValueError("source changed while preparing installation")
 
+    # Validators consume captured bytes, so an A->B->A source change cannot
+    # bind B's validation or projections to A's installation payloads.
+    with tempfile.TemporaryDirectory(prefix="portable-source-preflight-") as scratch:
+        frozen = Path(scratch)
+        for relative, body in captured.items():
+            path = frozen / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(body)
+        if (
+            t0.load_governance_t0_manifest(frozen) != tm
+            or skills.load_governance_skill_manifest(frozen) != sm
+        ):
+            raise ValueError("captured manifest differs from discovery inputs")
+        source_report = t0.check_governance_t0_sources(frozen)
+        if source_report.issues:
+            raise ValueError(
+                "Portable T0 source check failed: "
+                + "; ".join(f"{x.code}: {x.path}" for x in source_report.issues)
+            )
+        validated_skills = skills.validate_governance_skill_sources(frozen)
+    prepared_projections, binding_guard = skills.prepare_skill_projection_payloads(
+        validated_skills, target
+    )
+    if _package_files(source) != package_files or any(
+        t0._resolve_without_symlink_escape(source, path).read_bytes() != body
+        for path, body in captured.items()
+    ):
+        raise ValueError("source changed during installation preflight")
+
     payloads = dict(captured)
     for source_path, target_path in projections:
         if target_path in payloads:
             raise ValueError(f"installation paths overlap: {target_path}")
         payloads[target_path] = captured[source_path]
-    routing = next((r.target for r in tm.portable_t0_contracts if r.t0_layer_id == "the_task_routing"), None)
+    payloads.update(prepared_projections)
+    routing = next(
+        (
+            r.target
+            for r in tm.portable_t0_contracts
+            if r.t0_layer_id == "the_task_routing"
+        ),
+        None,
+    )
     entry = "# Portable Governance\n\n先读取 `09_soul/governance/README.md`，按包内规则处理任务。\n"
     if routing:
         entry += f"新任务的工作入口由 `{routing}` 与相应 Skill 说明。\n"
-    orchestration = next((s for s in sm.portable_governance_skills if s.skill_id == ORCHESTRATION_SKILL_ID), None)
+    orchestration = next(
+        (
+            s
+            for s in sm.portable_governance_skills
+            if s.skill_id == ORCHESTRATION_SKILL_ID
+        ),
+        None,
+    )
     if orchestration:
         # Only the package-root SKILL.md is the entry; a nested references/SKILL.md is an ordinary resource.
-        root_skill = (skills.SOURCE_PREFIX / orchestration.skill_id / "SKILL.md").as_posix()
-        hosts = {p.host_id: p.target for f in orchestration.package_files
-                 if f.source == root_skill for p in f.projections}
+        root_skill = (
+            skills.SOURCE_PREFIX / orchestration.skill_id / "SKILL.md"
+        ).as_posix()
+        hosts = {
+            p.host_id: p.target
+            for f in orchestration.package_files
+            if f.source == root_skill
+            for p in f.projections
+        }
         name = orchestration.skill_id
         entry += (
             f"\n直接承接用户完整项目任务的 Primary Agent 按默认编排方法统筹委派："
@@ -151,14 +210,46 @@ def install_governance(source_root: Path, target_root: Path, *, update: bool = F
         payloads["AGENTS.md"] = b"Read and follow CLAUDE.md first.\n"
 
     hashes = {path: hashlib.sha256(body).hexdigest() for path, body in captured.items()}
-    source_hash = hashlib.sha256(json.dumps(hashes, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+    source_hash = hashlib.sha256(
+        json.dumps(
+            hashes, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode()
+    ).hexdigest()
     if update:
         _check_update_targets(target, payloads)
-    else:
-        target.mkdir()  # Fails if another process created the destination; no exist_ok.
+    for relative, expected in binding_guard.items():
+        path = t0._resolve_without_symlink_escape(target, relative)
+        if (path.read_bytes() if path.exists() else None) != expected:
+            raise ValueError("target binding changed before installation: " + relative)
+    return PreparedGovernanceInstall(
+        source,
+        target,
+        update,
+        MappingProxyType(payloads),
+        source_hash,
+        len(tm.portable_t0_contracts),
+        len(sm.portable_governance_skills),
+        MappingProxyType(binding_guard),
+    )
+
+
+def _install_prepared_governance(prepared: PreparedGovernanceInstall) -> dict:
+    """Apply bytes produced by prepare_governance_install, then inspect the target."""
+    target = prepared.target_root
+    update = prepared.update
+    payloads = prepared.payloads
+    source_hash = prepared.source_sha256
+    if target.is_symlink() or (update and not target.is_dir()):
+        raise ValueError("prepared installation target changed")
+    if update:
+        _check_update_targets(target, payloads)
+    for relative, expected in prepared.binding_guard.items():
+        path = t0._resolve_without_symlink_escape(target, relative)
+        if (path.read_bytes() if path.exists() else None) != expected:
+            raise ValueError("target binding changed after preparation: " + relative)
+    if not update:
+        target.mkdir()  # No writes occur until all source, path and binding checks pass.
     for path, body in payloads.items():
-        if update and path in skill_targets:
-            continue  # The existing projector composes target-local addenda below.
         output = t0._resolve_without_symlink_escape(target, path)
         if update:
             skills._write_bytes_atomically(output, body)
@@ -166,12 +257,20 @@ def install_governance(source_root: Path, target_root: Path, *, update: bool = F
             output.parent.mkdir(parents=True, exist_ok=True)
             with output.open("xb") as stream:
                 stream.write(body)
-    if update:
-        skills.apply_governance_skill_release(target)
+    return inspect_governance_install(prepared)
 
+
+def inspect_governance_install(prepared: PreparedGovernanceInstall) -> dict:
+    """Read the actual target after installation or declared project-side updates."""
+    target = prepared.target_root
+    payloads = prepared.payloads
+    source_hash = prepared.source_sha256
     checks = {}
     project_requirements = []
-    for label, check in (("t0", t0.check_governance_t0_release), ("skill", skills.check_governance_skill_release)):
+    for label, check in (
+        ("t0", t0.check_governance_t0_release),
+        ("skill", skills.check_governance_skill_release),
+    ):
         try:
             result = check(target)
             issues = []
@@ -184,12 +283,42 @@ def install_governance(source_root: Path, target_root: Path, *, update: bool = F
         except (OSError, ValueError) as exc:
             checks[label] = {"passed": False, "error": str(exc)}
     return {
-        "installed": True, "target_root": str(target), "source_sha256": source_hash,
-        "file_count": len(payloads), "t0_count": len(tm.portable_t0_contracts),
-        "skill_count": len(sm.portable_governance_skills), "checks": checks,
+        "installed": True,
+        "target_root": str(target),
+        "source_sha256": source_hash,
+        "file_count": len(payloads),
+        "t0_count": prepared.t0_count,
+        "skill_count": prepared.skill_count,
+        "checks": checks,
         "package_checks_passed": all(c["passed"] for c in checks.values()),
         "project_requirements": project_requirements,
     }
+
+
+def install_governance(
+    source_root: Path, target_root: Path, *, update: bool = False
+) -> dict:
+    """Copy the captured package, declared dependencies and projections.
+
+    source_root supplies trusted local Portable files and their existing manifests.
+    target_root must be new by default; update=True requires an existing directory.
+    Update replaces only selected Portable files, preserves host entry/configuration
+    files, and uses the existing Skill projector to retain registered local addenda.
+    Source contracts and target-owned addenda are checked before the first write.
+    Individual file replacement is atomic; a later IO failure can still leave a
+    partially updated installation.
+    Fix the reported problem and repeat with the same source to finish copying.
+
+    Returns the existing installation/check report. file_count counts selected copy
+    and projection paths, excluding preserved host entries during update. Raises
+    ValueError or OSError for invalid inputs, paths, copying or projection failures.
+    Never repairs manifests, deletes stale files, registers Runtime objects or
+    accesses a database/provider. Source preflight errors cause no writes; existing
+    target-specific problems remain visible in the post-install report.
+    """
+    return _install_prepared_governance(
+        prepare_governance_install(source_root, target_root, update=update)
+    )
 
 
 def main(argv=None):
@@ -216,15 +345,40 @@ def main(argv=None):
             "  使用同一 source-root 和 target-root 加 --update 重试；不会自动回滚。"
         ),
     )
-    parser.add_argument("--source-root", type=Path, default=Path(__file__).resolve().parents[4], help="包含 09_soul/governance 的目录；省略时使用本脚本所在工作区，不是当前工作目录")
-    parser.add_argument("--target-root", type=Path, required=True, help="目标目录；默认须不存在且父目录存在，--update 时须为已有目录")
-    parser.add_argument("--update", action="store_true", help="覆盖选定 Portable 文件，保留宿主入口和配置；不删除旧文件")
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        default=Path(__file__).resolve().parents[4],
+        help="包含 09_soul/governance 的目录；省略时使用本脚本所在工作区，不是当前工作目录",
+    )
+    parser.add_argument(
+        "--target-root",
+        type=Path,
+        required=True,
+        help="目标目录；默认须不存在且父目录存在，--update 时须为已有目录",
+    )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="覆盖选定 Portable 文件，保留宿主入口和配置；不删除旧文件",
+    )
     args = parser.parse_args(argv)
     try:
-        report = install_governance(args.source_root, args.target_root, update=args.update)
+        report = install_governance(
+            args.source_root, args.target_root, update=args.update
+        )
     except (OSError, ValueError, KeyError) as exc:
-        print(json.dumps({"installed": False, "target_root": str(args.target_root), "error": str(exc),
-                          "message": "复制未完成；目标可能已部分写入，保留供诊断。修正问题后可用同一来源重试，不自动删除或回滚。"}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "installed": False,
+                    "target_root": str(args.target_root),
+                    "error": str(exc),
+                    "message": "复制未完成；目标可能已部分写入，保留供诊断。修正问题后可用同一来源重试，不自动删除或回滚。",
+                },
+                ensure_ascii=False,
+            )
+        )
         return 2
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["package_checks_passed"] else 1

@@ -34,7 +34,7 @@
         "start": "## 语言风格",
         "end_exclusive": "## Agent 交互原则"
       },
-      "sha256": "6d97779de1b30a3f23d036e95e8b9911af7c43a45bbb11987b7093ee559c43d3"
+      "sha256": "77387f4f6636cbc89760b6680b74c39562e1cb03c62f53d32850e49ab2c8be9f"
     },
     {
       "resource_id": "soul:bestpractice_ai_facing_writing",
@@ -45,7 +45,7 @@
         "start": "## 核心原则",
         "end_exclusive": "## Skill 文件应该包含什么"
       },
-      "sha256": "0211b797df09edc21b147b461ba075449d6b364ff7b7cafd1ed063b54f7b05cc"
+      "sha256": "d4578bb503613c8a4235ea99e404381d2e8cb08dce4a7ad908b3a05088827d9f"
     },
     {
       "resource_id": "soul:bestpractice_skill_writing",
@@ -56,7 +56,7 @@
         "start": null,
         "end_exclusive": null
       },
-      "sha256": "2f3c83d9f1a87e5947b9e89999a18fe531d5318bb7244e715f39021f22904314"
+      "sha256": "d7095430b92c4112f5225ce93ad27cd1b3cb42bf277fc6958f96679e211f8efa"
     },
     {
       "resource_id": "t0:review_contract_universal_review_style",
@@ -89,7 +89,7 @@
         "start": "<!-- design-layer-semantics:start -->",
         "end_exclusive": "<!-- design-layer-semantics:end -->"
       },
-      "sha256": "01719d22805b88401529a52f867e15e7a19282821d4f0512adebfc9817c61ecf"
+      "sha256": "9f7260e1f2d049fb507bbb369def66ee0ce9ecdb41f031e65e5c903e46fbe714"
     },
     {
       "resource_id": "t0:design_contract_review_checklist",
@@ -100,7 +100,7 @@
         "start": null,
         "end_exclusive": null
       },
-      "sha256": "1ae3b53ff4a6767b88c2fed56f7eb3846cf1f21f33b4817fe95cc593d202809d"
+      "sha256": "6b762d58e4c613f4ba0f6f423cfc2a50bc6bddf165d85422e6ae077ea9a2b89c"
     },
     {
       "resource_id": "t0:skill_authority_input_guard",
@@ -111,7 +111,7 @@
         "start": "<!-- skill-authority-input-guard:start -->",
         "end_exclusive": "<!-- skill-authority-input-guard:end -->"
       },
-      "sha256": "6fc33461de57721fa19a2dac237a5336b2118267291bdde412aadfd5a14e0494"
+      "sha256": "1608806b8330c044f173c7ed990e800b5018e65ffa340941c2a76c5573cdde83"
     },
     {
       "resource_id": "t0:skill_candidate_review_checklist",
@@ -122,7 +122,7 @@
         "start": null,
         "end_exclusive": null
       },
-      "sha256": "686f48f083c658e83e526e7e36bd3aaf40a22883ce54f6b2a16c08c025268e42"
+      "sha256": "2bf3caff884cfd2948a2ad3f006ce7f87e1114cb90a1a88f9854331d6209f417"
     },
     {
       "resource_id": "t0:skill_author_self_check",
@@ -210,7 +210,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-task-routing/SKILL.md",
-          "sha256": "22a162f38d7cc5b99f2859e9a74fd3ff7ae503059186747cecbdb3664afff81a",
+          "sha256": "a14766047a5410d232a4692ff041f8d26bb46d021769772a3602161ef1eaebcc",
           "embedded_resource_ids": [],
           "projections": [
             {
@@ -248,7 +248,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-system-change/SKILL.md",
-          "sha256": "89e416a19a4787fc16bed4b1190943b5e4b6870cfb493bedecf18cbfe0972daa",
+          "sha256": "34a66d5d323d525ea9b486eeaa91de1c9f3430f7bc26f0a8db2d62c9426f7e62",
           "embedded_resource_ids": [
             "soul:communication_authoring_prose",
             "soul:bestpractice_ai_facing_writing",
@@ -374,7 +374,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-design-authoring/SKILL.md",
-          "sha256": "d663609b4976bfa747257688f2228d57eaa4c8959da775dec77b7d2f40510a4f",
+          "sha256": "64ffb1aa5255fd6d3c21e4253f4503684cc7251707ec78cbe838ece7cb638834",
           "embedded_resource_ids": [
             "soul:bestpractice_ai_facing_writing",
             "t0:design_layer_semantics",
@@ -405,7 +405,7 @@
         },
         {
           "source": "09_soul/governance/skills/the-design-authoring/runtime_modules/design_contract_reviewer/prompt.md",
-          "sha256": "9adf43a8330e3a615e772b5c55e0d8b37759053d93b0e7ae6a05b24e82200012",
+          "sha256": "9d1689cb509247ccd48cba8b90c85e6a09ae9d9e8bf2b6a739d56f05912ce7fa",
           "embedded_resource_ids": [
             "t0:review_contract_universal_review_style",
             "t0:design_contract_review_checklist"
@@ -533,7 +533,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-skill-authoring/SKILL.md",
-          "sha256": "e6a609698f69e7c7a732b78a7b022d4a3371d75e6f8f29f1bfbe660e8433e934",
+          "sha256": "63fd744ceeda9facdac0adf60f747d9d94cd5cf901de41e84620700689fd0a48",
           "embedded_resource_ids": [
             "soul:bestpractice_ai_facing_writing",
             "t0:skill_authority_input_guard",
@@ -564,7 +564,7 @@
         },
         {
           "source": "09_soul/governance/skills/the-skill-authoring/runtime_modules/skill_candidate_reviewer/prompt.md",
-          "sha256": "d827df2873a2a3330d607e43e81384a87d92d8c6a8ec081c5cdb2483a3f693b8",
+          "sha256": "6418e8ec6a4e8b78a0acd08582050cd05f69ca48bccfa8d2dfd9c238a8d98d41",
           "embedded_resource_ids": [
             "t0:review_contract_universal_review_style",
             "t0:skill_candidate_review_checklist"
@@ -654,7 +654,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/the-review-authoring/SKILL.md",
-          "sha256": "7888dceb9b7ad6ccc7eb39d634e797f9656b13d1011f19b412329f9af75d5c6e",
+          "sha256": "ba6088f69a92a2b9b95c233053b18ae269e1140857095e9892e465119e54fd88",
           "embedded_resource_ids": [
             "soul:bestpractice_ai_facing_writing",
             "t0:skill_author_self_check",
@@ -777,7 +777,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/engineering-code-design/SKILL.md",
-          "sha256": "943bf2dac2d288d39213ef103660838ee3d3e79cfe4a473b54c367f38df80b5c",
+          "sha256": "1a3d51f9939a6b3ceacc9938b1a9cc76be12f44dea262592869b0840905242c4",
           "embedded_resource_ids": [
             "soul:bestpractice_ai_facing_writing",
             "t0:engineering_authority_input_guard",
@@ -824,7 +824,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/engineering-change-review/SKILL.md",
-          "sha256": "94d641d907bf73a37c412ea3c2f2fc707c864a6b41f8f9c5fe537378a90003aa",
+          "sha256": "945919f674e0ab041cbfecae565d856763a395a9e0197018c570a1170f1dc91c",
           "embedded_resource_ids": [
             "t0:review_contract_universal_review_style"
           ],
@@ -944,7 +944,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/experiment-authoring/SKILL.md",
-          "sha256": "9659fbd2a8bc079d6dbbf3c35308a7e6cc41ee184f574754dc18c11e4d68a5c3",
+          "sha256": "c4111f02a89fa3c48fd9c6a10213a8ed05aaf6b9e184989bd9f2be0e0f14dcf2",
           "embedded_resource_ids": [
             "soul:bestpractice_ai_facing_writing",
             "t0:skill_author_self_check",
@@ -963,7 +963,7 @@
         },
         {
           "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/module_registration.json",
-          "sha256": "e40c6771d1014c057db7ee9d9b82c78c720bb003c7af84e1f34ef67eb2ee6ba2",
+          "sha256": "a159a2fbef55ea2f0b769ace58b40c69b2eb8a48628543b68c0af729730c57c0",
           "embedded_resource_ids": [],
           "projections": [
             {
@@ -988,7 +988,7 @@
         },
         {
           "source": "09_soul/governance/skills/experiment-authoring/runtime_modules/experiment_reviewer/schemas/input.schema.json",
-          "sha256": "53294d0d190b095d14f3453139d78519f8da2218d46e8e3a90b9df378a10db56",
+          "sha256": "e3e8608f2383bbc918323f42008415fd0daa002150f37b28e4345d60dae124d7",
           "embedded_resource_ids": [],
           "projections": [
             {
@@ -1065,7 +1065,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/project-documentation-authoring/SKILL.md",
-          "sha256": "90d38524c18d950b8921b51f29d4c7beb704c835c0f8bfc596cc2c2680210c2a",
+          "sha256": "36241d238deacc79afc554e73fd26bfa2d2bd5b1f4de3497821b62e89e8ca32b",
           "embedded_resource_ids": [
             "soul:bestpractice_ai_facing_writing",
             "t0:skill_author_self_check",
@@ -1106,7 +1106,7 @@
         },
         {
           "source": "09_soul/governance/skills/project-documentation-authoring/examples/meta_de_technical.md",
-          "sha256": "6a0a7a4e6d38e02a904b1e8aadc5ce03f66ea674c96f5416e65795aecf5681d2",
+          "sha256": "8f39ab95c1d798a9b4b43f16c47f1bbc05c74d82aa9ee67d9df0358bd0c744d9",
           "embedded_resource_ids": [],
           "projections": [
             {
@@ -1294,7 +1294,7 @@
       "package_files": [
         {
           "source": "09_soul/governance/skills/agent-work-coordination/SKILL.md",
-          "sha256": "f5e009de4ed2f332323f34d8d6c7c2c6e287080e30072dce387354ac8e61ad03",
+          "sha256": "e156191dc1bbea7fda0f02c33bf6edbc65883bc20b6dd36426c81c8e63c3bce9",
           "embedded_resource_ids": [],
           "projections": [
             {

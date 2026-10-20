@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "schema:experiment_reviewer_input@v1",
+  "$id": "schema:experiment_reviewer_input@v3",
   "title": "Experiment Reviewer Input",
   "$defs": {
     "document": {
@@ -60,7 +60,7 @@
         "sha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
-          "const": "8f07fdccbfd045b7a1487162ce3691e0c16b99ee2b636849887c764309bc4d10"
+          "const": "a3722f72b97a409b430c065c41cede10c929c75edc5b9d5bffcf2839dde26e7a"
         }
       },
       "required": [

@@ -472,3 +472,99 @@ def test_cli_rejects_the_retired_executor_argument(candidate, tmp_path, capsys):
         review.main(["--candidate", str(candidate), "--design", str(DESIGN), "--root", str(tmp_path),
                      "--executor", "module:function"])
     assert error.value.code == 2 and "--executor" in capsys.readouterr().err
+
+
+@pytest.mark.deterministic
+def test_experiment_fixture_and_schema_bind_exact_current_authority():
+    authority = (ROOT / "09_soul/governance/t0/the_agent_experiment_design.md").read_bytes()
+    schema = json.loads((MODULE / "schemas/input.schema.json").read_text())
+    assert DESIGN.read_bytes() == authority
+    assert schema["$defs"]["governing_document"]["properties"]["sha256"]["const"] == hashlib.sha256(authority).hexdigest()
+
+
+def _published_fixed_records():
+    from agent_runtime import RuntimeReleaseBundle
+
+    return RuntimeReleaseBundle.from_dict(json.loads((FIXTURES / "published_fixed_records.json").read_text()))
+
+
+def _current_reviewer_source():
+    from agent_runtime.registry import load_reviewer_registration
+
+    return load_reviewer_registration(ROOT, skill_id="experiment-authoring", module_id="experiment_reviewer")
+
+
+@pytest.mark.deterministic
+def test_revised_input_asset_coexists_with_published_fixed_records():
+    from dataclasses import fields
+    from agent_runtime import ModuleReviewer, RuntimeReleaseRegistry, RuntimeReleaseBundle
+
+    published = _published_fixed_records()
+    legacy = next(row for row in published.schema_assets if row.release_ref == "schema:experiment_reviewer_input@v1")
+    output = next(row for row in published.schema_assets if row.release_ref == "schema:experiment_reviewer_output@v1")
+    assert legacy.schema_sha256 == "a3f4c6845a21124b962e255ee66eb2382b51769c05afd47926ae6a982745c758"
+    assert output.schema_sha256 == "b8e1019191775f6e2fae100151692e696b67760ce29e11eff1f06872c0f1a42a"
+    registry = RuntimeReleaseRegistry()
+    registry.register_bundle(published)
+    source = _current_reviewer_source()
+    exported = ModuleReviewer(source).export(module_version="schema_revision_test")
+    registry.register_bundle(exported.origin_bundle)
+    assert source.input_schema_ref == exported.module_release.input_schema_ref == "schema:experiment_reviewer_input@v3"
+    revised = next(row for row in exported.origin_bundle.schema_assets if row.release_ref == source.input_schema_ref)
+    assert registry.get_schema_asset(revised.release_ref, revised.schema_sha256).schema_document() == json.loads(source.input_schema_document)
+    assert registry.get_schema_asset(legacy.release_ref, legacy.schema_sha256) == legacy
+    assert registry.get_schema_asset(output.release_ref, output.schema_sha256) == output
+    after = registry.snapshot()
+    for field in fields(RuntimeReleaseBundle):
+        by_ref = {row.release_ref: row for row in getattr(after, field.name)}
+        for row in getattr(published, field.name):
+            assert by_ref[row.release_ref] == row
+
+
+@pytest.mark.deterministic
+def test_changed_owner_constraint_cannot_reuse_published_input_ref():
+    from dataclasses import replace
+    from agent_runtime import ModuleReviewer, RuntimeReleaseRegistry
+
+    registry = RuntimeReleaseRegistry()
+    registry.register_bundle(_published_fixed_records())
+    before = registry.snapshot()
+    source = _current_reviewer_source()
+    bad_schema = json.loads(source.input_schema_document)
+    bad_schema["$id"] = "schema:experiment_reviewer_input@v1"
+    bad_source = replace(source, input_schema_ref=bad_schema["$id"], input_schema_document=json.dumps(bad_schema))
+    exported = ModuleReviewer(bad_source).export(module_version="schema_collision_test")
+    with pytest.raises(ValueError, match="Schema Asset release_ref collision: schema:experiment_reviewer_input@v1"):
+        registry.register_bundle(exported.origin_bundle)
+    assert registry.snapshot() == before
+
+
+@pytest.mark.deterministic
+def test_input_schema_identity_must_match_registration_ref():
+    from dataclasses import replace
+    from agent_runtime import ModuleReviewer
+
+    source = _current_reviewer_source()
+    mismatched_schema = json.loads(source.input_schema_document)
+    mismatched_schema["$id"] = "schema:experiment_reviewer_input@v1"
+    mismatched_source = replace(source, input_schema_document=json.dumps(mismatched_schema))
+    with pytest.raises(ValueError, match=r"\$id.*ref"):
+        ModuleReviewer(mismatched_source).export(module_version="schema_mismatch_test")
+
+
+@pytest.mark.deterministic
+def test_input_asset_revision_keeps_the_public_payload_format(candidate):
+    from jsonschema import Draft202012Validator
+    from runtime_review import reviewer_for_input
+
+    source = _current_reviewer_source()
+    schema = json.loads(source.input_schema_document)
+    payload = review.build_input(candidate, "验证原任务输入", "只修复资产引用", DESIGN)
+    assert source.input_schema_ref == schema["$id"] == "schema:experiment_reviewer_input@v3"
+    assert payload["schema_version"] == schema["properties"]["schema_version"]["const"] == "experiment_reviewer_input_v1"
+    review.validate_input(payload)
+    assert reviewer_for_input(payload) == "experiment_reviewer"
+    legacy = next(row for row in _published_fixed_records().schema_assets if row.release_ref == "schema:experiment_reviewer_input@v1")
+    with pytest.raises(ValidationError) as caught:
+        Draft202012Validator(legacy.schema_document()).validate(payload)
+    assert list(caught.value.path) == ["governing_contract", "sha256"]

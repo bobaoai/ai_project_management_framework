@@ -38,7 +38,7 @@ python -B 09_soul/governance/t0/validation/install.py \
 ```
 
 源目录包含 `09_soul/governance/` 及 manifest 声明的 Soul 依赖。目标必须尚不存在，父目录须已存在。
-命令复制源字节和依赖，按现有 manifest 生成 `designDoc` 与 Skill 投影，并提供 CLAUDE/AGENTS 入口。
+命令先校验来源与声明依赖，再复制准确字节，按现有 manifest 生成 `designDoc` 与 Skill 投影，并提供 CLAUDE/AGENTS 入口。
 AGENTS.md 指向 CLAUDE.md。
 它不修改来源、补写 manifest hash、修复共享指令、覆盖已有目录或复制业务项目的 Charter、代码、凭据。
 
@@ -46,8 +46,8 @@ AGENTS.md 指向 CLAUDE.md。
 证明本次捕获的相对路径及文件内容一致，不表示正式发布或审核批准。相同源可以装入多个独立目录；
 安装后继续修改来源，不会改变已有副本。Python、Runtime 执行配置等工具环境单独提供，不由该命令注册。
 
-退出 `0` 表示复制和 Portable 检查通过；`1` 表示复制完成但包有问题；`2` 表示结构、路径或 IO 失败。
-失败时目标若已创建会保留，供检查和恢复，不自动删除。`installed: true` 只表示文件已写入，不能替代
+退出 `0` 表示复制和 Portable 检查通过；`1` 表示复制完成但目标回读仍有问题；`2` 表示来源、路径或 IO 失败。
+来源结构、身份、引用、hash 或资源闭包不合格时，命令在首次写入前拒绝。目标若因实际 IO 失败已部分写入，会保留供检查和恢复，不自动删除。`installed: true` 只表示文件已写入，不能替代
 `package_checks_passed`。项目尚未提供 Charter 时单列为项目后续要求，不把它当成 Portable 文件生成。
 
 ## 更新已有目录
@@ -65,7 +65,7 @@ python -B 09_soul/governance/t0/validation/install.py \
 因此更新不会补入新安装才有的默认编排导航；已有项目需要这段入口时，由项目一次性写入自己的入口文件。
 原有 `--apply` 只刷新已安装源的投影；跨目录复制更新使用这里的安装命令。
 
-更新前检查声明写入路径；复制中的 I/O 或投影失败可能留下部分更新，返回 `2` 并保留问题供诊断。
+更新前校验准确源包、声明写入路径和目标本地附加说明，并捕获最终待写字节。来源或本地 binding 不合格时，目标保持原状。复制中的 I/O 失败仍可能留下部分更新，返回 `2` 并保留问题供诊断。
 修正明确的来源或目标问题后，用同一来源重新运行即可补齐。复制完成但包检查未通过返回 `1`；
 只有复制和检查都通过才返回 `0`。旧文件不自动删除，清单摘要不自动修复，重复更新保持相同内容。
 
@@ -164,7 +164,7 @@ applies and validates host projections whose `first_authority_ref` now resolves.
 的执行配置属于各自的实际依赖；缺少时如实报告，不把“文件已部署”说成“全部工作已经可执行”。
 具体入口见 [Task Routing](t0/the_task_routing.md)，本说明不另立一套工作规则。
 
-入口确定后的执行分工见 Task Routing §6.4：Primary Agent 负责目标、沟通、协调与验收；
+入口确定后的执行分工见 Task Routing §5.4：Primary Agent 负责目标、沟通、协调与验收；
 执行方式按用户授权和当前宿主能力选择，不由安装的 Skill 默认指定外部执行宿主。
 
 Universal leakage guards reject user paths, temporary Design paths,
@@ -179,12 +179,16 @@ does not hard-code one consuming project's name.
 
 ```sh
 python -B 09_soul/governance/t0/validation/artifact_contracts/design_artifact_contract.py \
-  --layer T0 designDoc/the_design_doc_management.md
+  --layer T0 --project-root . designDoc/the_design_doc_management.md
 ```
 
 把文件路径换成本次待检查文稿；`--layer` 支持 `Charter`、`T0`、`T1`、`T2`，同层文件可一次传入多个。
 加 `--json` 返回机器可读结果，`--help` 查看完整参数。命令只读文件；全部结构检查通过退出 `0`，
-检查失败退出 `1`，参数错误退出 `2`。它直接复用 DDM 的结构规则，不代表独立语义审核已经通过。
+检查失败退出 `1`，参数错误退出 `2`。当前规则为 `design_artifact_contract_v5`，只接受 DDM 模块库中的正式标题及其层级、顺序、择一组合和非空规则；编号从 1 开始。旧目录不会按首章编号自动转入兼容规则。
+
+候选必须提供当前 DDM 的身份字段；检查结果记录 `contract_version`、准确 `contract_sha256`、`references_checked` 和检查范围。`--project-root` 指定引用的项目根，正文相对链接按 `canonical_owner` 所在目录解析。未传此参数时只检查结构和身份，`references_checked` 为 false。引用检查覆盖明确的本地 Markdown 文件链接与身份引用，拒绝缺失、越界或不支持的本地形式；外部 URL 不访问，章节 fragment 不在文件存在性检查范围内。其他项目可通过 API 提供自己的明确 resolver。
+
+Design review builder 使用相同候选规则。governing DDM 和其他背景保留完整原文，旧 Design、嵌套 Skill metadata 或无 frontmatter 的说明可以作为背景，不因此被要求迁移。工具结果只证明其声明的确定性检查，语义充分性仍由独立 Reviewer 判断。
 
 ## 独立审核的执行
 
@@ -247,6 +251,12 @@ Portable DDM 不导入项目配置或发行 Runtime release；数据库、Profil
 注册 Module、设置 active pointer 或覆盖已有结果文件。`--help` 列出当前参数。
 
 ## Skill 检查与独立审核
+
+当前 Skill 结构固定为 Task Summary、Intended Outcomes、Boundaries、Inputs and Completion、Method。第 4 章分别定义 Inputs、Output 和 Completion Contract。默认检查直接使用随包 `skill_artifact_contract.json` 的当前规则，旧布局会报错。
+
+候选资源在另一个工作区时，用 `--project-root path/to/workspace` 指定 manifest 和资源根；它与 Runtime 的 `--root` 用途不同。API 的 `contract_path` 和 CLI 的 `--contract` 只定位当前合同文件，便于读取包清单声明的来源，不提供旧结构兼容。返回结果记录 `contract_version`，检查报告另含合同文件的 `artifact_contract_sha256`。未知版本、结构或资源错误直接失败。
+
+发布检查使用 T0 manifest 的合同绑定检查全部根 `SKILL.md`。检查和独立审核均绑定准确候选及资源；采用、安装与 Runtime 注册分别报告实际结果。
 
 随包 `t0/validation/artifact_contracts/skill_review.py` 使用现有 Skill schema、资源选择器和
 `skill_candidate_reviewer` 输入输出合同。先检查候选，并按需生成临时自检表：

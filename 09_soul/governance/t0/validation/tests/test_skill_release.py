@@ -4,10 +4,15 @@ import hashlib
 import importlib.util
 import json
 import sys
+import shutil
 from pathlib import Path, PurePosixPath
 
 import pytest
+from portable_source_fixtures import valid_t0 as _valid_t0, add_design_contract
 from jsonschema import Draft202012Validator, ValidationError
+
+
+pytestmark = pytest.mark.deterministic
 
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
@@ -29,13 +34,21 @@ def _skill_payload(
     return (
         "---\n"
         f"name: {name}\n"
-        "skill_class: primary_agent_development\n"
-        f"primary_agent_entry_role: {role}\n"
-        "primary_agent_entry_subject: engineering_change_candidate\n"
-        "first_authority_ref: designDoc/the_example.md\n"
         "description: Designs one example change.\n"
-        "---\n\n"
-        "# Engineering Example\n"
+        "metadata:\n"
+        "  skill_class: primary_agent_development\n"
+        f"  primary_agent_entry_role: {role}\n"
+        "  primary_agent_entry_subject: engineering_change_candidate\n"
+        "  first_authority_ref: designDoc/the_example.md\n"
+        "---\n\n# Engineering Example\n\n"
+        "## 1. Task Summary\n\nPrepare an example.\n\n"
+        "## 2. Intended Outcomes\n\nDeliver a usable example.\n\n"
+        "## 3. Boundaries\n\nUse the declared authority.\n\n"
+        "## 4. Inputs and Completion\n\nUse the following contract.\n\n"
+        "### 4.1 Inputs\n\nRead the request.\n\n"
+        "### 4.2 Output\n\nReturn the checked example.\n\n"
+        "### 4.3 Completion Contract\n\nThe result meets the agreed criteria.\n\n"
+        "## 5. Method\n\nPrepare and check the result.\n"
     ).encode("utf-8")
 
 
@@ -59,7 +72,7 @@ def _write_fixture_project(
     authority.write_text("# Example T0\n", encoding="utf-8")
     t0_source = root / "09_soul/governance/t0/the_example.md"
     t0_source.parent.mkdir(parents=True, exist_ok=True)
-    t0_payload = b"# Example T0\n"
+    t0_payload = _valid_t0("the_example", b"# Example T0\n")
     t0_source.write_bytes(t0_payload)
     (root / "designDoc/the_charter.md").write_text(
         "# Project Charter\n",
@@ -82,6 +95,24 @@ def _write_fixture_project(
         ],
         "artifact_contracts": [],
     }
+    management = "09_soul/governance/t0/the_skill_management.md"
+    (root / management).write_bytes(_valid_t0("the_skill_management", b"# Skill Management\n"))
+    (root / "designDoc/the_skill_management.md").write_bytes(_valid_t0("the_skill_management", b"# Skill Management\n"))
+    t0_manifest["portable_t0_contracts"].append({
+        "t0_layer_id": "the_skill_management", "source": management,
+        "target": "designDoc/the_skill_management.md", "sha256": _hash((root / management).read_bytes()),
+    })
+    prefix = "09_soul/governance/t0/validation/artifact_contracts/"
+    for filename in ("skill_artifact_contract.json", "skill_artifact_contract.py"):
+        dest = root / prefix / filename
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPO_ROOT / prefix / filename, dest)
+    t0_manifest["artifact_contracts"] = [{
+        "artifact_contract_id": "skill_definition_artifact_contract", "owner_t0_layer_id": "the_skill_management",
+        "source": prefix + "skill_artifact_contract.json", "source_sha256": _hash((root / prefix / "skill_artifact_contract.json").read_bytes()),
+        "adapter": prefix + "skill_artifact_contract.py", "adapter_sha256": _hash((root / prefix / "skill_artifact_contract.py").read_bytes()),
+    }]
+    add_design_contract(root, t0_manifest)
     t0_path = root / "09_soul/governance/governance_t0_manifest.json"
     t0_path.parent.mkdir(parents=True, exist_ok=True)
     t0_path.write_text(json.dumps(t0_manifest), encoding="utf-8")
@@ -2579,6 +2610,7 @@ def test_skill_reviewer_slice_projections_are_exact(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.deterministic
 def test_skill_authoring_has_indexed_structure_and_declared_authority() -> None:
     source = (
         REPO_ROOT
@@ -2591,12 +2623,11 @@ def test_skill_authoring_has_indexed_structure_and_declared_authority() -> None:
         if line.startswith("## ") and line[3:4].isdigit()
     ] == [
         "## 0. AI-facing Authoring Rules",
-        "## 1. Task",
-        "## 2. Reader Gain",
-        "## 3. Entry and Exit",
-        "## 4. Execution Contract",
-        "## 5. Boundaries",
-        "## 6. Method",
+        "## 1. Task Summary",
+        "## 2. Intended Outcomes",
+        "## 3. Boundaries",
+        "## 4. Inputs and Completion",
+        "## 5. Method",
     ]
     for subheading in (
         line
@@ -2623,15 +2654,18 @@ def test_skill_authoring_has_indexed_structure_and_declared_authority() -> None:
     assert not any(path.is_file() for path in retired_host_root.rglob("*"))
 
 
+@pytest.mark.deterministic
 def test_skill_management_content_table_matches_skill_artifact_contract() -> None:
     contract = (
         REPO_ROOT / "09_soul/governance/t0/the_skill_management.md"
     ).read_text(encoding="utf-8")
 
     artifact = json.loads((REPO_ROOT / "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.json").read_text())
-    complete_skill = contract.split("### 6.1 ", 1)[1].split("\n### ", 1)[0]
+    headings = [line for line in contract.splitlines() if line.startswith("### ") and line.endswith(" 五个主章节")]
+    assert len(headings) == 1
+    complete_skill = contract.split(headings[0], 1)[1].split("\n### ", 1)[0]
     declared = [line.split("`", 2)[1] for line in complete_skill.splitlines() if line.startswith("| `")]
-    assert declared == [section["heading"] for section in artifact["required_sections"]]
+    assert declared == [f"{section['index']}. {section['heading']}" for section in artifact["required_sections"]] + [f"{section['index']} {section['heading']}" for section in artifact["required_sections"][3]["required_subsections"]]
     assert artifact["owner_t0_layer_id"] == "the_skill_management"
 
 
@@ -3869,3 +3903,90 @@ def test_apply_maps_symlinked_projection_ancestor_to_write_failure(
 
     assert caught.value.code == release.GOVERNANCE_SKILL_PROJECTION_WRITE_FAILED
     assert "symlink" in str(caught.value)
+
+
+@pytest.mark.deterministic
+def test_skill_authoring_structure_template_matches_machine_contract():
+    import re
+
+    source = (REPO_ROOT / "09_soul/governance/skills/the-skill-authoring/SKILL.md").read_text()
+    header = "| 固定章节 |"
+    assert source.count(header) == 1
+    table = source.split(header, 1)[1].split("\n\n", 1)[0]
+    rows = [line.split("|")[1:3] for line in table.splitlines() if line.startswith("| `")]
+    artifact = json.loads((REPO_ROOT / "09_soul/governance/t0/validation/artifact_contracts/skill_artifact_contract.json").read_text())
+    assert [re.findall(r"`([^`]+)`", row[0])[0] for row in rows] == [
+        f"{section['index']}. {section['heading']}" for section in artifact["required_sections"]
+    ]
+    assert [name for name in re.findall(r"`(4\.[123] [^`]+)`", source) if name in {f"{item['index']} {item['heading']}" for item in artifact["required_sections"][3]["required_subsections"]}][:3] == [
+        f"{section['index']} {section['heading']}"
+        for section in artifact["required_sections"][3]["required_subsections"]
+    ]
+
+
+@pytest.mark.parametrize('role', ['routing', 'review', 'operator'])
+def test_all_root_skills_are_checked_without_common_authoring_resource(tmp_path, role):
+    payload = _skill_payload(role=role).replace(b'## 3. Boundaries', b'## 2. Incorrect')
+    manifest_path = _write_fixture_project(tmp_path, source_payload=payload)
+    manifest = _load_fixture_manifest(manifest_path)
+    _fixture_skill_row(manifest)['primary_agent_entry_role'] = role
+    _store_fixture_manifest(manifest_path, manifest)
+    with pytest.raises(release.GovernanceSkillReleaseError, match='Skill violates'):
+        release.check_governance_skill_release(tmp_path)
+
+
+def test_release_uses_current_contract_at_manifest_location(tmp_path):
+    manifest_path = _write_fixture_project(tmp_path)
+    t0_path = tmp_path / release.T0_MANIFEST_RELATIVE_PATH
+    t0 = json.loads(t0_path.read_text())
+    binding = t0['artifact_contracts'][0]
+    original = tmp_path / binding['source']
+    relocated = original.with_name('current_skill_rules.json')
+    original.rename(relocated)
+    binding['source'] = relocated.relative_to(tmp_path).as_posix()
+    binding['source_sha256'] = _hash(relocated.read_bytes())
+    t0_path.write_text(json.dumps(t0))
+    release.apply_governance_skill_release(tmp_path)
+    assert release.check_governance_skill_release(tmp_path).is_clean
+
+
+@pytest.mark.parametrize("relative", [
+    "09_soul/governance/governance_skill_manifest.json",
+    "09_soul/governance/governance_t0_manifest.json",
+    "09_soul/governance/README.md",
+])
+def test_skill_can_reference_canonical_portable_manifest(tmp_path, relative):
+    payload = _skill_payload() + f"\nUse `{relative}` to locate declared resources.\n".encode()
+    _write_fixture_project(tmp_path, source_payload=payload)
+    if relative.endswith("README.md"):
+        (tmp_path / relative).write_text("Package guide.")
+    release.apply_governance_skill_release(tmp_path)
+    assert release.check_governance_skill_release(tmp_path).is_clean
+
+
+@pytest.mark.parametrize("relative", [
+    "09_soul/governance/governance_skill_manifest.json.bak",
+    "09_soul/governance/governance_skill_manifest.json/../private.md",
+    "../09_soul/governance/governance_skill_manifest.json",
+    "/Users/example/09_soul/governance/governance_skill_manifest.json",
+    "09_soul/governance/unknown_manifest.json",
+])
+def test_portable_manifest_reference_does_not_hide_other_paths(tmp_path, relative):
+    payload = _skill_payload() + f"\nUse `{relative}`.\n".encode()
+    _write_fixture_project(tmp_path, source_payload=payload)
+    with pytest.raises(release.GovernanceSkillReleaseError, match="project-local identity"):
+        release.check_governance_skill_release(tmp_path)
+
+
+def test_portable_manifest_reference_requires_real_file_without_symlink(tmp_path):
+    relative = release.MANIFEST_RELATIVE_PATH
+    payload = relative.as_posix().encode()
+    with pytest.raises(release.GovernanceSkillReleaseError, match="does not resolve"):
+        release._without_portable_tool_paths(tmp_path, payload)
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    elsewhere = tmp_path / "elsewhere.json"
+    elsewhere.write_text("{}")
+    path.symlink_to(elsewhere)
+    with pytest.raises(release.GovernanceSkillReleaseError, match="symlink"):
+        release._without_portable_tool_paths(tmp_path, payload)

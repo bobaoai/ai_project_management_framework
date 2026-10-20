@@ -1,323 +1,169 @@
 from __future__ import annotations
-
-import hashlib
-import importlib.util
-import sys
+import hashlib, importlib.util, json, re, sys
 from pathlib import Path
-
 import pytest
 
-
+pytestmark = pytest.mark.deterministic
 REPO_ROOT = Path(__file__).resolve().parents[6]
 MODULE_PATH = (
     REPO_ROOT
     / "09_soul/governance/t0/validation/artifact_contracts/design_artifact_contract.py"
 )
-SPEC = importlib.util.spec_from_file_location(
-    "design_artifact_contract", MODULE_PATH
-)
-assert SPEC is not None and SPEC.loader is not None
+SPEC = importlib.util.spec_from_file_location("design_artifact_contract", MODULE_PATH)
 contract = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = contract
 SPEC.loader.exec_module(contract)
 
 
 def _candidate(
-    layer: str,
-    *,
-    extra_heading: str | None = None,
-    extra_headings: tuple[str, ...] = (),
-    outside_heading: str | None = None,
-) -> bytes:
-    definition = contract.load_contract()["layers"][layer]
-    headings = list(definition["protected_headings"])
-    extensions = list(extra_headings)
-    if extra_heading is not None:
-        extensions.append(extra_heading)
-    insertion_index = headings.index(definition["extension_slot"]["before"])
-    headings[insertion_index:insertion_index] = extensions
-    if outside_heading is not None:
-        headings.insert(1, outside_heading)
-    rows = ["---", f"layer: {definition['layer_value']}", "---", "", "# Candidate", ""]
-    for index, heading in enumerate(headings):
-        rows.append(f"## {index}. {heading}")
-        rows.append("")
-        if heading == "Intent Capsule":
-            rows.extend(("```yaml", f"layer: {definition['layer_value']}", "status: candidate", "```"))
-        else:
-            rows.append(f"Complete meaning for {heading}.")
-        rows.append("")
-    return "\n".join(rows).encode("utf-8")
-
-
-def _candidate_with_review_completion(
-    layer: str,
-    *,
-    trailing_extension: bool = False,
-) -> bytes:
-    extensions = (
-        ("审查与完成", "Later Owner Detail")
-        if trailing_extension
-        else ("审查与完成",)
-    )
-    payload = _candidate(layer, extra_headings=extensions)
-    text = payload.decode("utf-8")
-    heading_line = next(
-        line
-        for line in text.splitlines()
-        if line.endswith(". 审查与完成")
-    )
-    parent_index = heading_line.split(".", 1)[0].removeprefix("## ")
-    subsection_body = "\n\n".join(
-        f"### {parent_index}.{index} {heading}\n\nComplete {heading}."
-        for index, heading in enumerate(
-            ("确定性检查", "语义审查", "表达审查", "完成条件"),
-            start=1,
+    layer, *, extra_heading=None, extra_headings=(), outside_heading=None, headings=None
+):
+    value = "Charter" if layer.lower() == "charter" else layer.upper()
+    if headings is None:
+        opening = (
+            "Constitutional Authority Map"
+            if value == "Charter"
+            else "Primary System Flow"
         )
-    )
-    return text.replace(
-        "Complete meaning for 审查与完成.", subsection_body, 1
-    ).encode("utf-8")
+        headings = [
+            opening,
+            "Intended Outcomes",
+            "Owned System Object",
+            "Authority",
+            "Capability and Operation",
+            "Architecture and Lifecycle",
+            "Public Interface and Effects",
+            "System-wide Invariants",
+            "Peer Boundaries",
+            "Completion, Failure, and Recovery",
+            "Dependencies and Verification",
+            "References",
+        ]
+    headings = list(headings)
+    headings[-1:-1] = [*extra_headings, *([extra_heading] if extra_heading else [])]
+    if outside_heading:
+        headings.insert(1, outside_heading)
+    rows = [
+        "---",
+        f"layer: {value}",
+        "title: Example",
+        "canonical_owner: designDoc/example.md",
+        "owned_system_object: Example decision",
+        "---",
+        "",
+        "# Candidate",
+        "",
+        "The selected capability serves a declared request.",
+    ]
+    for index, heading in enumerate(headings, 1):
+        rows += ["", f"## {index}. {heading}", "", f"Complete meaning for {heading}."]
+    return ("\n".join(rows) + "\n").encode()
 
 
-def _replace_once(payload: bytes, old: str, new: str) -> bytes:
-    text = payload.decode("utf-8")
+def _replace_once(payload, old, new):
+    text = payload.decode()
     assert text.count(old) == 1
-    return text.replace(old, new, 1).encode("utf-8")
+    return text.replace(old, new, 1).encode()
 
 
 @pytest.mark.parametrize("layer", ["charter", "t0", "t1", "t2"])
-def test_each_design_layer_uses_one_code_owned_required_section_contract(
-    layer: str,
-) -> None:
-    payload = _candidate(layer, extra_heading="Owner-specific Detail")
-
+def test_each_layer_uses_current_contract(layer):
+    payload = _candidate(layer)
     result = contract.validate_artifact(payload, layer=layer)
-
     assert result.subject_sha256 == hashlib.sha256(payload).hexdigest()
-    assert result.layer == layer
-    assert "design_required_section_schema" in result.validator_ids
-    assert "design_optional_review_completion_section" not in result.validator_ids
+    assert result.contract_version == "design_artifact_contract_v5"
+    assert (
+        result.contract_sha256
+        == hashlib.sha256(contract.CONTRACT_PATH.read_bytes()).hexdigest()
+    )
+    assert result.layer == layer and not result.references_checked
+    assert result.validation_scope == "structure_and_identity_only"
+    assert "design_modular_section_selection" in result.validator_ids
 
 
 @pytest.mark.parametrize("fence", ["```", "~~~", "````"])
-def test_example_headings_inside_code_fences_are_not_document_sections(fence: str):
+def test_fenced_examples_are_not_sections_or_forbidden_headings(fence):
     payload = _candidate("t0").replace(
         b"Complete meaning for Authority.",
-        ("Complete meaning for Authority.\n\n" + fence + "md\n## 99. Example\n" + fence).encode(),
+        (
+            f"Authority applies to this operation.\n{fence}md\n## 99. User Intent\n## Hidden\n{fence}\n"
+        ).encode(),
     )
     result = contract.validate_artifact(payload, layer="t0")
-    assert "Example" not in result.headings
+    assert "Hidden" not in result.headings and "User Intent" not in result.headings
 
 
-def test_fenced_example_cannot_supply_all_required_headings():
-    payload = b"````md\n" + _candidate("t0") + b"````\n"
-    with pytest.raises(contract.DesignArtifactContractError, match="no numbered"):
-        contract.validate_artifact(payload, layer="t0")
-
-
-def test_optional_subsection_examples_do_not_change_required_subsection_sequence():
-    payload = _candidate_with_review_completion("t0").replace(
-        "Complete 确定性检查.".encode(),
-        "Complete 确定性检查.\n\n```md\n### 99.1 示例\n```".encode(),
+def test_comments_cannot_supply_sections_or_content():
+    payload = _candidate("t0").replace(
+        b"Complete meaning for Authority.", b"<!-- text\n## 55. User Intent\n-->"
     )
-    result = contract.validate_artifact(payload, layer="t0")
-    assert "design_optional_review_completion_section" in result.validator_ids
-
-
-@pytest.mark.parametrize("layer", ["charter", "t0", "t1", "t2"])
-def test_missing_protected_heading_is_rejected(layer: str) -> None:
-    payload = _candidate(layer)
-    heading = contract.load_contract()["layers"][layer]["protected_headings"][2]
-    payload = _replace_once(
-        payload,
-        f"## 2. {heading}",
-        f"## 2. Renamed {heading}",
-    )
-
     with pytest.raises(
-        contract.DesignArtifactContractError,
-        match="must occur exactly once",
-    ) as caught:
-        contract.validate_artifact(payload, layer=layer)
-
-    assert caught.value.code == "DESIGN_REPRESENTATION_INCOMPLETE"
-
-
-@pytest.mark.parametrize("layer", ["charter", "t0", "t1", "t2"])
-def test_layer_in_frontmatter_allows_a_prose_capsule(layer: str) -> None:
-    value = contract.load_contract()["layers"][layer]["layer_value"]
-    payload = _replace_once(
-        _candidate(layer),
-        f"```yaml\nlayer: {value}\nstatus: candidate\n```",
-        "说明本设计的目标、范围与输入输出。",
+        contract.DesignArtifactContractError, match="empty or placeholder"
+    ):
+        contract.validate_artifact(payload, layer="t0")
+    payload = _candidate("t0").replace(
+        b"Complete meaning for Authority.",
+        b"Actual authority.\n<!-- ``` ignored fence -->",
     )
-    result = contract.validate_artifact(payload, layer=layer)
-    assert result.layer == layer
+    assert contract.validate_artifact(payload, layer="t0")
 
 
-def test_capsule_layer_remains_sufficient_without_frontmatter() -> None:
-    payload = _candidate("t0").removeprefix(b"---\nlayer: T0\n---\n\n")
-    assert contract.validate_artifact(payload, layer="t0").layer == "t0"
-
-
-def test_empty_frontmatter_can_use_capsule_layer() -> None:
-    payload = _candidate("t0").replace(b"layer: T0\n", b"", 1)
-    assert contract.validate_artifact(payload, layer="t0").layer == "t0"
+def test_fenced_example_cannot_supply_the_document():
+    with pytest.raises(contract.DesignArtifactContractError):
+        contract.validate_artifact(b"````md\n" + _candidate("t0") + b"````", layer="t0")
 
 
 @pytest.mark.parametrize("value", ['"T0"', "'T0'"])
-def test_quoted_layer_declarations_are_supported(value: str) -> None:
-    payload = _candidate("t0").replace(b"layer: T0", f"layer: {value}".encode())
-    assert contract.validate_artifact(payload, layer="t0").layer == "t0"
-
-
-@pytest.mark.parametrize("location", ["frontmatter", "capsule"])
-def test_conflicting_layer_declaration_is_rejected(location: str) -> None:
-    payload = _candidate("t0")
-    if location == "frontmatter":
-        payload = payload.replace(b"layer: T0", b"layer: T1", 1)
-    else:
-        payload = _replace_once(payload, "```yaml\nlayer: T0", "```yaml\nlayer: T1")
-    with pytest.raises(contract.DesignArtifactContractError, match="conflict"):
-        contract.validate_artifact(payload, layer="t0")
-
-
-@pytest.mark.parametrize("location", ["frontmatter", "capsule"])
-def test_repeated_layer_in_one_location_is_rejected(location: str) -> None:
-    payload = _candidate("t0")
-    if location == "frontmatter":
-        payload = payload.replace(b"layer: T0", b"layer: T0\nlayer: T0", 1)
-    else:
-        payload = _replace_once(payload, "```yaml\nlayer: T0", "```yaml\nlayer: T0\nlayer: T0")
-    with pytest.raises(contract.DesignArtifactContractError, match="repeated"):
-        contract.validate_artifact(payload, layer="t0")
-
-
-def test_missing_layer_is_rejected() -> None:
-    payload = _candidate("t0").replace(b"layer: T0\n", b"")
-    with pytest.raises(contract.DesignArtifactContractError, match="declaration is missing"):
-        contract.validate_artifact(payload, layer="t0")
-
-
-def test_unclosed_frontmatter_is_rejected() -> None:
-    payload = _candidate("t0").replace(b"---\n\n# Candidate", b"\n# Candidate", 1)
-    with pytest.raises(contract.DesignArtifactContractError, match="frontmatter is not closed"):
-        contract.validate_artifact(payload, layer="t0")
-
-
-def test_protected_heading_order_is_rejected() -> None:
-    payload = _candidate("t0")
-    payload = _replace_once(payload, "## 2. User Intent", "## 2. Reader Gain")
-    payload = _replace_once(payload, "## 3. Reader Gain", "## 3. User Intent")
-
-    with pytest.raises(contract.DesignArtifactContractError, match="out of order"):
-        contract.validate_artifact(payload, layer="t0")
-
-
-def test_empty_protected_section_is_rejected() -> None:
-    payload = _candidate("t2")
-    payload = _replace_once(
-        payload,
-        "## 2. User Intent\n\nComplete meaning for User Intent.",
-        "## 2. User Intent\n",
+def test_quoted_layer_is_supported(value):
+    assert contract.validate_artifact(
+        _candidate("t0").replace(b"layer: T0", f"layer: {value}".encode()), layer="t0"
     )
 
-    with pytest.raises(
-        contract.DesignArtifactContractError,
-        match="empty or placeholder-only",
-    ):
-        contract.validate_artifact(payload, layer="t2")
 
-
-def test_owner_extension_outside_registered_slot_is_rejected() -> None:
-    payload = _candidate("t1", outside_heading="Unexpected Detail")
-
-    with pytest.raises(
-        contract.DesignArtifactContractError,
-        match="outside its layer-owned slot",
-    ):
-        contract.validate_artifact(payload, layer="t1")
-
-
+@pytest.mark.parametrize("old_heading", ["User Intent", "Reader Gain"])
 @pytest.mark.parametrize("layer", ["charter", "t0", "t1", "t2"])
-def test_optional_review_completion_section_is_validated_when_present(
-    layer: str,
-) -> None:
-    payload = _candidate_with_review_completion(layer)
+def test_retired_outcome_names_are_rejected(layer, old_heading):
+    for payload in [
+        _candidate(layer, extra_heading=old_heading),
+        _candidate(layer).replace(
+            b"## 2. Intended Outcomes", f"## 2. {old_heading}".encode()
+        ),
+    ]:
+        with pytest.raises(
+            contract.DesignArtifactContractError, match="forbidden Design heading"
+        ):
+            contract.validate_artifact(payload, layer=layer)
 
-    result = contract.validate_artifact(payload, layer=layer)
 
-    assert "design_optional_review_completion_section" in result.validator_ids
-
-
-def test_optional_review_completion_section_must_be_last_in_extension_slot() -> None:
-    payload = _candidate_with_review_completion(
-        "t0", trailing_extension=True
-    )
-
+@pytest.mark.parametrize(
+    "heading", ["## Reader Gain", "### 5.1 User Intent", "## 99. Reader Gain ###"]
+)
+def test_retired_name_cannot_hide_unnumbered_or_nested(heading):
     with pytest.raises(
-        contract.DesignArtifactContractError,
-        match="must be last",
+        contract.DesignArtifactContractError, match="forbidden Design heading"
     ):
-        contract.validate_artifact(payload, layer="t0")
+        contract.validate_artifact(
+            _candidate("t0") + f"\n{heading}\nLegacy content.\n".encode(), layer="t0"
+        )
 
 
-def test_optional_review_completion_subsections_are_required_and_ordered() -> None:
-    payload = _candidate_with_review_completion("t1")
-    text = payload.decode("utf-8")
-    payload = text.replace("语义审查", "Missing Semantic Review", 1).encode(
-        "utf-8"
-    )
-
+@pytest.mark.parametrize("version", ["v1", "v2", "v3", "v4", "v99"])
+def test_previous_or_unknown_contract_is_not_a_compatibility_selector(
+    tmp_path, version
+):
+    data = contract.load_contract()
+    data["contract_version"] = "design_artifact_contract_" + version
+    path = tmp_path / "contract.json"
+    path.write_text(json.dumps(data))
     with pytest.raises(
-        contract.DesignArtifactContractError,
-        match="missing, renamed, or out of order",
+        contract.DesignArtifactContractError, match="unsupported.*version"
     ):
-        contract.validate_artifact(payload, layer="t1")
-
-
-def test_optional_review_completion_subsections_use_parent_section_number() -> None:
-    payload = _candidate_with_review_completion("t2")
-    text = payload.decode("utf-8")
-    heading_line = next(
-        line for line in text.splitlines() if line.endswith(". 审查与完成")
-    )
-    parent_index = heading_line.split(".", 1)[0].removeprefix("## ")
-    payload = text.replace(
-        f"### {parent_index}.1 确定性检查",
-        "### 99.1 确定性检查",
-        1,
-    ).encode("utf-8")
-
-    with pytest.raises(
-        contract.DesignArtifactContractError,
-        match="missing, renamed, or out of order",
-    ):
-        contract.validate_artifact(payload, layer="t2")
-
-
-def test_optional_review_completion_subsections_reject_reordered_headings() -> None:
-    payload = _candidate_with_review_completion("charter")
-    text = payload.decode("utf-8")
-    first = "### 6.1 确定性检查"
-    second = "### 6.2 语义审查"
-    assert first in text and second in text
-    payload = text.replace(first, "### 6.1 语义审查", 1).replace(
-        second, "### 6.2 确定性检查", 1
-    ).encode("utf-8")
-
-    with pytest.raises(
-        contract.DesignArtifactContractError,
-        match="missing, renamed, or out of order",
-    ):
-        contract.validate_artifact(payload, layer="charter")
+        contract.load_contract(path)
 
 
 def test_design_reviewer_prompt_contains_exact_projected_checklist() -> None:
     prompt = (
-        REPO_ROOT
-        / "09_soul/governance/skills/the-design-authoring/runtime_modules/"
+        REPO_ROOT / "09_soul/governance/skills/the-design-authoring/runtime_modules/"
         "design_contract_reviewer/prompt.md"
     ).read_bytes()
     resource_id = "t0:design_contract_review_checklist"
@@ -330,10 +176,12 @@ def test_design_reviewer_prompt_contains_exact_projected_checklist() -> None:
 
 
 def test_code_checklist_matches_the_ddm_authority_table() -> None:
-    source = (REPO_ROOT / "09_soul/governance/t0/the_design_doc_management.md").read_bytes()
-    table = source.split(b"<!-- design-contract-review-checklist:start -->", 1)[1].split(
-        b"<!-- design-contract-review-checklist:end -->", 1
-    )[0]
+    source = (
+        REPO_ROOT / "09_soul/governance/t0/the_design_doc_management.md"
+    ).read_bytes()
+    table = source.split(b"<!-- design-contract-review-checklist:start -->", 1)[
+        1
+    ].split(b"<!-- design-contract-review-checklist:end -->", 1)[0]
     assert contract.render_reviewer_checklist().strip() == table.strip()
 
 
@@ -344,3 +192,49 @@ def test_design_authoring_skill_does_not_duplicate_reviewer_checklist() -> None:
 
     assert "skill-specific-review-checklist:design_contract_reviewer" not in authoring
     assert "## 7. Design Reviewer Checklist Source" not in authoring
+
+
+def test_checklist_identity_is_stable_and_authority_text_is_exact(tmp_path):
+    definition = contract.load_contract()
+    check = definition["reviewer_checklist"]["checks"][0]
+    assert check["check_id"] == "intent_and_reader_result"
+    authority = (
+        REPO_ROOT / "09_soul/governance/t0/the_design_doc_management.md"
+    ).read_text()
+    assert check["required_result"] in authority
+    schema_root = (
+        REPO_ROOT
+        / "09_soul/governance/skills/the-design-authoring/runtime_modules/design_contract_reviewer/schemas"
+    )
+    schema = json.loads((schema_root / "input.schema.json").read_text())
+    assert (
+        schema["properties"]["required_check_ids"]["prefixItems"][0]["const"]
+        == check["check_id"]
+    )
+    assert check["check_id"] in (schema_root / "output.schema.json").read_text()
+    check["required_result"] = "Candidate owner-defined checklist wording."
+    path = tmp_path / "contract.json"
+    path.write_text(json.dumps(definition))
+    assert check["required_result"] in contract.render_reviewer_checklist(path).decode()
+
+
+def test_module_catalog_matches_the_actual_ddm_module_library():
+    authority = (
+        REPO_ROOT / "09_soul/governance/t0/the_design_doc_management.md"
+    ).read_text()
+    names = set(re.findall(r"^#### ([A-Za-z][^：\n]+)：", authority, re.M)) - {
+        "Intent Capsule"
+    }
+    supplement = authority.split("#### T1 常用的补充标题", 1)[1].split("### 5.3", 1)[0]
+    rows = re.findall(r"^\| `([^`]+)` \| ([^|]+) \|", supplement, re.M)
+    names.update(name for name, _ in rows)
+    definition = contract.load_contract()
+    assert set(definition["modules"]) == names and len(names) == 23
+    for name, layers in rows:
+        assert set(definition["modules"][name]["layers"]) == {
+            x.strip().lower() for x in layers.split("、")
+        }
+    assert definition["modules"]["Primary System Flow"]["layers"] == ["t0", "t1", "t2"]
+    assert "protected_headings" not in json.dumps(
+        definition
+    ) and "extension_slot" not in json.dumps(definition)

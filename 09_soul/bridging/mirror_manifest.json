@@ -10,7 +10,7 @@
     {
       "source": "09_soul/core/COMMUNICATION.md",
       "target": "09_claude/core/COMMUNICATION.md",
-      "source_hash": "sha256:e8969d993a239fc2ada3f4c338960eb5ee2f56d00228c7b400f281b13577c715",
+      "source_hash": "sha256:5a3bbbe8a4375a74364205620d8a346f4df3b7aed51c3d1cb2641ee72576e8cc",
       "last_synced": "2026-10-19",
       "addendum_marker": "## Project-Specific Addendum"
     },
@@ -388,7 +388,7 @@
     {
       "source": "09_soul/core/COMMUNICATION.md",
       "target": "09_codex/core/COMMUNICATION.md",
-      "source_hash": "sha256:e8969d993a239fc2ada3f4c338960eb5ee2f56d00228c7b400f281b13577c715",
+      "source_hash": "sha256:5a3bbbe8a4375a74364205620d8a346f4df3b7aed51c3d1cb2641ee72576e8cc",
       "last_synced": "2026-10-19",
       "addendum_marker": "## Project-Specific Addendum"
     },
@@ -829,7 +829,7 @@
     {
       "source": "09_soul/core/COMMUNICATION.md",
       "target": "09_cursor/core/COMMUNICATION.md",
-      "source_hash": "sha256:e8969d993a239fc2ada3f4c338960eb5ee2f56d00228c7b400f281b13577c715",
+      "source_hash": "sha256:5a3bbbe8a4375a74364205620d8a346f4df3b7aed51c3d1cb2641ee72576e8cc",
       "last_synced": "2026-10-19",
       "addendum_marker": "## Project-Specific Addendum"
     },

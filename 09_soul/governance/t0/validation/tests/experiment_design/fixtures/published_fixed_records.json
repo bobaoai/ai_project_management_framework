@@ -1,0 +1,86 @@
+{
+  "schema_assets": [
+    {
+      "schema_asset_id": "experiment_reviewer_input",
+      "schema_asset_version": "v1",
+      "release_ref": "schema:experiment_reviewer_input@v1",
+      "canonical_schema_json": "{\"$defs\":{\"document\":{\"additionalProperties\":false,\"properties\":{\"body\":{\"minLength\":1,\"type\":\"string\"},\"document_id\":{\"minLength\":1,\"type\":\"string\"},\"owner_ref\":{\"minLength\":1,\"type\":\"string\"},\"sha256\":{\"pattern\":\"^[0-9a-f]{64}$\",\"type\":\"string\"},\"title\":{\"minLength\":1,\"type\":\"string\"}},\"required\":[\"document_id\",\"owner_ref\",\"title\",\"body\",\"sha256\"],\"type\":\"object\"},\"governing_document\":{\"additionalProperties\":false,\"properties\":{\"body\":{\"minLength\":1,\"type\":\"string\"},\"document_id\":{\"minLength\":1,\"type\":\"string\"},\"owner_ref\":{\"const\":\"designDoc/the_agent_experiment_design.md\",\"minLength\":1,\"type\":\"string\"},\"sha256\":{\"const\":\"8f07fdccbfd045b7a1487162ce3691e0c16b99ee2b636849887c764309bc4d10\",\"pattern\":\"^[0-9a-f]{64}$\",\"type\":\"string\"},\"title\":{\"minLength\":1,\"type\":\"string\"}},\"required\":[\"document_id\",\"owner_ref\",\"title\",\"body\",\"sha256\"],\"type\":\"object\"}},\"$id\":\"schema:experiment_reviewer_input@v1\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"context_documents\":{\"items\":{\"$ref\":\"#/$defs/document\"},\"type\":\"array\"},\"deterministic_evidence\":{\"additionalProperties\":false,\"properties\":{\"candidate_sha256\":{\"pattern\":\"^[0-9a-f]{64}$\",\"type\":\"string\"},\"checks\":{\"const\":[\"experiment_sections\",\"experiment_environment_sections\",\"experiment_declared_inputs\"],\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"candidate_sha256\",\"checks\"],\"type\":\"object\"},\"experiment_design\":{\"$ref\":\"#/$defs/document\"},\"governing_contract\":{\"$ref\":\"#/$defs/governing_document\"},\"module_id\":{\"const\":\"experiment_reviewer\"},\"prior_findings\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"body\":{\"minLength\":1,\"type\":\"string\"},\"finding_id\":{\"minLength\":1,\"type\":\"string\"}},\"required\":[\"finding_id\",\"body\"],\"type\":\"object\"},\"type\":\"array\"},\"required_check_ids\":{\"const\":[\"experiment_goal\",\"task_and_expected_actions\",\"environment_and_independence\",\"execution_and_permissions\",\"evidence_and_measurement\",\"evaluation_and_attribution\",\"comparison_and_repetition\",\"failure_and_recovery\",\"prose_and_meaning_preservation\"],\"items\":{\"type\":\"string\"},\"type\":\"array\"},\"review_request\":{\"additionalProperties\":false,\"properties\":{\"change\":{\"minLength\":1,\"type\":\"string\"},\"goal\":{\"minLength\":1,\"type\":\"string\"}},\"required\":[\"goal\",\"change\"],\"type\":\"object\"},\"schema_version\":{\"const\":\"experiment_reviewer_input_v1\"}},\"required\":[\"schema_version\",\"module_id\",\"review_request\",\"experiment_design\",\"governing_contract\",\"context_documents\",\"deterministic_evidence\",\"required_check_ids\",\"prior_findings\"],\"title\":\"Experiment Reviewer Input\",\"type\":\"object\"}",
+      "schema_sha256": "a3f4c6845a21124b962e255ee66eb2382b51769c05afd47926ae6a982745c758",
+      "release_sha256": "cdf9bc880f4f79bf614b1e61d5930cf3b97a804dae77447712c051e23b88bf88"
+    },
+    {
+      "schema_asset_id": "experiment_reviewer_output",
+      "schema_asset_version": "v1",
+      "release_ref": "schema:experiment_reviewer_output@v1",
+      "canonical_schema_json": "{\"$defs\":{\"check_result\":{\"additionalProperties\":false,\"properties\":{\"assessment\":{\"minLength\":1,\"type\":\"string\"},\"check_id\":{\"enum\":[\"experiment_goal\",\"task_and_expected_actions\",\"environment_and_independence\",\"execution_and_permissions\",\"evidence_and_measurement\",\"evaluation_and_attribution\",\"comparison_and_repetition\",\"failure_and_recovery\",\"prose_and_meaning_preservation\"],\"minLength\":1,\"type\":\"string\"},\"disposition\":{\"enum\":[\"passed\",\"finding\",\"not_applicable\",\"not_run\"],\"minLength\":1,\"type\":\"string\"},\"finding_ids\":{\"items\":{\"minLength\":1,\"type\":\"string\"},\"type\":\"array\",\"uniqueItems\":true}},\"required\":[\"check_id\",\"disposition\",\"assessment\",\"finding_ids\"],\"type\":\"object\"},\"evidence\":{\"additionalProperties\":false,\"properties\":{\"locator\":{\"minLength\":1,\"type\":\"string\"},\"observation\":{\"minLength\":1,\"type\":\"string\"},\"source_ref\":{\"minLength\":1,\"type\":\"string\"}},\"required\":[\"source_ref\",\"locator\",\"observation\"],\"type\":\"object\"},\"finding\":{\"additionalProperties\":false,\"properties\":{\"accountable_owner_ref\":{\"minLength\":1,\"type\":\"string\"},\"check_id\":{\"enum\":[\"experiment_goal\",\"task_and_expected_actions\",\"environment_and_independence\",\"execution_and_permissions\",\"evidence_and_measurement\",\"evaluation_and_attribution\",\"comparison_and_repetition\",\"failure_and_recovery\",\"prose_and_meaning_preservation\"],\"minLength\":1,\"type\":\"string\"},\"evidence\":{\"$ref\":\"#/$defs/evidence\"},\"finding_id\":{\"minLength\":1,\"type\":\"string\"},\"impact\":{\"minLength\":1,\"type\":\"string\"},\"required_change\":{\"minLength\":1,\"type\":\"string\"},\"requirement\":{\"minLength\":1,\"type\":\"string\"},\"severity\":{\"enum\":[\"block\",\"fix\",\"note\"],\"minLength\":1,\"type\":\"string\"}},\"required\":[\"finding_id\",\"severity\",\"evidence\",\"requirement\",\"impact\",\"accountable_owner_ref\",\"required_change\",\"check_id\"],\"type\":\"object\"}},\"$id\":\"schema:experiment_reviewer_output@v1\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"check_results\":{\"items\":{\"$ref\":\"#/$defs/check_result\"},\"maxItems\":9,\"minItems\":9,\"type\":\"array\"},\"findings\":{\"items\":{\"$ref\":\"#/$defs/finding\"},\"type\":\"array\"},\"safe_next_step\":{\"minLength\":1,\"type\":\"string\"},\"verdict\":{\"enum\":[\"passed\",\"non_pass\",\"blocked\"],\"minLength\":1,\"type\":\"string\"}},\"required\":[\"verdict\",\"check_results\",\"findings\",\"safe_next_step\"],\"title\":\"Experiment Review Result\",\"type\":\"object\"}",
+      "schema_sha256": "b8e1019191775f6e2fae100151692e696b67760ce29e11eff1f06872c0f1a42a",
+      "release_sha256": "b83cdcc531c306a37d94605d56e4aa5e208ab592ff51cf5a46fb02d320f92457"
+    },
+    {
+      "schema_asset_id": "runtime_behavior_policy",
+      "schema_asset_version": "v1",
+      "release_ref": "schema:runtime_behavior_policy@v1",
+      "canonical_schema_json": "{\"$id\":\"schema:runtime_behavior_policy@v1\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"context_isolation\":{\"enum\":[\"workflow_execution_isolated\"],\"type\":\"string\"}},\"required\":[\"context_isolation\"],\"type\":\"object\"}",
+      "schema_sha256": "c7083a3cd1f56f32e865ef254e3ffbcde220ad55298f6db53e560f9918b37db4",
+      "release_sha256": "12abe7451ee6377d4877011b8b78b0471388b57d9dc65ffd315eac426e57c216"
+    },
+    {
+      "schema_asset_id": "runtime_evaluation_policy",
+      "schema_asset_version": "v1",
+      "release_ref": "schema:runtime_evaluation_policy@v1",
+      "canonical_schema_json": "{\"$id\":\"schema:runtime_evaluation_policy@v1\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"evaluation_mode\":{\"enum\":[\"module_candidate\",\"deterministic_candidate\",\"none\"],\"type\":\"string\"}},\"required\":[\"evaluation_mode\"],\"type\":\"object\"}",
+      "schema_sha256": "617489185bec619c002b261f1d13f17eda5ae55ea4daa865441fb7fb87816a82",
+      "release_sha256": "d6037c18b899adb99fb87e7857b3c00e5c29011e937791cd8d87fde2d2792625"
+    },
+    {
+      "schema_asset_id": "runtime_retry_policy",
+      "schema_asset_version": "v1",
+      "release_ref": "schema:runtime_retry_policy@v1",
+      "canonical_schema_json": "{\"$id\":\"schema:runtime_retry_policy@v1\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"max_attempts\":{\"maximum\":100,\"minimum\":1,\"type\":\"integer\"}},\"required\":[\"max_attempts\"],\"type\":\"object\"}",
+      "schema_sha256": "c03468aaba587c2ef3a8bdd1735636cd8b2ff34df8801f809b442b01d54b3fab",
+      "release_sha256": "56aa0275116f70914beeddb76ada683e2b1c32b0f2209daefc8408e2a6386b81"
+    }
+  ],
+  "prompt_components": [],
+  "prompt_bundles": [],
+  "behavior_policies": [
+    {
+      "policy_id": "workflow_execution_isolated",
+      "policy_version": "v1",
+      "release_ref": "behavior-policy:workflow_execution_isolated@v1",
+      "policy_schema_ref": "schema:runtime_behavior_policy@v1",
+      "policy_schema_sha256": "c7083a3cd1f56f32e865ef254e3ffbcde220ad55298f6db53e560f9918b37db4",
+      "canonical_policy_json": "{\"context_isolation\":\"workflow_execution_isolated\"}",
+      "policy_sha256": "a123e711b9069ea52638a19135ae01436082c830000e2105d7075bdef9d5de24",
+      "release_sha256": "9343981c7d26291d792e4a935a14162185e974a9587f025bdf46d28e6dcaef1d"
+    }
+  ],
+  "evaluation_policies": [
+    {
+      "policy_id": "module_entry",
+      "policy_version": "v1",
+      "release_ref": "evaluation-policy:module_entry@v1",
+      "policy_schema_ref": "schema:runtime_evaluation_policy@v1",
+      "policy_schema_sha256": "617489185bec619c002b261f1d13f17eda5ae55ea4daa865441fb7fb87816a82",
+      "canonical_policy_json": "{\"evaluation_mode\":\"none\"}",
+      "policy_sha256": "8b871513076b92f41cb8742a822edbb012f1419cd6267e37377b64fe61cf2fb9",
+      "release_sha256": "88fb411a436070b003d5928606c892acb974c41e29125e4a163ae8026b20ff27"
+    }
+  ],
+  "retry_policies": [
+    {
+      "policy_id": "bounded_candidate",
+      "policy_version": "v1",
+      "release_ref": "retry-policy:bounded_candidate@v1",
+      "policy_schema_ref": "schema:runtime_retry_policy@v1",
+      "policy_schema_sha256": "c03468aaba587c2ef3a8bdd1735636cd8b2ff34df8801f809b442b01d54b3fab",
+      "canonical_policy_json": "{\"max_attempts\":3}",
+      "policy_sha256": "958cb7c79c50925396cc120fd6115837b7df98802ebe58510ec78d2ae4d39735",
+      "release_sha256": "95f575c6398673d3a3c2221f27ab0817e0712c37e92bb4c0522b3ac04d120d57"
+    }
+  ],
+  "execution_variant_policies": [],
+  "execution_profiles": [],
+  "modules": [],
+  "workflows": []
+}

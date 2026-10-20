@@ -74,6 +74,7 @@ def test_success_uses_exact_candidate_goal_and_existing_schema(args):
     assert result["subject_sha256"] == hashlib.sha256(before).hexdigest()
 
 
+@pytest.mark.deterministic
 @pytest.mark.parametrize("problem", ["goal", "scope", "self_check_hash", "self_check_open", "self_check_coverage", "schema", "missing_context"])
 def test_invalid_inputs_never_invoke_executor(args, problem):
     if problem == "goal": args["goal"] = " "
@@ -85,7 +86,12 @@ def test_invalid_inputs_never_invoke_executor(args, problem):
         if problem == "self_check_coverage": value["rows"].pop()
         args["self_check_path"].write_text(json.dumps(value), encoding="utf-8")
     if problem == "schema":
-        args["candidate_path"].write_bytes(_candidate().replace(b"## 2. Reader Gain", b"## 2. Wrong"))
+        body = _candidate()
+        heading = b"## 2. Intended Outcomes"
+        assert body.count(heading) == 1
+        changed = body.replace(heading, b"## 3. Wrong", 1)
+        assert changed != body
+        args["candidate_path"].write_bytes(changed)
     if problem == "missing_context": args["context_bindings"] = [("skill", args["candidate_path"].parent / "missing.md")]
 
     with pytest.raises((ValueError, OSError)):
@@ -398,10 +404,10 @@ def test_actual_resource_selection_and_hash_drift(tmp_path):
     report = entry.check_skill(candidate, project_root=tmp_path)
     assert report["resource_sha256"][identity] == hashlib.sha256(selected.encode()).hexdigest()
     manifests = {path: path.read_bytes() for path in governance.glob("*.json")}
-    source.write_text(source.read_text().replace("machine-facing meaning", "modified authority meaning"), encoding="utf-8")
+    source.write_text(source.read_text().replace(start, start + "Modified authority input.\n", 1), encoding="utf-8")
     with pytest.raises(ValueError, match="differ from their canonical sources"):
         entry.check_skill(candidate, project_root=tmp_path)
-    candidate.write_bytes(candidate.read_bytes().replace(b"machine-facing meaning", b"modified authority meaning"))
+    candidate.write_bytes(candidate.read_bytes().replace(selected.encode(), ("Modified authority input.\n" + selected).encode(), 1))
     changed = entry.check_skill(candidate, project_root=tmp_path)
     assert changed["resource_sha256"][identity] != report["resource_sha256"][identity]
     assert all(path.read_bytes() == payload for path, payload in manifests.items())
@@ -720,3 +726,43 @@ def test_self_check_template_is_code_bound_and_cannot_be_submitted_unfilled(args
     with pytest.raises(SystemExit):
         entry.main(command)
     assert target.read_bytes() == before
+
+
+@pytest.mark.deterministic
+def test_five_section_candidate_and_dynamic_owner_keep_registered_input_schema(args):
+    payload, _ = entry._prepare(**args)
+    assert payload["schema_version"] == "skill_candidate_reviewer_input_v9"
+    assert payload["owning_design_closure"][0]["body"] == "Skill Management fixture authority."
+    assert payload["skill_candidate"]["candidate_body"].encode() == args["candidate_path"].read_bytes()
+    assert payload["required_check_ids"] == check_ids()
+    assert "## 5. Method" in payload["skill_candidate"]["candidate_body"]
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("heading", [b"## 6. Entry and Exit", b"## 6. Execution Contract"])
+def test_mixed_old_main_sections_are_rejected_before_executor(args, heading):
+    args["candidate_path"].write_bytes(args["candidate_path"].read_bytes() + b"\n" + heading + b"\n\nLegacy.\n")
+    with pytest.raises(ValueError, match="forbidden Skill top-level heading"):
+        entry.review_skill(executor=lambda payload: pytest.fail("executor must not run"), **args)
+
+
+@pytest.mark.deterministic
+def test_all_ten_portable_skills_pass_the_official_candidate_check():
+    root = entry.PROJECT_ROOT
+    manifest = entry.release.load_governance_skill_manifest(root)
+    checked = []
+    for skill in manifest.portable_governance_skills:
+        candidates = [item for item in skill.package_files if item.source.endswith("/SKILL.md")]
+        assert len(candidates) == 1
+        candidate = candidates[0]
+        report = entry.check_skill(root / candidate.source, project_root=root)
+        assert report["skill_id"] == skill.skill_id
+        headings = report["headings"]
+        if "soul:bestpractice_ai_facing_writing" in candidate.embedded_resource_ids:
+            assert headings[0] == "AI-facing Authoring Rules"
+            headings = headings[1:]
+        assert tuple(headings[:5]) == ("Task Summary", "Intended Outcomes", "Boundaries", "Inputs and Completion", "Method")
+        assert set(report["resource_sha256"]) == set(candidate.embedded_resource_ids)
+        checked.append(skill.skill_id)
+    assert len(checked) == len(set(checked)) == 10
+    assert checked == [skill.skill_id for skill in manifest.portable_governance_skills]

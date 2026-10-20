@@ -9,6 +9,9 @@ import sys
 
 import pytest
 
+
+pytestmark = pytest.mark.deterministic
+
 from .test_artifact_contract import MODULE_PATH, _candidate
 
 
@@ -38,9 +41,9 @@ def test_cli_checks_file_using_existing_contract(tmp_path, layer):
 
 
 @pytest.mark.parametrize("payload, expected", [
-    (b"# Empty design\n", "no numbered level-two sections"),
+    (_candidate("t0").split(b"## 1.", 1)[0], "no numbered level-two sections"),
     (b"\xff", "UTF-8"),
-    (_candidate("t0").replace(b"Reader Gain", b"Wrong Heading"), "Reader Gain"),
+    (_candidate("t0").replace(b"Intended Outcomes", b"Wrong Heading"), "Intended Outcomes"),
 ])
 def test_cli_returns_actual_validation_failure(tmp_path, payload, expected):
     path = tmp_path / "bad.md"

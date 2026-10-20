@@ -26,11 +26,7 @@ SPEC.loader.exec_module(entry)
 @pytest.fixture
 def candidate(tmp_path):
     path = tmp_path / "设计.md"
-    body = _candidate("t0").replace(
-        b"---\nlayer: T0\n",
-        b"---\nlayer: T0\ntitle: Example\nowned_system_object: Example decision\ncanonical_owner: designDoc/example.md\n",
-        1,
-    )
+    body = _candidate("t0")
     path.write_bytes(body)
     return path
 
@@ -52,7 +48,7 @@ def test_build_uses_exact_input_and_does_not_require_old_process_records(candida
     assert value["candidate_documents"][0]["body"].encode() == candidate.read_bytes()
     assert value["candidate_documents"][0]["document_id"] == "candidate_1"
     assert value["review_request"]["candidate_revision_class"] == "materially_revised_surface"
-    assert {x["context_role"] for x in value["context_documents"]} == {"governing_contract", "prior_decision"}
+    assert {x["context_role"] for x in value["context_documents"]} == {"governing_contract", "prior_decision", "current_inspection"}
     assert "迁移清单" not in json.dumps(value["review_request"],ensure_ascii=False)
     assert len(value["required_check_ids"]) == 11
 
@@ -75,6 +71,7 @@ def test_same_names_do_not_collide_in_model_identifiers(candidate, tmp_path):
     assert len(ids) == len(set(ids))
 
 
+@pytest.mark.deterministic
 @pytest.mark.parametrize("mutation", ["missing_layer", "missing_object", "missing_heading", "crlf", "empty_goal"])
 def test_invalid_candidate_never_reaches_executor(candidate, mutation):
     args = args_for(candidate)
@@ -83,7 +80,12 @@ def test_invalid_candidate_never_reaches_executor(candidate, mutation):
     if mutation == "missing_object":
         body = body.replace(b"owned_system_object:",b"unrelated:")
         body = body.replace(b"Complete meaning for Owned System Object.", b" ")
-    if mutation == "missing_heading": body = body.replace(b"Reader Gain",b"Wrong Heading")
+    if mutation == "missing_heading":
+        heading = b"## 2. Intended Outcomes"
+        assert body.count(heading) == 1
+        original = body
+        body = body.replace(heading, b"## 2. Wrong Heading", 1)
+        assert body != original
     if mutation == "crlf": body = body.replace(b"\n",b"\r\n")
     if mutation == "empty_goal": args["intended_result"] = " "
     candidate.write_bytes(body)
@@ -99,10 +101,10 @@ def test_success_preserves_input_and_returns_bound_result(candidate):
     assert candidate.read_bytes() == before
 
 
-def test_owned_object_may_be_declared_in_its_required_body_section(candidate):
+def test_owned_object_must_not_be_inferred_from_a_body_section(candidate):
     candidate.write_bytes(candidate.read_bytes().replace(b"owned_system_object: Example decision\n",b""))
-    value=entry.build_design_review_input(**args_for(candidate))
-    assert value["candidate_documents"][0]["owned_object"] == "Complete meaning for Owned System Object."
+    with pytest.raises(ValueError, match="owned_system_object"):
+        entry.build_design_review_input(**args_for(candidate))
 
 
 @pytest.mark.parametrize("kind", ["schema", "false_pass", "missing_check"])
@@ -221,7 +223,24 @@ def test_cli_missing_configuration_stops_with_actionable_message(candidate, tmp_
 @pytest.mark.parametrize("layer", ["charter", "t1", "t2"])
 def test_review_kind_follows_document_layer(tmp_path, layer):
     path = tmp_path / "candidate.md"
-    body = _candidate(layer).replace(b"---\n", b"---\ntitle: Example\nowned_system_object: Example decision\n", 1)
+    body = _candidate(layer)
     path.write_bytes(body)
     value = entry.build_design_review_input(**args_for(path))
     assert value["review_request"]["reviewed_subject_kind"] == layer + "_design"
+
+
+@pytest.mark.deterministic
+@pytest.mark.parametrize("filename, expected_verdict", [
+    ("positive_grounded_capability_case.json", "passed"),
+    ("negative_abstract_responsibility_case.json", "non_pass"),
+])
+def test_semantic_fixtures_keep_valid_new_structure(filename, expected_verdict):
+    case = json.loads((Path(__file__).with_name("fixtures") / filename).read_text())
+    payload = case["candidate_markdown"].encode("utf-8")
+    checked = entry.artifact_contract.validate_artifact(payload, layer="t2")
+    assert checked.headings.count("Intended Outcomes") == 1
+    assert case["expected_verdict"] == expected_verdict
+    old_structure = payload.replace(b"## 2. Intended Outcomes", b"## 2. Reader Gain", 1)
+    assert old_structure != payload
+    with pytest.raises(entry.artifact_contract.DesignArtifactContractError):
+        entry.artifact_contract.validate_artifact(old_structure, layer="t2")

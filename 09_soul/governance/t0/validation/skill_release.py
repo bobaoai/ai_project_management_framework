@@ -707,7 +707,7 @@ def validate_reviewer_prompt_artifact(
 
 
 def _without_portable_tool_paths(project_root: Path, payload: bytes) -> bytes:
-    """Exclude verified package tools from the project-local path scan."""
+    """Exclude verified package tools and canonical manifests and the package guide."""
     def replace(match: re.Match[bytes]) -> bytes:
         relative = _validated_relative_path(
             match.group().decode("utf-8"),
@@ -721,6 +721,19 @@ def _without_portable_tool_paths(project_root: Path, payload: bytes) -> bytes:
                 code=GOVERNANCE_SKILL_SOURCE_CLOSURE_INVALID,
             )
         return b"<portable-governance-tool>"
+    for manifest_path in (MANIFEST_RELATIVE_PATH, T0_MANIFEST_RELATIVE_PATH, Path("09_soul/governance/README.md")):
+        pattern = re.compile(
+            rb"(?<![A-Za-z0-9_./-])" + re.escape(manifest_path.as_posix().encode())
+            + rb"(?![A-Za-z0-9_./-])"
+        )
+        if pattern.search(payload):
+            path = _resolve_without_symlink_escape(project_root, manifest_path.as_posix())
+            if not path.is_file():
+                raise GovernanceSkillReleaseError(
+                    f"portable Governance package reference does not resolve: {manifest_path}",
+                    code=GOVERNANCE_SKILL_SOURCE_CLOSURE_INVALID,
+                )
+            payload = pattern.sub(b"<portable-governance-manifest>", payload)
     return _PORTABLE_TOOL_PATH_PATTERN.sub(replace, payload)
 
 
@@ -2093,8 +2106,39 @@ def load_governance_skill_manifest(
     )
 
 
+def _read_binding_payload(project_root, binding):
+    binding_path = _resolve_without_symlink_escape(
+        project_root, binding.source
+    )
+    try:
+        binding_payload = binding_path.read_bytes()
+    except OSError as exc:
+        raise GovernanceSkillReleaseError(
+            "cannot read Governance Skill project binding: "
+            f"{binding.source}"
+        ) from exc
+    actual_binding_hash = _sha256_bytes(binding_payload)
+    if actual_binding_hash != binding.sha256:
+        raise GovernanceSkillReleaseError(
+            "Governance Skill project binding hash mismatch: "
+            f"{binding.source}; declared={binding.sha256}; "
+            f"actual={actual_binding_hash}"
+        )
+    if binding_payload.startswith(b"---\n"):
+        raise GovernanceSkillReleaseError(
+            "Governance Skill project binding must not contain "
+            f"frontmatter: {binding.source}"
+        )
+    if not binding_payload.endswith(b"\n"):
+        raise GovernanceSkillReleaseError(
+            "Governance Skill project binding must end with one "
+            f"newline: {binding.source}"
+        )
+    return binding_payload
+
+
 def _validated_source_payloads(
-    project_root: Path, manifest: GovernanceSkillManifest
+    project_root: Path, manifest: GovernanceSkillManifest, *, source_only: bool = False
 ) -> tuple[
     tuple[ValidatedSkillPackagePayload, ...],
     tuple[tuple[str, bytes], ...],
@@ -2109,7 +2153,7 @@ def _validated_source_payloads(
     }
     bindings = {
         binding.skill_id: binding
-        for binding in load_project_governance_skill_bindings(project_root)
+        for binding in (() if source_only else load_project_governance_skill_bindings(project_root))
     }
     unknown_binding_skills = sorted(
         set(bindings) - {skill.skill_id for skill in manifest.portable_governance_skills}
@@ -2121,9 +2165,7 @@ def _validated_source_payloads(
         )
     payloads: list[ValidatedSkillPackagePayload] = []
     owner_rows: list[tuple[PortableGovernanceSkill, object]] = []
-    project_forbidden_fragments = _project_forbidden_source_fragments(
-        project_root
-    )
+    project_forbidden_fragments = () if source_only else _project_forbidden_source_fragments(project_root)
     source_payload_cache: dict[str, bytes] = {}
 
     def read_source_once(
@@ -2204,11 +2246,9 @@ def _validated_source_payloads(
     }
 
     requires_skill_artifact_contract = any(
-        "soul:bestpractice_ai_facing_writing"
-        in package_file.embedded_resource_ids
+        package_file.source == f"{SOURCE_PREFIX}/{skill.skill_id}/SKILL.md"
         for skill in manifest.portable_governance_skills
         for package_file in skill.package_files
-        if package_file.source.endswith("/SKILL.md")
     )
     skill_artifact_adapter: Any | None = None
     if requires_skill_artifact_contract:
@@ -2250,33 +2290,7 @@ def _validated_source_payloads(
         binding = bindings.get(skill.skill_id)
         binding_payload: bytes | None = None
         if binding is not None:
-            binding_path = _resolve_without_symlink_escape(
-                project_root, binding.source
-            )
-            try:
-                binding_payload = binding_path.read_bytes()
-            except OSError as exc:
-                raise GovernanceSkillReleaseError(
-                    "cannot read Governance Skill project binding: "
-                    f"{binding.source}"
-                ) from exc
-            actual_binding_hash = _sha256_bytes(binding_payload)
-            if actual_binding_hash != binding.sha256:
-                raise GovernanceSkillReleaseError(
-                    "Governance Skill project binding hash mismatch: "
-                    f"{binding.source}; declared={binding.sha256}; "
-                    f"actual={actual_binding_hash}"
-                )
-            if binding_payload.startswith(b"---\n"):
-                raise GovernanceSkillReleaseError(
-                    "Governance Skill project binding must not contain "
-                    f"frontmatter: {binding.source}"
-                )
-            if not binding_payload.endswith(b"\n"):
-                raise GovernanceSkillReleaseError(
-                    "Governance Skill project binding must end with one "
-                    f"newline: {binding.source}"
-                )
+            binding_payload = _read_binding_payload(project_root, binding)
 
         skill_source_payloads: dict[str, bytes] = {}
         skill_payload_rows: list[ValidatedSkillPackagePayload] = []
@@ -2366,20 +2380,17 @@ def _validated_source_payloads(
                 package_file.embedded_resource_ids,
                 instruction_payloads_by_id,
             )
-            if (
-                package_relative == PurePosixPath("SKILL.md")
-                and "soul:bestpractice_ai_facing_writing"
-                in package_file.embedded_resource_ids
-            ):
+            if package_relative == PurePosixPath("SKILL.md"):
                 assert skill_artifact_adapter is not None
                 try:
                     skill_artifact_adapter.validate_artifact(
                         composed_source_payload,
                         embedded_resource_ids=package_file.embedded_resource_ids,
+                        contract_path=project_root / skill_artifact_binding.source,
                     )
                 except (AttributeError, TypeError, ValueError) as exc:
                     raise GovernanceSkillReleaseError(
-                        "Governance authoring Skill violates the registered "
+                        "Governance Skill violates the registered "
                         f"Skill artifact contract: {package_file.source}: {exc}",
                         code=GOVERNANCE_SKILL_SOURCE_CLOSURE_INVALID,
                     ) from exc
@@ -2436,9 +2447,13 @@ def _validated_source_payloads(
                 code=GOVERNANCE_SKILL_OWNER_INVALID,
             )
         try:
-            authority_path = _resolve_without_symlink_escape(
-                project_root, authority
-            )
+            owner_location = authority
+            if source_only:
+                owner_sources = {row.target: row.source for row in _load_governance_t0_manifest(project_root).portable_t0_contracts}
+                if authority not in owner_sources:
+                    raise GovernanceSkillReleaseError(f"Portable authority is not declared: {authority}", code=GOVERNANCE_SKILL_OWNER_INVALID)
+                owner_location = owner_sources[authority]
+            authority_path = _resolve_without_symlink_escape(project_root, owner_location)
         except GovernanceSkillReleaseError as exc:
             raise GovernanceSkillReleaseError(
                 str(exc), code=GOVERNANCE_SKILL_OWNER_INVALID
@@ -2465,7 +2480,7 @@ def _validated_source_payloads(
 
 
 def _validated_governance_skill_release_input(
-    project_root: Path, manifest_path: Path | None = None
+    project_root: Path, manifest_path: Path | None = None, *, source_only: bool = False
 ) -> GovernanceSkillValidatedInput:
     root = project_root.resolve()
     manifest = load_governance_skill_manifest(root, manifest_path)
@@ -2473,9 +2488,7 @@ def _validated_governance_skill_release_input(
         payloads,
         soul_resource_payloads,
         instruction_resource_payloads,
-    ) = _validated_source_payloads(
-        root, manifest
-    )
+    ) = _validated_source_payloads(root, manifest, source_only=source_only)
     return GovernanceSkillValidatedInput(
         manifest=manifest,
         source_payloads=payloads,
@@ -2487,6 +2500,7 @@ def _validated_governance_skill_release_input(
 def _check_validated_governance_skill_release(
     project_root: Path,
     validated_input: GovernanceSkillValidatedInput,
+    *, source_only: bool = False,
 ) -> GovernanceSkillReleaseReport:
     root = project_root.resolve()
     manifest = validated_input.manifest
@@ -2527,7 +2541,7 @@ def _check_validated_governance_skill_release(
                     ),
                 )
             )
-        for projection in package_file.projections:
+        for projection in (() if source_only else package_file.projections):
             projection_count += 1
             projection_root = (
                 HOST_TARGET_PREFIXES[projection.host_id] / skill.skill_id
@@ -2713,6 +2727,8 @@ def _check_validated_governance_skill_release(
                     ),
                 )
             )
+    if source_only:
+        return GovernanceSkillReleaseReport(skill_count=len(manifest.portable_governance_skills), projection_count=0, issues=tuple(issues))
     for forbidden_root in manifest.forbidden_projection_roots:
         forbidden_path = resolve_for_report(
             forbidden_root,
@@ -2785,6 +2801,44 @@ def _check_validated_governance_skill_release(
         projection_count=projection_count,
         issues=tuple(issues),
     )
+
+
+def validate_governance_skill_sources(project_root: Path):
+    """Return validated Portable bytes without borrowing host projections/addenda."""
+    root = Path(project_root).resolve()
+    validated = _validated_governance_skill_release_input(root, source_only=True)
+    report = _check_validated_governance_skill_release(root, validated, source_only=True)
+    if not report.is_clean:
+        raise GovernanceSkillReleaseError("Portable Skill source check failed: " + "; ".join(f"{x.code}: {x.path}" for x in report.issues))
+    return validated
+
+
+def prepare_skill_projection_payloads(validated_input, target_root: Path):
+    """Compose exact target bytes and capture the target-owned binding inputs."""
+    root = Path(target_root).resolve()
+    manifest_path = _resolve_without_symlink_escape(root, PROJECT_BINDING_MANIFEST_RELATIVE_PATH.as_posix())
+    manifest_bytes = manifest_path.read_bytes() if manifest_path.exists() else None
+    bindings = load_project_governance_skill_bindings(root)
+    known = {x.skill_id for x in validated_input.manifest.portable_governance_skills}
+    unknown = {x.skill_id for x in bindings} - known
+    if unknown:
+        raise GovernanceSkillReleaseError(f"project binding names an unknown portable Governance Skill: {sorted(unknown)}")
+    guard = {PROJECT_BINDING_MANIFEST_RELATIVE_PATH.as_posix():manifest_bytes}
+    addenda = {}
+    for binding in bindings:
+        body = _read_binding_payload(root, binding)
+        addenda[binding.skill_id] = body
+        guard[binding.source] = body
+    if (manifest_path.read_bytes() if manifest_path.exists() else None) != manifest_bytes:
+        raise GovernanceSkillReleaseError("project binding manifest changed during preparation")
+    result = {}
+    for row in validated_input.source_payloads:
+        body = row.source_payload
+        if row.package_file.source == f"{SOURCE_PREFIX}/{row.skill.skill_id}/SKILL.md" and row.skill.skill_id in addenda:
+            body += b"\n" + addenda[row.skill.skill_id]
+        for projection in row.package_file.projections:
+            result[projection.target] = body
+    return result, guard
 
 
 def check_governance_skill_release(

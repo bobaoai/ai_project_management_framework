@@ -21,7 +21,7 @@ AI 开始写作前，应明确文稿要完成什么、服务什么读者，以�
 
 写作任务至少应明确四件事：
 
-1. **目标**：文稿用于什么，读者需要从中获得什么理解、判断或执行能力。
+1. **目标**：谁在什么情境下需要所设计的能力或任务产物，以及应获得什么实际结果。
 2. **验收依据**：哪些要求决定文稿是否正确、充分并符合用途，如何核对这些要求。
 3. **依据与方法**：使用哪些材料、知识和工具，哪些步骤或先后关系会影响结果。
 4. **交付要求**：文稿需要达到什么深度，采用什么形式；已有明确的格式、路径或 schema 要求时，遵守相应要求。
@@ -29,6 +29,22 @@ AI 开始写作前，应明确文稿要完成什么、服务什么读者，以�
 凡步骤、顺序、工具或执行身份会影响正确性、授权边界或证据有效性的要求，应明确规定。例如，独立审核需要针对准确候选执行，审核结论需要与该候选对应。
 
 其余方法由 AI 根据任务选择。步骤式指导、例子和经验，只要能帮助完成任务，就可以保留；避免强制执行与结果无关的过程，也避免只给目标而缺少必要方法。
+
+#### Intended Outcomes：统一表达预期结果
+
+Design 和 Skill 用一个 `Intended Outcomes` 章节集中表达主要结果要求。每项主要能力应有对应的实质结果，并说明接收者用途和决定结果能否使用的必要质量。不能只列产物名称，或用“完整、可靠、可实施”等词代替具体要求。目的、范围和适用条件以解释结果所需的深度保留。
+
+作者先从授权目标和主要能力确定结果，再逐章反向核对全部正文；对象定义、职责边界和共同约束等位置也可能含有重要结果要求。重要结果或必要质量若只在后文出现，应补入结果章节；局部字段、操作步骤和检查命令仍放在所属位置。多项能力可以共享一个结果，一项能力也可以产生多个结果。不设固定条数、篇幅或逐项同名的要求，不为凑全内容增加未经授权的能力。
+
+同一结果可以在不同章节出现：结果章节定义要达到什么，方法说明怎样达到，完成与验证说明凭什么确认。各处履行不同职责，不算重复定义；重复整项要求时才合并。修订先保留有效含义，再组织表达，不只更换标题或拼接旧段落。
+
+Design 描述所设计系统或能力的功能与作用。Skill 描述执行任务的交付、接收者用途和必要质量。专业知识文稿需要说明其提供哪些专业认识，以及这些认识支持何种判断；是否使用固定章节沿其所属文稿规则确定。
+
+“读者能找到入口、理解职责”等要求用于作者和 Reviewer 的冷读检查，正文直接把入口和职责讲清楚。教学、培训等任务以读者能力变化为实际产出时，可以将具体可验证的能力写成预期结果。
+
+结果章节说明要做成什么，后续对应章节说明如何实现。Skill 在 `Method` 中写判断方法和操作过程，在 `Inputs and Completion` 的三个子节中分别明确输入、输出规格和完成条件；Design 按所属层级在功能、流程、架构和接口章节中明确必要工作方式。影响正确性、权限或证据有效性的指定方法必须写清楚，不能仅凭执行过方法就判定结果已经成立。
+
+结果确定性要求目标和判断依据明确，并给执行者保留方法选择空间。信息不足时准确交付未知及其影响也可以符合结果要求，不承诺每次得到同一个结论或必须填满所有字段。当前进度、阶段安排和运行记录保留在对应项目或交付记录中。
 
 ### 原则二：支持 AI 自主判断，排斥 SOP
 
@@ -62,7 +78,7 @@ Skill 是 AI 执行任务时使用的契约文档。写作应先保证执行所�
 1. **这一层负责什么？** 说明这一层的用途。
 2. **什么时候进入这一层？** 说明进入条件和触发信号。
 3. **进入后先读什么？** 明确应优先遵循的权威依据（first authority），以及承载当前事实的来源（truth surface）。
-4. **应该产出什么？** 说明输出形式，以及读者读完后应能理解、判断或完成什么（reader-end-state）。
+4. **应该产出什么？** 说明预期的功能、产物或状态变化、接收者用途和必要质量；输出形式按实际交付需要确定。
 5. **怎样与相邻层交接？** 说明上游期望什么、下游使用什么，以及失败时如何回退。
 6. **哪些相邻概念容易混淆？** 说明它们的区别，以及什么时候应使用其他概念或入口。
 
@@ -183,165 +199,138 @@ Schema、协议对象或法律术语可以先定义，以保证精确。定义�
 
 <!-- embedded-resource:soul:bestpractice_ai_facing_writing:end -->
 
-## 1. Task
+## 1. Task Summary
 
-本 Skill 接收明确授权的 Reviewer prompt 编写请求，或已有已审计划中的对应步骤，为一个由目标
-Design authority 定义判断标准的 Reviewer 编写或修订 prompt source。直接请求不需要另有 SystemChangePlan。
+作者使用本 Skill，为一个任务已经明确的 Reviewer 编写或修订固定指令。输入是已授权的 Reviewer prompt 修改请求，或已有计划中的对应步骤。直接授权的写作请求不需要另有 SystemChangePlan。
 
-完整 Reviewer prompt 使用五个固定章节：
+下文的“目标 Reviewer”指这份指令要交给的审核者。它审什么、根据什么标准判断，由目标 Design 决定。本 Skill 将这些要求写成第 1 至 3 节的专用指令，再与代码注入的通用规则和专业 checklist 组成完整候选。
 
-1. `0. review_contract_universal`；
-2. `1. Review Task`；
-3. `2. Inputs, Decision, and Output`；
-4. `3. Boundaries and Failure Routing`；
-5. `4. Subject Review Checklist`。
 
-本 Skill 只编写第 1 至 3 节。第 0 节由 Review Contract 拥有，第 4 节由目标 Design authority
-拥有；两者由 code 根据已登记的 canonical source ref 和 hash 机械注入。成功结果是一份完整、冻结、
-返回 Skill Management 的 Reviewer prompt candidate。本 Skill 不执行 `reviewer_reviewer`，不审核
-自己的候选，不生成 Skill package closure，不注册 Module，也不选择 provider、model 或 Runtime
-profile。
+## 2. Intended Outcomes
 
-Exact prompt candidate 必须使用已注册的 `reviewer_reviewer` Runtime Module 完成独立审核。Module
-route 未注册、未准入或不可执行时，停止交付并返回 Runtime registration 或 execution 的真实
-owner；Prompt author 不自审，Primary Agent 不直接代审。
+为任务已明确的 Reviewer 交付完整 prompt 候选及准确来源，供独立执行者、审核组织者和维护者使用。
 
-## 2. Reader Gain
+1. **任务与判断范围准确。** 指令说明目标 Reviewer 审什么、为什么审，以及接收方需要何种判断。候选与背景可区分，专业任务落实所属 Design，不增加未经授权的标准或机制。
+2. **指令足以指导独立判断。** 必需输入、允许背景及用途、关键判断、必要顺序和输出要求明确。执行者凭 prompt 与声明材料即可完成审核，无需聊天历史或未声明搜索；合理的证据分析方式仍可自行选择。指令让目标 Reviewer 负责语义与表达判断；schema、hash、引用、共享区间和投影的一致性使用声明的代码证据，不让模型重算或手填机械事实。
+3. **共同规则和专业要求保持准确来源。** 完整五章 prompt 中，专用指令与代码注入的通用规则、checklist 一致。输入输出约定和样例相互对应，适用条件、例外及停止条件没有被缩写丢失，也没有第二套结论含义。prompt 可供同类审核重复使用；本次候选、临时路径、历史回复、凭据和实际运行配置由调用方另行提供，不固化在指令中。
+4. **缺件和失败能被正确分流。** 目标 Reviewer 能区分候选缺陷、缺少必要依据和越界事项，并按已有合同交给真实负责人。作者遇到任务、资源或绑定缺口时，也交出已完成部分、具体缺口、影响、继续条件及提供方，不把草稿称为完整冻结候选。
+5. **候选可以审核、维护和交接。** 完整指令、原来源、声明资源及适用组装检查、自检材料相互对应。修订保留仍有效的要求，组织者能够安排准确候选的独立审核并核对处理结果。指令内容交付与正式源更新、注册及部署分别说明实际完成程度。
 
-冷启动 Primary Agent 只读本 Skill、授权请求或已有计划步骤、Review Contract 和目标 Design
-authority 后，可以：
+## 3. Boundaries
 
-1. 判断请求是否属于 Reviewer prompt source authoring；
-2. 写清 Reviewer 要审什么、使用哪些输入、作出什么判断、返回什么结果；
-3. 把 target-specific instruction 与 universal instruction、Design checklist 和 invocation data 分开；
-4. 形成无需聊天历史或 ambient repository search 也能执行的完整 Reviewer prompt candidate；
-5. 在 owner、subject、checklist、schema 或 failure route 不完整时停止，并返回真实 owner。
+本 Skill 负责写作、自检、确定性组装和交接。独立审核由 Primary Agent 按 Skill Management 组织，通过已注册的 `reviewer_reviewer` 执行。本 Skill 不自行审核候选，也不注册 Module、选择模型配置或发布部署。
 
-## 3. Entry and Exit
+授权请求决定本次改什么。目标 Design 决定专业任务和标准。Review Contract 决定共同审核规则、结果含义和 prompt 布局。Skill Management 决定完整候选和源交付要求。代码与实际运行记录说明当前能力，旧实现或旧意见不能代替设计决定。
 
-### 3.1 Entry
+请求指定的 Reviewer、受审对象或目标 Design 不一致时，说明冲突并返回请求方。已有计划的步骤有误时，返回计划作者；直接授权请求不会因此被要求另建计划。
 
-只有以下条件全部成立时才进入：
+需要改变输入输出含义或专业判断标准时，返回目标 Design 负责人。需要改变共同审核规则时，返回 Review Contract 负责人，按 `the-design-authoring` 修改规范。包内 schema、样例、资源声明和发布清单的问题交给包的来源或发布负责人；组装、校验等代码工具的新增或修改交 Software Delivery 的工程负责人。需要改变包含它的 Skill 时，交 `the-skill-authoring`；跨层范围和依赖需要统筹时，交 `the-system-change`。注册、执行能力或资源边界交 Agent Runtime 及相应操作负责人，安装发布交对应交付负责人。
 
-1. 用户已明确授权编写或修改 Reviewer prompt，或已有已审计划将对应步骤交给 `the-review-authoring`；
-2. 请求或步骤指定唯一 Reviewer identity、目标 Design authority、被审 subject kind 和 intended result；
-3. Review Contract 的 universal source 与目标 Design authority 的 checklist source 均可解析；
-4. Reviewer 的 input、output、verdict meaning 和 failure owner 已由对应 authority 定义；
-5. 新建任务已比较现有 Reviewer source peer set；更新任务已取得当前 accepted prompt source。
+| 边界 | 可观察的越界 |
+| --- | --- |
+| 作者落实已定任务 | 由旧 prompt、文件名或附近代码反推新的产品要求，或自行替换 Reviewer 的专业目标。 |
+| 通用规则和专业标准各有来源 | 第 1 至 3 节另写一套结论含义，或用缩略解释改变目标 Design 的适用条件。 |
+| 固定指令与本次材料分开 | prompt 固化本次候选、临时路径、历史回复、凭据或实际运行配置。 |
+| 作者自检与独立审核分开 | 作者返回 passed，或因为 prompt 与作者 Skill 同包，就声称独立性已经成立。 |
+| 代码处理机械事实 | 模型手填哈希，或被要求重新计算字节一致性和验证 schema 语法。 |
+| 候选与背景分开 | Reviewer 获准修改背景规范，或将未来实现及相邻系统问题一并当作本次候选缺陷。 |
+| 源内容交付与运行采用分开 | 写好 prompt 就声称 Module 已注册、配置完成或部署生效。 |
 
-Reviewer 名字、附近 prompt、旧 review output、Runtime Module 或 provider session 不能替代上述
-entry 条件。
+上述分工不新增审批记录或运行状态。不能把真实缺口写成已经存在的能力，也不能以扩大本次范围代替交接。
 
-### 3.2 Exit
 
-- 请求范围、Reviewer identity、target Design authority 或 subject kind 不一致时，说明具体冲突并
-  返回请求方；已有计划的步骤错误返回其作者，不要求直接请求先补一份计划。
-- Checklist、input/output meaning、verdict meaning 或 failure owner 未由目标 Design authority
-  定义时，停止并返回该 authority。
-- Universal source、checklist source、current prompt 或 exact bytes 无法重现时，返回
-  `blocked_reproducibility`，不创建候选。
-- 请求实际改变 Review Contract、目标 Design、Skill lifecycle、Runtime registration 或 release 时，
-  退出到对应 owner，不把该变更写进 Reviewer prompt。
-- Authoring 完成后交出 exact candidate 与 deterministic composition result。只改 prompt 时直接进入
-  独立 `reviewer_reviewer`；containing Skill 的 Task、方法或交接也改变时，先完成该 Skill 的独立审核。
-  准确源文件的更新仍按 Skill Management 的负责人和采用规则处理。
+## 4. Inputs and Completion
 
-## 4. Execution Contract
+### 4.1 Inputs
 
-### 4.1 Inputs and Authority
+本包的 `runtime_modules/reviewer_reviewer/` 保存独立审核所需的 prompt、schema、样例和 registration source。
 
-本 Skill 只使用以下冻结输入：
+开始写作前，明确以下材料及其来源：
 
-1. 本次明确授权目标与范围，或已有已审计划及其目标步骤；
-2. `designDoc/the_review_contract.md`；
-3. 目标 Design authority 及其 exact Reviewer checklist source；
-4. Reviewer identity、subject kind、review purpose 和 intended result；
-5. allowed core context、optional supporting context 和禁止读取的 context；
-6. input schema、output schema、semantic validator 和 verdict meaning；
-7. Review Contract universal source 的 exact ref；
-8. 更新任务的 current accepted prompt source、predecessor 和必须保留的 meaning。
+- 本次授权目标、修改范围和所需结果。已有计划时附当前步骤、完成条件、排除项及后续边界。
+- `designDoc/the_review_contract.md`：共同结果与规则见第 3、4 章，prompt 布局及修改条件见第 5 章，完成和验证见第 6、7 章。
+- 目标 Reviewer 的身份、受审对象、审核目的，以及直接定义这些要求的 Design 和完整专业 checklist。
+- 必需背景、可选辅助材料和禁止使用的上下文。背景的用途须明确，不能由目标 Reviewer 猜测读取范围。
+- 实际 input/output schema、语义校验入口和样例。目标 Design 已明确输入输出含义、结论含义和缺件负责人；本 Skill 不在写作中另行决定。
+- 通用规则和专业 checklist 的准确源入口。修订时还需当前 prompt、既有适用审核材料及必须保留的含义。
+- `designDoc/the_skill_management.md`：包含它的 Skill 是否需要审核，以及候选内容、源交付、安装和注册怎样分别处理。
 
-授权请求或已有计划决定本次 scope。目标 Design authority 决定 Reviewer 要判断的 subject meaning、checklist、
-output 和 verdict。Review Contract 决定共同审核纪律与固定 layout。Skill Management 决定 prompt
-source 作为 Skill artifact 的完整性。Runtime 只在下游执行已注册 Module。
+Portable 治理包的来源从 `09_soul/governance/governance_skill_manifest.json` 读取。`instruction_resources` 定位共享片段，`portable_governance_skills[].package_files` 定位准确包文件及嵌入资源；`09_soul/governance/governance_t0_manifest.json` 定位所属 T0 和已声明的机器合同。其他项目由其包负责人提供对应入口，不猜另一套清单。
 
-本次请求或计划步骤的目标、完成条件、相关排除项与后续边界随候选交接。Prior finding 只作为 evidence，
-先核对引文、owner、scope、intended result 和本步必要性，再决定是否修订；note 默认不实施，
-错误或越界意见附理由交回独立重判，不能把建议改成 authority 或自行把未通过结论改成通过。
 
-### 4.2 Output and Completion
+任务或判断要求未定时，返回目标 Design 负责人。来源无法复现时，指出缺失文件、资源或绑定，交给来源维护者。保留已有工作，但在必要输入补齐前不宣称完成准确候选，也不靠 Reviewer 名称、附近文件或聊天历史补输入。
 
-成功时返回：
+### 4.2 Output
 
-1. Reviewer identity、目标 Design authority、subject kind 和 intended result；
-2. 完整的第 1 至 3 节 source；
-3. 由 code 机械加入第 0 节和第 4 节后的完整五章节 prompt candidate；
-4. universal source、Design checklist source、input/output schema 和 semantic validator 的 exact refs；
-5. changed surfaces、preserved meaning、明确排除项和 predecessor；
-6. deterministic composition result，以及后续可交给 `reviewer_reviewer` 的 exact subject。
+将完整 prompt 候选和以下材料交给本次工作的组织者及接手维护者。prompt 使用 Review Contract 规定的 Markdown 形式。采用前，将候选保存在本次指定的位置，并提供准确入口；现行源文件保持原内容。目标 Reviewer 的正式源文件从第 4.1 节所述包清单定位，只有满足第 4.3 节的条件后才在授权内更新。配套材料提供各自准确入口。交付时说明实际检查与审核结果、源更新结果、未完成事项及其负责人。
 
-Candidate 只有在以下结果全部成立时才完成：
+交付内容相互对应：
 
-- 冷启动 Reviewer 能判断 exact subject、允许证据、判断顺序、输出对象、verdict 和 failure route；
-- 第 1 至 3 节没有复制或改写第 0 节和第 4 节；
-- invocation data 没有进入 fixed prompt source；
-- deterministic code 可以验证五个章节各出现一次、顺序固定、两个机械注入章节逐字同源；
-- prompt 没有新增目标 Design 未要求的 object、field、workflow、state、policy 或 mechanism；
-- Reviewer author、独立 Reviewer、subject owner、Runtime execution identity 和 admission owner 保持分离。
+1. 目标 Reviewer、受审对象、所属 Design，以及本次授权结果和修改范围。
+2. 完整五章 prompt。第 1 至 3 节为本次作者内容，第 0、4 节由代码从准确来源加入。
+3. 通用规则、专业 checklist、input/output schema、语义校验和所需样例的准确入口及用途。
+4. 本次实际改动、需要保留的含义、明确排除项，以及修订前的准确来源。
+5. 适用的机械检查结果和作者逐项自检，供组织者安排独立审核。
 
-本 Skill 不计算或手改 hash，不写 manifest/schema/fixture，不生成 host projection，不返回 review verdict，
-不注册、执行、发布或部署 Reviewer Module。
+### 4.3 Completion Contract
 
-## 5. Boundaries
+这份候选应使没有聊天背景的目标 Reviewer 能根据声明输入完成任务。布局和两个嵌入区间通过适用代码检查；专用指令没有重定义通用规则或专业标准，也没有混入本次运行材料。
 
-| Boundary | 本 Skill 的职责 | 无声违反时的可观察结果 |
-| --- | --- | --- |
-| 请求与 authoring | 按直接授权或已有计划步骤编写指定 prompt | Prompt 超出本次范围，或明确授权请求因缺少 SystemChangePlan 被拒绝 |
-| Review Contract 与 target Design | 保留 universal 规则和 target checklist 的独立权责 | 第 1 至 3 节重复、概括或改写第 0 节或第 4 节 |
-| Authoring 与 review | Prompt 完成机械检查后独立审核；containing Skill 的 Task、方法或交接改变时先审该 Skill | 作者自行返回 `passed`、跳过实际适用的审核，或仅因同目录而重复审核未变 Skill |
-| Prompt source 与 invocation data | 固定 instruction 只描述稳定任务 | Candidate 包含本次 subject bytes、临时路径、prior output、credential 或 execution record |
-| Skill 与 Runtime | 交付完整 prompt source 和 handoff | Candidate 声称 Module 已 registered、provider 已绑定或 release 已 admitted |
-| Deterministic 与 semantic | Code 检查 layout、source、hash 和 schema；Reviewer 判断意义闭包 | 模型被要求核对 byte equality，或 code 被要求推断 checklist 是否充分 |
-| Subject 与 context | Core context 只帮助判断 exact subject | Reviewer 获准把辅助材料变成新的 review subject 或修改 peer contract |
+这些条件表示作者完成候选准备，不表示候选已通过独立审核。Primary Agent 按第 5.4 节完成当前候选的检查，并在需要独立审核时取得有效通过结果，满足 Skill Management 的采用条件后，才能在既有授权内更新准确源内容。Reviewer 不可用时，交付候选和执行缺口，返回 Runtime 注册或执行负责人；不能用作者自审或相似 Reviewer 代替。
 
-## 6. Method
+本 Skill 不手改 manifest、schema、样例、安装投影或运行配置，不把候选交付称为完整包发布、Module 注册或一次实际执行。
 
-### 6.1 冻结 Reviewer 边界
+## 5. Method
 
-先写出 Reviewer identity、target Design authority、subject kind、intended result、allowed context、
-output、verdict meaning 和 failure owner。任何一项缺失时停止 authoring，不用通用措辞掩盖空缺。
+### 5.1 从审核任务确定专用指令
 
-### 6.2 编写第 1 节 Review Task
+新建 Reviewer 前，比较直接相关的已有 Reviewer，确认任务没有被现有方法覆盖。修订时以准确旧稿和明确问题为起点，保留仍然适用的要求。任务边界或职责有冲突时，按第 3 章返回负责人。
 
-第 1 节说明 Reviewer 的目的、Reader Gain、exact frozen subject 和 intended result。它必须让执行者
-知道自己的判断会帮助哪个 owner 作出什么决定，同时不把辅助 context 或未来 implementation 当成
-被审对象。
+沿一次声明范围内的审核任务走读：执行者拿到什么候选，需要回答什么问题，用哪些依据形成判断，最后向谁交出什么。将影响判断的材料、先后关系和例外落实为专用指令。具体如何分析证据由目标 Reviewer 决定，不把作者的过程偏好写成唯一程序。
 
-### 6.3 编写第 2 节 Inputs, Decision, and Output
+目标 Design 已有完整定义时，引用相应依据和适用位置。不要另写一份可能漏掉条件的缩略定义。设计尚有会改变审核结果的缺口时，交回负责人，不能靠“全面审核”“保证充分”等要求掩盖它。
 
-第 2 节逐项列出 required core input、可按需读取的 supporting context、禁止读取的 context、判断顺序、
-output schema、semantic validator 和 verdict meaning。Required input 必须足以完成判断；supporting
-context 只能解释 subject，不能扩大 subject。
+### 5.2 按章节职责写出第 1 至 3 节
 
-### 6.4 编写第 3 节 Boundaries and Failure Routing
+完整 prompt 的准确标题和来源使用 Review Contract 第 5.2 节。它是本 Skill 写出的产物结构；本 Skill 自身仍使用 Skill Management 的五章结构。
 
-第 3 节明确 Reviewer 不得编辑、批准、注册、执行或发布 subject。Peer、parent、child 或 implementation
-只作为背景；其缺口确实阻止当前判断时说明依赖与真实负责人，不将邻接改进作为 prompt 修订义务。
-信息不足、具体缺陷与满足要求按 Review Contract 的既有含义返回；不要在专用部分再写一套通用规则。
+| 作者编写部分 | 具体写法与检查问题 |
+| --- | --- |
+| `1. Review Task` | 写清目标 Reviewer 审哪一个对象、为什么审、结果交给谁使用。接手者应能区分当前候选与背景材料，不把未来实现或其他产物一并纳入。 |
+| `2. Inputs, Decision, and Output` | 按实际输入合同说明必需材料、允许背景及用途，落实专业判断的必要顺序，指向准确输出要求。接手者应能找到依据、判断哪些要求成立，并交出约定结果。通用结论含义沿用第 0 节，不另写一套。 |
+| `3. Boundaries and Failure Routing` | 写清该 Reviewer 不能作出的决定和动作，以及必要依据缺失或发生冲突时由谁补齐。接手者应知道何时能判断具体缺陷，何时只能说明依赖；不能把其他负责人的问题改写成本候选的修订义务。 |
 
-### 6.5 机械组装与交接
+第 0 节和第 4 节由代码组装，作者不手抄。需要改变其中规则时，按第 3 章返回来源负责人。
 
-由 code 把 Review Contract 的第 0 节和目标 Design authority 的第 4 节注入候选，并检查章节 identity、
-唯一性、顺序、source bytes、hash、schema 和 projection closure。Primary Agent 只消费检查结果，不手改
-机械章节或生成 hash。
+用一个满足要求的候选和一个确有缺陷或缺失依据的情境走读指令，检查它是否会返回正确类型的判断、是否将背景当成候选，以及是否仍允许合理的下层选择。这是文稿检查，不要求提前运行模型或另建测试流程。
 
-冻结后的 exact prompt candidate 在机械检查完成后进入独立 `reviewer_reviewer`。Containing Skill
-的 Task、方法或交接同时改变时，先完成其 `skill_candidate_reviewer`，再审核 prompt；仅修改 prompt
-时不重复审核未变 Skill。源文件更新由 Skill Management 规定的负责人按准确审核结果完成。Finding 作为
-evidence 返回 author，按本次目标与当前必要性处理；实际修订形成新的 exact candidate，并重新经过
-适用的 deterministic checks。重开已处理问题说明新证据、候选变化或原处理失败，不逐轮改变完成标准。
+中文优先使用简单句，先写清谁做什么。拆句保留条件、例外、职责和因果。保留准确字段与标识；长期指令不写入本次讨论和修订过程。
 
-### 6.6 Author Self-Check
+### 5.3 组装完整候选并核对来源
+
+从第 4.1 节的清单取得通用规则和目标 checklist 的来源及选择方式。代码按这些来源组装完整五章 prompt，检查章节唯一性、顺序和内容，再核对输入输出及样例的实际约定。作者只消费检查结果，不手工填写哈希或修改生成区间。
+
+Portable 包提供现成入口：`09_soul/governance/t0/validation/skill_release.py` 的 `select_candidate_instruction_resource_bytes` 读取当前候选来源，`compose_governance_skill_package_file` 组装内容，`validate_reviewer_prompt_artifact` 检查固定布局和资源位置。它们不执行模型审核；候选内容检查也不等于发布或安装检查。
+
+新 Reviewer 尚未声明所需资源，或现有绑定不能对应目标 Design 时，列明缺少的资源、来源和负责方，交给包的来源或发布负责人。可以继续说明所需专用内容，但不能手工拼一份冒充已完成同源检查的候选。涉及其他修改时，按第 3 章的分工交接。
+
+同时核对目标 Reviewer 的 input/output schema、语义校验和样例，确认专用指令使用的是实际声明要求。发现不一致时，指出差异属于指令表达、设计含义、包文件声明还是代码工具。只修正本次授权范围内的指令缺陷；其他问题按第 3 章交给相应负责人。交接时提供已完成的候选、准确差异及已有证据，说明影响了哪项结果、继续工作还需补齐什么，不另造状态或记录格式。
+
+### 5.4 交给组织者完成独立审核
+
+prompt 是否需要独立审核，使用 Review Contract 第 5.3 节的完整条件。首次编写或判断含义改变时，使用独立 `reviewer_reviewer`。保留判断含义的文字修订，按该节完成当前候选的保真自检和适用代码检查；旧稿与历史审核只作核对背景，不称为新稿的审核结论。无法确认判断含义保留时，取得独立审核结果。未变已审指令的投影执行一致性检查，只有内容、适用规则和相关依据都未改变时才沿用已有审核证据。文本未变但依据已变，或没有适用旧证据时，组织者按当前依据重新取得独立 `reviewer_reviewer` 结果。
+
+包含它的 Skill 是否需要审核，使用 Skill Management 第 6.1 节的完整条件。Skill 与 prompt 都需要审核时，先取得 Skill 审核的有效通过结果，再审 prompt。只修改 prompt 不重复审核未变 Skill；后续 prompt 修订影响 Skill 时，重新判断受影响内容。
+
+组织者使用本包 `runtime_modules/reviewer_reviewer/` 中的完整指令、input/output schema、样例和注册定义。输入按其中 `schemas/input.schema.json` 准备；输出同时使用 `schemas/output.schema.json` 和 `09_soul/governance/t0/validation/review_contract/reviewer_output_validation.py` 核对。主体是准确 prompt，目标 Design 和其余材料只服务该判断。
+
+正式独立执行入口为 `09_soul/governance/t0/validation/runtime_review.py`。组织者按 `09_soul/governance/README.md` 的“独立审核的执行”准备已注册 Module、Runtime root 和执行参数。Module 未注册、未准入或无法执行时，交给 Runtime 注册或执行负责人，不由本 Skill 临时注册或自建执行器。
+
+有效 non_pass 返回作者核对并处理成立的必修问题；有效 blocked 返回所缺依据或决定的提供方；执行失败或输出无效返回相应执行、校验负责人。保留原始结果，不补写模型判断字段。note 不自动实施，争议附证据和范围理由交回独立重判，不能自行改写原结论。
+
+修订后重新检查准确候选及受影响内容，再组织适用审核。已有问题只有出现新证据、候选变化或原处理失败时才重新打开，不逐轮改变完成标准。通过后按第 4.3 节交回准确源内容；安装、注册和部署分别报告。
+
+### 5.5 Author Self-Check
 
 <!-- embedded-resource:t0:skill_author_self_check:start -->
 调用外部 Reviewer 前，author 必须直接消费本 Skill 声明的、由 subject authority 拥有的 canonical checklist，不能手抄第二份 checklist。每次调用只形成临时结果表：
@@ -354,7 +343,7 @@ evidence 返回 author，按本次目标与当前必要性处理；实际修订�
 Author Self-Check 只防止作者把自己已经看见的缺口交给 Reviewer。它不产生 `passed`、approval、admission 或任何可替代独立审核的结果，也不创建持久化 record、Registry 或跨系统 schema。
 <!-- embedded-resource:t0:skill_author_self_check:end -->
 
-Canonical subject checklist：
+本 Skill 的产物是 Reviewer prompt，使用 Review Contract 第 7.2 节的专用标准。该节说明原判据与五项语义 `check_id` 及表达项的对应关系。自检沿用这套对应关系，不根据自然语言条目的序号另造检查 ID。
 
 <!-- embedded-resource:t0:reviewer_prompt_review_checklist:start -->
 1. Prompt 清楚说明任务、读者需要的判断、受审对象、必要输入、输出和完成条件。

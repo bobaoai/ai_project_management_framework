@@ -1,98 +1,234 @@
 {
-  "$id": "hoveath://governance/design-artifact-contract/v2",
-  "contract_version": "design_artifact_contract_v2",
+  "$id": "hoveath://governance/design-artifact-contract/v5",
+  "contract_version": "design_artifact_contract_v5",
   "artifact_contract_id": "design_document_artifact_contract",
   "owner_t0_layer_id": "the_design_doc_management",
   "artifact_kind": "design_document",
   "layers": {
     "charter": {
-      "layer_value": "Charter",
-      "protected_headings": [
-        "Intent Capsule",
-        "Constitutional Authority Map",
-        "User Intent",
-        "Reader Gain",
-        "Product Identity and Scope",
-        "Human Authority",
-        "Constitutional Invariants",
-        "Design and Code Boundary",
-        "Amendment Authority",
-        "T0 Topology Reference",
-        "References"
-      ],
-      "extension_slot": {
-        "after": "Human Authority",
-        "before": "Constitutional Invariants"
-      }
+      "layer_value": "Charter"
     },
     "t0": {
-      "layer_value": "T0",
-      "protected_headings": [
-        "Intent Capsule",
-        "Primary System Flow",
-        "User Intent",
-        "Reader Gain",
-        "Owned System Object",
-        "Authority",
-        "System-wide Invariants",
-        "Peer Boundaries",
-        "References"
-      ],
-      "extension_slot": {
-        "after": "Authority",
-        "before": "System-wide Invariants"
-      }
+      "layer_value": "T0"
     },
     "t1": {
-      "layer_value": "T1",
-      "protected_headings": [
-        "Intent Capsule",
-        "Primary System Flow",
-        "User Intent",
-        "Reader Gain",
-        "Domain Outcome and Owned Objects",
-        "Architecture and Lifecycle",
-        "Public Boundaries and Quality Rules",
-        "T2 Partition and Dependencies",
-        "Completion and Failure",
-        "References"
-      ],
-      "extension_slot": {
-        "after": "Domain Outcome and Owned Objects",
-        "before": "Architecture and Lifecycle"
-      }
+      "layer_value": "T1"
     },
     "t2": {
-      "layer_value": "T2",
-      "protected_headings": [
-        "Intent Capsule",
-        "Primary System Flow",
-        "User Intent",
-        "Reader Gain",
-        "Capability and Operation",
-        "Public Interface and Effects",
-        "Completion, Failure, and Recovery",
-        "Dependencies and Verification",
-        "References"
-      ],
-      "extension_slot": {
-        "after": "Capability and Operation",
-        "before": "Public Interface and Effects"
-      }
+      "layer_value": "T2"
     }
   },
-  "optional_sections": [
-    {
-      "heading": "审查与完成",
-      "placement": "extension_slot_last",
-      "required_subsections": [
-        "确定性检查",
-        "语义审查",
-        "表达审查",
-        "完成条件"
+  "modules": {
+    "Intended Outcomes": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Owned System Object": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Authority": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Capability and Operation": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Architecture and Lifecycle": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Public Interface and Effects": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "System-wide Invariants": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Peer Boundaries": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Completion, Failure, and Recovery": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Dependencies and Verification": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "References": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Primary System Flow": {
+      "layers": [
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Domain Outcome and Owned Objects": {
+      "layers": [
+        "t1"
+      ]
+    },
+    "Public Boundaries and Quality Rules": {
+      "layers": [
+        "t1"
+      ]
+    },
+    "T2 Partition and Dependencies": {
+      "layers": [
+        "t1"
+      ]
+    },
+    "Completion and Failure": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Design and Code Boundary": {
+      "layers": [
+        "charter",
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    "Constitutional Authority Map": {
+      "layers": [
+        "charter"
+      ]
+    },
+    "Product Identity and Scope": {
+      "layers": [
+        "charter"
+      ]
+    },
+    "Human Authority": {
+      "layers": [
+        "charter"
+      ]
+    },
+    "Constitutional Invariants": {
+      "layers": [
+        "charter"
+      ]
+    },
+    "Amendment Authority": {
+      "layers": [
+        "charter"
+      ]
+    },
+    "T0 Topology Reference": {
+      "layers": [
+        "charter"
       ]
     }
-  ],
+  },
+  "section_rules": {
+    "numbering_start": 1,
+    "required_headings": [
+      "Intended Outcomes",
+      "References"
+    ],
+    "opening_headings": [
+      "Primary System Flow",
+      "Constitutional Authority Map"
+    ],
+    "final_heading": "References",
+    "exclusive_groups": [
+      [
+        "Primary System Flow",
+        "Constitutional Authority Map"
+      ],
+      [
+        "Owned System Object",
+        "Domain Outcome and Owned Objects"
+      ],
+      [
+        "Completion and Failure",
+        "Completion, Failure, and Recovery"
+      ]
+    ]
+  },
+  "identity_fields": {
+    "required": [
+      "title",
+      "layer",
+      "canonical_owner",
+      "owned_system_object"
+    ],
+    "optional": [
+      "parent",
+      "t0_layer_id"
+    ],
+    "forbidden": [
+      "status",
+      "reader_persona",
+      "reader_personas",
+      "readers",
+      "target_readers",
+      "review_status",
+      "review_verdict",
+      "review_result",
+      "review_model",
+      "model",
+      "model_config",
+      "deployment",
+      "deployment_status"
+    ]
+  },
   "reviewer_checklist": {
     "resource_id": "t0:design_contract_review_checklist",
     "intro_lines": [],
@@ -106,81 +242,85 @@
       {
         "order": 1,
         "check_id": "intent_and_reader_result",
-        "required_result": "设计实现本次授权目标与适用计划步骤的结果；User Intent 与 Reader Gain 清楚，不把自行新增的承诺或后续工作当成当前要求",
+        "required_result": "Intended Outcomes 覆盖授权范围内本层每项主要能力的预期结果及必要质量，说明使用情境和接收方用途，保留目的依据与适用边界。对照主要能力及全部后文要求，确认重要结果没有遗漏或只出现在后文；不能仅列产物名称或空泛质量词。不以条数、篇幅或逐项同名判断完整性，不要求搬入局部实现细节。读者理解或指定过程不能替代系统结果，无证据的结论或后续工作不能成为当前承诺。",
         "finding_class": "intent_gap",
         "stage": "semantic"
       },
       {
         "order": 2,
         "check_id": "layer_owner_and_parent",
-        "required_result": "所属层级、负责人和必要父级清楚，本次结果实际涉及的职责集合没有重叠或缺口，不为检查完整而重整全部邻接系统",
+        "required_result": "层级、负责人和必要父级清楚。本次结果涉及的职责没有重叠或缺口，也没有为了检查完整性而重整全部邻接系统。",
         "finding_class": "layer_or_owner_defect",
         "stage": "semantic"
       },
       {
         "order": 3,
         "check_id": "layer_content_fit",
-        "required_result": "内容属于本层，机制按实际需要使用，没有为填满模板增加下层设计",
+        "required_result": "内容属于本层，所选模块承担明确的内容职责。机制按实际需要使用，没有为填满标题而增加下层设计。",
         "finding_class": "layer_content_misfit",
         "stage": "semantic"
       },
       {
         "order": 4,
         "check_id": "peer_authority_and_inheritance",
-        "required_result": "遵守适用上游规则，与直接相关 peer 的交接一致；实际涉及时间或机器引用时使用对应 T0",
+        "required_result": "设计遵守适用上游规则，与直接相关同级系统的交接一致。实际涉及时间或机器引用语义时，遵守对应 T0。",
         "finding_class": "peer_or_inheritance_conflict",
         "stage": "semantic"
       },
       {
         "order": 5,
         "check_id": "boundary_coherence",
-        "required_result": "各主要职责落实到可识别的执行主体、处理对象和动作；交接说明传递什么结果、谁接收并继续什么工作，文档负责人不替代执行主体，不以职责区分创造多余管理角色",
+        "required_result": "主要职责有明确执行主体、处理对象和动作。交接写清结果、接收方及其后续工作。文档负责人不替代执行主体，职责区分不创造多余管理角色。",
         "finding_class": "boundary_ambiguity",
         "stage": "semantic"
       },
       {
         "order": 6,
         "check_id": "design_and_code_truth_separation",
-        "required_result": "目标与实际实现可区分，当前事实有代码依据，不额外要求无消费需求的机器对象",
+        "required_result": "文稿区分目标与实际实现，当前事实有代码依据，不额外要求没有消费需要的机器对象。",
         "finding_class": "code_truth_leakage",
         "stage": "semantic"
       },
       {
         "order": 7,
         "check_id": "flow_interface_and_error_closure",
-        "required_result": "Flowmap、正文与实际需要的输入输出和失败处理一致，文档交接不被误写成软件接口",
+        "required_result": "流程图、正文、实际需要的输入输出和失败处理一致。材料交接没有被误写成软件接口。",
         "finding_class": "flow_or_interface_closure_gap",
         "stage": "semantic"
       },
       {
         "order": 8,
         "check_id": "failure_completion_and_rollback",
-        "required_result": "完成、信息不足与真实失败的后果清楚；恢复或回滚仅在实际影响需要时定义",
+        "required_result": "完成、信息不足和真实失败的后果清楚。恢复或回滚只在实际影响需要时定义。",
         "finding_class": "failure_or_completion_gap",
         "stage": "semantic"
       },
       {
         "order": 9,
         "check_id": "implementability_without_redesign",
-        "required_result": "具体情境中的主要功能、选定工作方式和交付结果已由本层说明，下一层无需重新猜测；功能或交付的实质歧义是设计缺口，不降为文字建议；合理下层实现选择和不影响本步的后续工作仍被保留",
+        "required_result": "本层已决定实际情境中的主要功能、工作方式和交付结果，接手者无需重新猜测。实质功能歧义按设计缺口处理，不降为文字建议。合理下层选择和不影响本步的后续工作仍被保留。",
         "finding_class": "implementability_gap",
         "stage": "semantic"
       },
       {
         "order": 10,
         "check_id": "review_approval_and_admission",
-        "required_result": "审查、实际实现与采用结果的证据不被混淆，所需授权明确，不强制额外状态或重复审批",
+        "required_result": "审核、实现和采用分别有对应证据，所需授权清楚，没有新增不必要的状态或重复审批。",
         "finding_class": "review_or_admission_conflict",
         "stage": "semantic"
       },
       {
         "order": 11,
         "check_id": "prose_and_meaning_preservation",
-        "required_result": "语义检查通过后，冷读者能准确理解设计；表达修正保持事实、职责和条件",
+        "required_result": "语义要求成立后，没有聊天背景的读者能准确理解设计。文字修正保留事实、职责和条件。",
         "finding_class": "prose_or_communication_defect",
         "stage": "prose"
       }
     ],
     "outro_lines": []
-  }
+  },
+  "forbidden_headings": [
+    "User Intent",
+    "Reader Gain"
+  ]
 }
